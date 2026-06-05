@@ -5,7 +5,7 @@ import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
 import { useAuthStore } from '../../shared/store/authStore';
 
-const mainTabRoutes = ['Inicio', 'ListadoGrupos', 'AgregarGasto', 'Perfil'] as const;
+const mainTabLabels = ['Inicio', 'Grupos', 'Agregar', 'Perfil'] as const;
 
 describe('navigation shell', () => {
   beforeEach(() => {
@@ -16,14 +16,14 @@ describe('navigation shell', () => {
     expect(registeredRouteNames).toEqual([
       'Onboarding',
       'Login',
-      'Registrarse',
-      'Inicio',
-      'ListadoGrupos',
-      'DetalleGrupo',
-      'NuevoGrupo',
-      'AgregarGasto',
-      'LiquidarDeudas',
-      'Perfil',
+      'Register',
+      'Home',
+      'GroupsList',
+      'GroupDetail',
+      'NewGroup',
+      'AddExpense',
+      'SettleDebts',
+      'Profile',
     ]);
   });
 
@@ -45,9 +45,9 @@ describe('navigation shell', () => {
     expect(await findByText('LoginScreen')).toBeOnTheScreen();
 
     act(() => {
-      navigationRef.navigate('Registrarse');
+      navigationRef.navigate('Register');
     });
-    expect(await findByText('RegistrarseScreen')).toBeOnTheScreen();
+    expect(await findByText('RegisterScreen')).toBeOnTheScreen();
   });
 
   it('renders main tabs while authenticated', async () => {
@@ -63,20 +63,20 @@ describe('navigation shell', () => {
     expect(await findByText('Te deben')).toBeOnTheScreen();
     expect(queryByText('HomeScreen')).toBeNull();
 
-    expect(mainTabRoutes).toHaveLength(4);
+    expect(mainTabLabels).toHaveLength(4);
 
-    for (const tabName of mainTabRoutes) {
-      expect(getAllByText(tabName).length).toBeGreaterThan(0);
+    for (const tabLabel of mainTabLabels) {
+      expect(getAllByText(tabLabel).length).toBeGreaterThan(0);
     }
 
-    fireEvent.press(getByText('ListadoGrupos'));
-    expect(await findByText('ListadoGruposScreen')).toBeOnTheScreen();
+    fireEvent.press(getByText('Grupos'));
+    expect(await findByText('GroupsListScreen')).toBeOnTheScreen();
 
-    fireEvent.press(getAllByText('AgregarGasto').at(-1)!);
-    expect(await findByText('AgregarGastoScreen')).toBeOnTheScreen();
+    fireEvent.press(getAllByText('Agregar').at(-1)!);
+    expect(await findByText('AddExpenseScreen')).toBeOnTheScreen();
 
     fireEvent.press(getByText('Perfil'));
-    expect(await findByText('PerfilScreen')).toBeOnTheScreen();
+    expect(await findByText('ProfileScreen')).toBeOnTheScreen();
   });
 
   it('navigates to registered stack screens and switches stacks when auth state changes', async () => {
@@ -100,16 +100,16 @@ describe('navigation shell', () => {
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
 
     act(() => {
-      navigationRef.navigate('DetalleGrupo', { groupId: 'group-1' });
+      navigationRef.navigate('GroupDetail', { groupId: 'group-1' });
     });
 
-    expect(await findByText('DetalleGrupoScreen')).toBeOnTheScreen();
+    expect(await findByText('GroupDetailScreen')).toBeOnTheScreen();
 
     act(() => {
       useAuthStore.getState().clearSession();
     });
 
     expect(await findByText('OnboardingScreen')).toBeOnTheScreen();
-    expect(queryByText('DetalleGrupoScreen')).toBeNull();
+    expect(queryByText('GroupDetailScreen')).toBeNull();
   });
 });

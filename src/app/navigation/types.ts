@@ -1,30 +1,30 @@
 export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
-  Registrarse: undefined;
+  Register: undefined;
   Main: undefined;
-  DetalleGrupo: { groupId?: string } | undefined;
-  NuevoGrupo: undefined;
-  AgregarGasto: undefined;
-  LiquidarDeudas: undefined;
+  GroupDetail: { groupId?: string } | undefined;
+  NewGroup: undefined;
+  AddExpense: undefined;
+  SettleDebts: undefined;
 };
 
 export type MainTabParamList = {
-  Inicio: undefined;
-  ListadoGrupos: undefined;
-  AgregarGasto: undefined;
-  Perfil: undefined;
+  Home: undefined;
+  GroupsList: undefined;
+  AddExpense: undefined;
+  Profile: undefined;
 };
 
 export const registeredRouteNames = [
   'Onboarding',
   'Login',
-  'Registrarse',
-  'Inicio',
-  'ListadoGrupos',
-  'DetalleGrupo',
-  'NuevoGrupo',
-  'AgregarGasto',
-  'LiquidarDeudas',
-  'Perfil',
+  'Register',
+  'Home',
+  'GroupsList',
+  'GroupDetail',
+  'NewGroup',
+  'AddExpense',
+  'SettleDebts',
+  'Profile',
 ] as const;

@@ -1,1 +1,1 @@
-export type ProfileScreenName = 'PerfilScreen';
+export type ProfileScreenName = 'ProfileScreen';

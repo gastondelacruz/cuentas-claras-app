@@ -1,1 +1,1 @@
-export type AuthScreenName = 'OnboardingScreen' | 'LoginScreen' | 'RegistrarseScreen';
+export type AuthScreenName = 'OnboardingScreen' | 'LoginScreen' | 'RegisterScreen';

@@ -5,6 +5,8 @@ import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
 import { useAuthStore } from '../../shared/store/authStore';
 
+const mainTabRoutes = ['Inicio', 'ListadoGrupos', 'AgregarGasto', 'Perfil'] as const;
+
 describe('navigation shell', () => {
   beforeEach(() => {
     useAuthStore.getState().clearSession();
@@ -51,15 +53,19 @@ describe('navigation shell', () => {
   it('renders main tabs while authenticated', async () => {
     useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
 
-    const { findByText, getAllByText, getByText } = render(
+    const { findByText, getAllByText, getByText, queryByText } = render(
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>,
     );
 
-    expect(await findByText('InicioScreen')).toBeOnTheScreen();
+    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
+    expect(await findByText('Te deben')).toBeOnTheScreen();
+    expect(queryByText('HomeScreen')).toBeNull();
 
-    for (const tabName of ['Inicio', 'ListadoGrupos', 'AgregarGasto', 'Perfil'] as const) {
+    expect(mainTabRoutes).toHaveLength(4);
+
+    for (const tabName of mainTabRoutes) {
       expect(getAllByText(tabName).length).toBeGreaterThan(0);
     }
 
@@ -87,8 +93,9 @@ describe('navigation shell', () => {
       useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
     });
 
-    expect(await findByText('InicioScreen')).toBeOnTheScreen();
+    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
     expect(queryByText('OnboardingScreen')).toBeNull();
+    expect(queryByText('HomeScreen')).toBeNull();
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
 

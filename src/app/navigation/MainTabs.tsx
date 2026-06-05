@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CircleDollarSign, Home, PlusCircle, User } from 'lucide-react-native';
 
 import { AgregarGastoScreen } from '../../features/expenses/screens/AgregarGastoScreen';
-import { InicioScreen } from '../../features/groups/screens/InicioScreen';
+import { HomeScreen } from '../../features/home/screens/HomeScreen';
 import { ListadoGruposScreen } from '../../features/groups/screens/ListadoGruposScreen';
 import { PerfilScreen } from '../../features/profile/screens/PerfilScreen';
 import { colors } from '../../shared/theme/colors';
@@ -20,7 +20,7 @@ export function MainTabs() {
         headerShown: true,
       }}
     >
-      <Tab.Screen name="Inicio" component={InicioScreen} options={{ tabBarIcon: ({ color }) => <Home color={color} /> }} />
+      <Tab.Screen name="Inicio" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Home color={color} /> }} />
       <Tab.Screen
         name="ListadoGrupos"
         component={ListadoGruposScreen}

@@ -1,15 +1,18 @@
-import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Settings, Wallet } from 'lucide-react-native';
-import { Pressable, Text, View } from 'react-native';
+import { useNavigation } from "@react-navigation/native";
+import { ChevronLeft, Settings, WalletCards } from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
 
-import { colors } from '../../../shared/theme/colors';
+import { colors } from "../../../shared/theme/colors";
 
 type GroupDetailHeaderProps = {
   groupName: string;
   onPressSettings?: () => void;
 };
 
-export function GroupDetailHeader({ groupName, onPressSettings }: GroupDetailHeaderProps) {
+export function GroupDetailHeader({
+  groupName,
+  onPressSettings,
+}: GroupDetailHeaderProps) {
   const navigation = useNavigation();
 
   return (
@@ -25,7 +28,9 @@ export function GroupDetailHeader({ groupName, onPressSettings }: GroupDetailHea
       </Pressable>
 
       <View className="flex-1 flex-row items-center justify-center gap-2 px-2">
-        <Wallet color={colors.primary} size={20} />
+        <View className="h-8 w-8 items-center justify-center rounded-md bg-primaryBg">
+          <WalletCards color={colors.primary} size={18} strokeWidth={2.4} />
+        </View>
         <Text numberOfLines={1} className="text-lg font-bold text-neutral900">
           {groupName}
         </Text>

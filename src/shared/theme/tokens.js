@@ -9,6 +9,10 @@ const colors = {
   success: '#16A34A',
   error: '#DC2626',
   white: '#FFFFFF',
+  // Soft tinted backgrounds for category badges and balance surfaces.
+  primaryBg: '#E6F4EC',
+  accentBg: '#FEF0E6',
+  debtBg: '#FEE2E2',
 };
 
 const fontFamily = {

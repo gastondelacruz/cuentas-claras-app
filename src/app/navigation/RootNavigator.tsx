@@ -21,7 +21,7 @@ export function RootNavigator() {
   return (
     <Stack.Navigator initialRouteName="Main">
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} />
+      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="NewGroup" component={NewGroupScreen} />
       <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
       <Stack.Screen name="SettleDebts" component={SettleDebtsScreen} />

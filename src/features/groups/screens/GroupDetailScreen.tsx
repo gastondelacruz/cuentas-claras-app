@@ -1,5 +1,84 @@
-import { PlaceholderScreen } from '../../../shared/ui/PlaceholderScreen';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { Plus } from 'lucide-react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { RootStackParamList } from '../../../app/navigation/types';
+import { colors } from '../../../shared/theme/colors';
+import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { BalanceMiniCards } from '../components/BalanceMiniCards';
+import { ExpenseRow } from '../components/ExpenseRow';
+import { GroupActionButtons } from '../components/GroupActionButtons';
+import { GroupDetailHeader } from '../components/GroupDetailHeader';
+import { GroupTotalCard } from '../components/GroupTotalCard';
+import { MemberBalanceBubble } from '../components/MemberBalanceBubble';
+import { useGroupDetail } from '../hooks/useGroupDetail';
+
+type GroupDetailRoute = RouteProp<RootStackParamList, 'GroupDetail'>;
 
 export function GroupDetailScreen() {
-  return <PlaceholderScreen name="GroupDetailScreen" />;
+  const route = useRoute<GroupDetailRoute>();
+  const { group, memberBalances, recentExpenses, totalExpensesCount } = useGroupDetail(route.params?.groupId);
+
+  return (
+    <ScreenContainer>
+      <SafeAreaView edges={['top']} className="bg-white">
+        <GroupDetailHeader groupName={group.name} />
+      </SafeAreaView>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-6 pb-28 pt-4">
+        <View className="gap-4 px-4">
+          <GroupTotalCard totalExpense={group.totalExpense} changePercent={group.totalExpenseChangePercent} />
+          <BalanceMiniCards owedToYou={group.owedToYou} youOwe={group.youOwe} />
+        </View>
+
+        <GroupActionButtons />
+
+        <View className="gap-3">
+          <View className="flex-row items-center justify-between px-4">
+            <Text className="text-lg font-bold text-neutral900">Balances</Text>
+            <Pressable accessibilityRole="button" onPress={() => {}}>
+              <Text className="text-sm text-primary">Ver quién debe a quién</Text>
+            </Pressable>
+          </View>
+
+          <FlatList
+            horizontal
+            data={memberBalances}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="gap-4 px-4"
+            renderItem={({ item }) => <MemberBalanceBubble member={item} onPress={() => {}} />}
+          />
+        </View>
+
+        <View className="gap-3 px-4">
+          <Text className="text-lg font-bold text-neutral900">Gastos Recientes</Text>
+
+          <View className="gap-3">
+            {recentExpenses.map((expense) => (
+              <ExpenseRow key={expense.id} expense={expense} />
+            ))}
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {}}
+            className="items-center rounded-lg border border-dashed border-primary py-3"
+          >
+            <Text className="text-sm text-primary">{`Ver los ${totalExpensesCount} gastos`}</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Añadir gasto"
+        onPress={() => {}}
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-primary"
+      >
+        <Plus color={colors.white} />
+      </Pressable>
+    </ScreenContainer>
+  );
 }

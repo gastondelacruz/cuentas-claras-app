@@ -28,7 +28,7 @@ export function MainTabs() {
       <Tab.Screen
         name="GroupsList"
         component={GroupsListScreen}
-        options={{ tabBarLabel: 'Grupos', tabBarIcon: ({ color }) => <CircleDollarSign color={color} /> }}
+        options={{ headerShown: false, tabBarLabel: 'Grupos', tabBarIcon: ({ color }) => <CircleDollarSign color={color} /> }}
       />
       <Tab.Screen
         name="AddExpense"

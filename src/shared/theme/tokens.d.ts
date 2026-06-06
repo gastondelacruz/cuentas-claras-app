@@ -10,6 +10,9 @@ declare const tokens: {
     success: string;
     error: string;
     white: string;
+    primaryBg: string;
+    accentBg: string;
+    debtBg: string;
   };
   fontFamily: { sans: 'Inter' };
   fontSize: { sm: number; base: number; lg: number; xl: number; h1: number };

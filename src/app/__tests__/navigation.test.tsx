@@ -70,7 +70,7 @@ describe('navigation shell', () => {
     }
 
     fireEvent.press(getByText('Grupos'));
-    expect(await findByText('GroupsListScreen')).toBeOnTheScreen();
+    expect(await findByText('Balance Neto Total')).toBeOnTheScreen();
 
     fireEvent.press(getAllByText('Agregar').at(-1)!);
     expect(await findByText('AddExpenseScreen')).toBeOnTheScreen();
@@ -103,13 +103,13 @@ describe('navigation shell', () => {
       navigationRef.navigate('GroupDetail', { groupId: 'group-1' });
     });
 
-    expect(await findByText('GroupDetailScreen')).toBeOnTheScreen();
+    expect(await findByText('Viaje a Europa 2024')).toBeOnTheScreen();
 
     act(() => {
       useAuthStore.getState().clearSession();
     });
 
     expect(await findByText('OnboardingScreen')).toBeOnTheScreen();
-    expect(queryByText('GroupDetailScreen')).toBeNull();
+    expect(queryByText('Viaje a Europa 2024')).toBeNull();
   });
 });

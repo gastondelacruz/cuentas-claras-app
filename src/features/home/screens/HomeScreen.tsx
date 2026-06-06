@@ -1,13 +1,18 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Plus, Search, WalletCards } from 'lucide-react-native';
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { Plus } from "lucide-react-native";
 
-import { ActiveGroupsSection } from '../components/ActiveGroupsSection';
-import { HomeEmptyView, HomeErrorView, HomeLoadingView } from '../components/HomeStateViews';
-import { RecentActivitySection } from '../components/RecentActivitySection';
-import { SummaryCards } from '../components/SummaryCards';
-import { useHomeData } from '../hooks/useHomeData';
-import { colors } from '../../../shared/theme/colors';
-import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { ActiveGroupsSection } from "../components/ActiveGroupsSection";
+import {
+  HomeEmptyView,
+  HomeErrorView,
+  HomeLoadingView,
+} from "../components/HomeStateViews";
+import { RecentActivitySection } from "../components/RecentActivitySection";
+import { SummaryCards } from "../components/SummaryCards";
+import { useHomeData } from "../hooks/useHomeData";
+import { colors } from "../../../shared/theme/colors";
+import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 
 export function HomeScreen() {
   const { data, isLoading, isError, error } = useHomeData();
@@ -15,6 +20,7 @@ export function HomeScreen() {
   if (isLoading) {
     return (
       <ScreenContainer>
+        <AppTopBar />
         <HomeLoadingView />
       </ScreenContainer>
     );
@@ -23,16 +29,20 @@ export function HomeScreen() {
   if (isError) {
     return (
       <ScreenContainer>
+        <AppTopBar />
         <HomeErrorView message={error?.message} />
       </ScreenContainer>
     );
   }
 
-  const isEmpty = !data || (data.activeGroups.length === 0 && data.recentActivity.length === 0);
+  const isEmpty =
+    !data ||
+    (data.activeGroups.length === 0 && data.recentActivity.length === 0);
 
   if (isEmpty) {
     return (
       <ScreenContainer>
+        <AppTopBar />
         <HomeEmptyView />
       </ScreenContainer>
     );
@@ -40,19 +50,11 @@ export function HomeScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-6 px-5 pb-28 pt-6">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <WalletCards color={colors.white} size={24} />
-            </View>
-            <Text className="text-h1 font-bold text-neutral900">Cuentas Claras</Text>
-          </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Buscar" className="h-12 w-12 items-center justify-center rounded-full bg-white">
-            <Search color={colors.neutral900} size={22} />
-          </Pressable>
-        </View>
-
+      <AppTopBar />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="gap-6 px-5 pb-28 pt-6"
+      >
         <SummaryCards summary={data.summary} />
         <ActiveGroupsSection groups={data.activeGroups} />
         <RecentActivitySection activities={data.recentActivity} />

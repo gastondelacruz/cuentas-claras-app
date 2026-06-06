@@ -13,6 +13,7 @@ export type MainTabParamList = {
   Home: undefined;
   GroupsList: undefined;
   AddExpense: undefined;
+  Activity: undefined;
   Profile: undefined;
 };
 
@@ -25,6 +26,7 @@ export const registeredRouteNames = [
   'GroupDetail',
   'NewGroup',
   'AddExpense',
+  'Activity',
   'SettleDebts',
   'Profile',
 ] as const;

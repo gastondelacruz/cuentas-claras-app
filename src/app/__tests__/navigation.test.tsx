@@ -5,7 +5,7 @@ import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
 import { useAuthStore } from '../../shared/store/authStore';
 
-const mainTabLabels = ['Inicio', 'Grupos', 'Agregar', 'Perfil'] as const;
+const mainTabLabels = ['Inicio', 'Grupos', 'Agregar', 'Actividad', 'Perfil'] as const;
 
 describe('navigation shell', () => {
   beforeEach(() => {
@@ -22,6 +22,7 @@ describe('navigation shell', () => {
       'GroupDetail',
       'NewGroup',
       'AddExpense',
+      'Activity',
       'SettleDebts',
       'Profile',
     ]);
@@ -63,7 +64,7 @@ describe('navigation shell', () => {
     expect(await findByText('Te deben')).toBeOnTheScreen();
     expect(queryByText('HomeScreen')).toBeNull();
 
-    expect(mainTabLabels).toHaveLength(4);
+    expect(mainTabLabels).toHaveLength(5);
 
     for (const tabLabel of mainTabLabels) {
       expect(getAllByText(tabLabel).length).toBeGreaterThan(0);
@@ -74,6 +75,9 @@ describe('navigation shell', () => {
 
     fireEvent.press(getAllByText('Agregar').at(-1)!);
     expect(await findByText('AddExpenseScreen')).toBeOnTheScreen();
+
+    fireEvent.press(getByText('Actividad'));
+    expect(await findByText('Gastos este mes')).toBeOnTheScreen();
 
     fireEvent.press(getByText('Perfil'));
     expect(await findByText('ProfileScreen')).toBeOnTheScreen();

@@ -1,7 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CircleDollarSign, Home, PlusCircle, User } from 'lucide-react-native';
+import { Bell, CircleDollarSign, Home, PlusCircle, User } from 'lucide-react-native';
 
 import { AddExpenseScreen } from '../../features/expenses/screens/AddExpenseScreen';
+import { ActivityScreen } from '../../features/activity/screens/ActivityScreen';
 import { GroupsListScreen } from '../../features/groups/screens/GroupsListScreen';
 import { HomeScreen } from '../../features/home/screens/HomeScreen';
 import { ProfileScreen } from '../../features/profile/screens/ProfileScreen';
@@ -34,6 +35,11 @@ export function MainTabs() {
         name="AddExpense"
         component={AddExpenseScreen}
         options={{ tabBarLabel: 'Agregar', tabBarIcon: ({ color }) => <PlusCircle color={color} /> }}
+      />
+      <Tab.Screen
+        name="Activity"
+        component={ActivityScreen}
+        options={{ headerShown: false, tabBarLabel: 'Actividad', tabBarIcon: ({ color }) => <Bell color={color} /> }}
       />
       <Tab.Screen
         name="Profile"

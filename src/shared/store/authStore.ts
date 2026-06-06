@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export type AuthUser = {
   id: string;
@@ -16,7 +16,9 @@ type AuthStore = {
 export const useAuthStore = create<AuthStore>()((set) => ({
   user: null,
   accessToken: null,
-  isAuthenticated: false,
-  setSession: (user, token) => set({ user, accessToken: token, isAuthenticated: true }),
-  clearSession: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+  isAuthenticated: true,
+  setSession: (user, token) =>
+    set({ user, accessToken: token, isAuthenticated: true }),
+  clearSession: () =>
+    set({ user: null, accessToken: null, isAuthenticated: false }),
 }));

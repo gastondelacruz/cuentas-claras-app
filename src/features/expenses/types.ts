@@ -1,1 +1,1 @@
-export type ExpenseScreenName = 'AgregarGastoScreen' | 'LiquidarDeudasScreen';
+export type ExpenseScreenName = 'AddExpenseScreen' | 'SettleDebtsScreen';

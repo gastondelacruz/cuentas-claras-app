@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CircleDollarSign, Home, PlusCircle, User } from 'lucide-react-native';
 
-import { AgregarGastoScreen } from '../../features/expenses/screens/AgregarGastoScreen';
-import { InicioScreen } from '../../features/groups/screens/InicioScreen';
-import { ListadoGruposScreen } from '../../features/groups/screens/ListadoGruposScreen';
-import { PerfilScreen } from '../../features/profile/screens/PerfilScreen';
+import { AddExpenseScreen } from '../../features/expenses/screens/AddExpenseScreen';
+import { GroupsListScreen } from '../../features/groups/screens/GroupsListScreen';
+import { HomeScreen } from '../../features/home/screens/HomeScreen';
+import { ProfileScreen } from '../../features/profile/screens/ProfileScreen';
 import { colors } from '../../shared/theme/colors';
 import { MainTabParamList } from './types';
 
@@ -13,25 +13,33 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Inicio"
+      initialRouteName="Home"
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.neutral500,
         headerShown: true,
       }}
     >
-      <Tab.Screen name="Inicio" component={InicioScreen} options={{ tabBarIcon: ({ color }) => <Home color={color} /> }} />
       <Tab.Screen
-        name="ListadoGrupos"
-        component={ListadoGruposScreen}
-        options={{ tabBarIcon: ({ color }) => <CircleDollarSign color={color} /> }}
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: 'Inicio', tabBarIcon: ({ color }) => <Home color={color} /> }}
       />
       <Tab.Screen
-        name="AgregarGasto"
-        component={AgregarGastoScreen}
-        options={{ tabBarIcon: ({ color }) => <PlusCircle color={color} /> }}
+        name="GroupsList"
+        component={GroupsListScreen}
+        options={{ tabBarLabel: 'Grupos', tabBarIcon: ({ color }) => <CircleDollarSign color={color} /> }}
       />
-      <Tab.Screen name="Perfil" component={PerfilScreen} options={{ tabBarIcon: ({ color }) => <User color={color} /> }} />
+      <Tab.Screen
+        name="AddExpense"
+        component={AddExpenseScreen}
+        options={{ tabBarLabel: 'Agregar', tabBarIcon: ({ color }) => <PlusCircle color={color} /> }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Perfil', tabBarIcon: ({ color }) => <User color={color} /> }}
+      />
     </Tab.Navigator>
   );
 }

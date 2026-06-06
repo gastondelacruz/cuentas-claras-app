@@ -1,1 +1,1 @@
-export type GroupScreenName = 'InicioScreen' | 'ListadoGruposScreen' | 'DetalleGrupoScreen' | 'NuevoGrupoScreen';
+export type GroupScreenName = 'GroupsListScreen' | 'GroupDetailScreen' | 'NewGroupScreen';

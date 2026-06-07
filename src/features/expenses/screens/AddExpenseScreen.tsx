@@ -1,10 +1,9 @@
-import { useNavigation } from "@react-navigation/native";
-import { CalendarDays, Check, ChevronDown, ChevronLeft, Globe2, ShoppingBag, TrainFront, Utensils } from "lucide-react-native";
+import { CalendarDays, Check, ChevronDown, Globe2, ShoppingBag, TrainFront, Utensils } from "lucide-react-native";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
 import { Avatar } from "../../../shared/ui/Avatar";
+import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 
 type Category = {
@@ -43,29 +42,9 @@ const participants: Participant[] = [
 ];
 
 export function AddExpenseScreen() {
-  const navigation = useNavigation();
-
   return (
     <ScreenContainer>
-      <SafeAreaView edges={["top"]} className="bg-white">
-        <View className="flex-row items-center justify-between border-b border-neutral200 bg-white px-4 py-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            hitSlop={8}
-            onPress={() => navigation.goBack()}
-            className="h-10 w-10 items-center justify-center"
-          >
-            <ChevronLeft color={colors.neutral900} />
-          </Pressable>
-
-          <Text className="flex-1 text-center text-lg font-bold text-neutral900">
-            Crear gasto
-          </Text>
-
-          <View className="h-10 w-10" />
-        </View>
-      </SafeAreaView>
+      <InternalScreenHeader title="Crear gasto" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

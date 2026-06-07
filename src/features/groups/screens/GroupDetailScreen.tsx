@@ -1,7 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '../../../app/navigation/types';
 import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
@@ -24,9 +23,7 @@ export function GroupDetailScreen() {
 
   return (
     <ScreenContainer>
-      <SafeAreaView edges={['top']} className="bg-white">
-        <GroupDetailHeader groupName={group.name} />
-      </SafeAreaView>
+      <GroupDetailHeader groupName={group.name} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-6 pb-28 pt-4">
         <View className="gap-4 px-4">

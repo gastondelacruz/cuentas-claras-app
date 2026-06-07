@@ -1,6 +1,9 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { Plus } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ScrollView } from "react-native";
 
+import { MainTabParamList, RootStackParamList } from "../../../app/navigation/types";
 import { ActiveGroupsSection } from "../components/ActiveGroupsSection";
 import {
   HomeEmptyView,
@@ -10,12 +13,20 @@ import {
 import { RecentActivitySection } from "../components/RecentActivitySection";
 import { SummaryCards } from "../components/SummaryCards";
 import { useHomeData } from "../hooks/useHomeData";
-import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { FloatingCreateMenu } from "../../../shared/ui/FloatingCreateMenu";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 
+type HomeNavigation = BottomTabNavigationProp<MainTabParamList, "Home">;
+type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
+
 export function HomeScreen() {
+  const navigation = useNavigation<HomeNavigation>();
   const { data, isLoading, isError, error } = useHomeData();
+
+  const navigateToRootScreen = (screen: keyof RootStackParamList) => {
+    navigation.getParent?.<RootNavigation>()?.navigate(screen);
+  };
 
   if (isLoading) {
     return (
@@ -60,14 +71,10 @@ export function HomeScreen() {
         <RecentActivitySection activities={data.recentActivity} />
       </ScrollView>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Agregar gasto"
-        className="absolute bottom-8 right-6 h-16 w-16 items-center justify-center rounded-full bg-primary"
-        onPress={() => undefined}
-      >
-        <Plus color={colors.white} size={30} />
-      </Pressable>
+      <FloatingCreateMenu
+        onCreateGroup={() => navigateToRootScreen("NewGroup")}
+        onCreateExpense={() => navigateToRootScreen("AddExpense")}
+      />
     </ScreenContainer>
   );
 }

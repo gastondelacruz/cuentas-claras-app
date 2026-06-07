@@ -11,7 +11,6 @@ import { useAuthStore } from "../../shared/store/authStore";
 const mainTabLabels = [
   "Inicio",
   "Grupos",
-  "Agregar",
   "Actividad",
   "Perfil",
 ] as const;
@@ -65,7 +64,7 @@ describe("navigation shell", () => {
       .getState()
       .setSession({ id: "1", email: "a@b.com" }, "tok-abc");
 
-    const { findByText, getAllByText, getByText, queryByText } = render(
+    const { findByText, getAllByText, getByLabelText, getByText, queryByText } = render(
       <NavigationContainer>
         <RootNavigator />
       </NavigationContainer>,
@@ -75,7 +74,7 @@ describe("navigation shell", () => {
     expect(await findByText("Te deben")).toBeOnTheScreen();
     expect(queryByText("HomeScreen")).toBeNull();
 
-    expect(mainTabLabels).toHaveLength(5);
+    expect(mainTabLabels).toHaveLength(4);
 
     for (const tabLabel of mainTabLabels) {
       expect(getAllByText(tabLabel).length).toBeGreaterThan(0);
@@ -84,8 +83,8 @@ describe("navigation shell", () => {
     fireEvent.press(getByText("Grupos"));
     expect(await findByText("Balance Neto Total")).toBeOnTheScreen();
 
-    fireEvent.press(getAllByText("Agregar").at(-1)!);
-    expect(await findByText("AddExpenseScreen")).toBeOnTheScreen();
+    fireEvent.press(getByLabelText("Abrir menú de creación"));
+    expect(await findByText("Crear nuevo gasto")).toBeOnTheScreen();
 
     fireEvent.press(getByText("Actividad"));
     expect(await findByText("Gastos este mes")).toBeOnTheScreen();
@@ -122,6 +121,12 @@ describe("navigation shell", () => {
     });
 
     expect(await findByText("Viaje a Europa 2024")).toBeOnTheScreen();
+
+    act(() => {
+      navigationRef.navigate("AddExpense");
+    });
+
+    expect(await findByText("Crear Gasto")).toBeOnTheScreen();
 
     act(() => {
       useAuthStore.getState().clearSession();

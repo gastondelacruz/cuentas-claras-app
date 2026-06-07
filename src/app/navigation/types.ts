@@ -12,7 +12,6 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   GroupsList: undefined;
-  AddExpense: undefined;
   Activity: undefined;
   Profile: undefined;
 };

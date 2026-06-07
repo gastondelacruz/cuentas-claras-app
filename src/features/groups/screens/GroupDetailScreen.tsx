@@ -1,10 +1,10 @@
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { Plus } from 'lucide-react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '../../../app/navigation/types';
-import { colors } from '../../../shared/theme/colors';
+import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { BalanceMiniCards } from '../components/BalanceMiniCards';
 import { ExpenseRow } from '../components/ExpenseRow';
@@ -15,8 +15,10 @@ import { MemberBalanceBubble } from '../components/MemberBalanceBubble';
 import { useGroupDetail } from '../hooks/useGroupDetail';
 
 type GroupDetailRoute = RouteProp<RootStackParamList, 'GroupDetail'>;
+type GroupDetailNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 export function GroupDetailScreen() {
+  const navigation = useNavigation<GroupDetailNavigation>();
   const route = useRoute<GroupDetailRoute>();
   const { group, memberBalances, recentExpenses, totalExpensesCount } = useGroupDetail(route.params?.groupId);
 
@@ -71,14 +73,10 @@ export function GroupDetailScreen() {
         </View>
       </ScrollView>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Añadir gasto"
-        onPress={() => {}}
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-primary"
-      >
-        <Plus color={colors.white} />
-      </Pressable>
+      <FloatingCreateMenu
+        onCreateGroup={() => navigation.navigate('NewGroup')}
+        onCreateExpense={() => navigation.navigate('AddExpense')}
+      />
     </ScreenContainer>
   );
 }

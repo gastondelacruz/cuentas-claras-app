@@ -3,11 +3,9 @@ import {
   Bell,
   CircleDollarSign,
   Home,
-  PlusCircle,
   User,
 } from "lucide-react-native";
 
-import { AddExpenseScreen } from "../../features/expenses/screens/AddExpenseScreen";
 import { ActivityScreen } from "../../features/activity/screens/ActivityScreen";
 import { GroupsListScreen } from "../../features/groups/screens/GroupsListScreen";
 import { HomeScreen } from "../../features/home/screens/HomeScreen";
@@ -41,14 +39,6 @@ export function MainTabs() {
         options={{
           tabBarLabel: "Grupos",
           tabBarIcon: ({ color }) => <CircleDollarSign color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="AddExpense"
-        component={AddExpenseScreen}
-        options={{
-          tabBarLabel: "Agregar",
-          tabBarIcon: ({ color }) => <PlusCircle color={color} />,
         }}
       />
       <Tab.Screen

@@ -23,7 +23,7 @@ export function RootNavigator() {
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="NewGroup" component={NewGroupScreen} />
-      <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
+      <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettleDebts" component={SettleDebtsScreen} />
     </Stack.Navigator>
   );

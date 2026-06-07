@@ -36,7 +36,7 @@ describe('HomeScreen', () => {
 
     expect(screen.getByText('Cuentas Claras')).toBeTruthy();
     expect(screen.getByLabelText('Buscar')).toBeTruthy();
-    expect(screen.getByLabelText('Agregar gasto')).toBeTruthy();
+    expect(screen.getByLabelText('Abrir menú de creación')).toBeTruthy();
   });
 
   it('renders summary cards with exact formatted amounts and chips', () => {

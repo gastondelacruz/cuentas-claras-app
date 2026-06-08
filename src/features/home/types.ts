@@ -14,7 +14,7 @@ export type HomeGroupMember = {
   id: string;
   name: string;
   initials: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
 };
 
 export type HomeGroup = {

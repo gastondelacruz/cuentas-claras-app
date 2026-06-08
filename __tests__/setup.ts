@@ -22,6 +22,11 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(async () => undefined),
 }));
 
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}));
+
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
 jest.mock('react-native-gesture-handler', () => {
@@ -56,6 +61,7 @@ jest.mock('@react-navigation/native', () => {
     ...actual,
     useNavigation: jest.fn(() => ({
       navigate: jest.fn(),
+      replace: jest.fn(),
       addListener: jest.fn(() => jest.fn()),
       removeListener: jest.fn(),
       dispatch: jest.fn(),

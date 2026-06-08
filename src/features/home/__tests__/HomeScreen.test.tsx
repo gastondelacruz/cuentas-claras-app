@@ -1,15 +1,23 @@
-import { render, screen } from '@testing-library/react-native';
+import { useNavigation } from '@react-navigation/native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { homeMockData } from '../mocks/home.mock';
 import { HomeScreen } from '../screens/HomeScreen';
 import type { UseHomeDataResult } from '../types';
 import { useHomeData } from '../hooks/useHomeData';
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+}));
+
 jest.mock('../hooks/useHomeData', () => ({
   useHomeData: jest.fn(),
 }));
 
 const mockedUseHomeData = jest.mocked(useHomeData);
+const mockedUseNavigation = jest.mocked(useNavigation);
+const navigate = jest.fn();
+const parentNavigate = jest.fn();
 
 function mockHomeData(overrides: Partial<UseHomeDataResult> = {}) {
   mockedUseHomeData.mockReturnValue({
@@ -27,6 +35,10 @@ function mockHomeData(overrides: Partial<UseHomeDataResult> = {}) {
 describe('HomeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedUseNavigation.mockReturnValue({
+      navigate,
+      getParent: () => ({ navigate: parentNavigate }),
+    } as never);
   });
 
   it('renders the loaded dashboard shell', () => {
@@ -62,6 +74,18 @@ describe('HomeScreen', () => {
     expect(screen.getByText('+2')).toBeTruthy();
     expect(screen.getByText('4 deudas activas')).toBeTruthy();
     expect(screen.getByLabelText('James')).toBeTruthy();
+    expect(screen.getByLabelText('Ver todos los grupos')).toBeTruthy();
+    expect(screen.getByText('Ver lista completa')).toBeTruthy();
+  });
+
+  it('navigates to the groups list from the extra active groups card', () => {
+    mockHomeData();
+
+    render(<HomeScreen />);
+
+    fireEvent.press(screen.getByLabelText('Ver todos los grupos'));
+
+    expect(navigate).toHaveBeenCalledWith('GroupsList');
   });
 
   it('renders recent activity rows with context, signed amounts, and time labels', () => {

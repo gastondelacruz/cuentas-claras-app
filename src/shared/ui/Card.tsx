@@ -5,21 +5,28 @@ type CardVariant = 'default' | 'groupPreview' | 'activityList' | 'summary' | 'ce
 
 type CardProps = Omit<ComponentProps<typeof View>, 'className'> & {
   children: ReactNode;
+  className?: string;
   variant?: CardVariant;
 };
 
+const baseCardClassName = 'rounded-lg border border-neutral200 bg-white';
+
 const cardClassNames: Record<CardVariant, string> = {
-  default: 'rounded-lg border border-neutral200 bg-white',
-  groupPreview: 'w-64 overflow-hidden rounded-lg border border-neutral200 bg-white',
-  activityList: 'overflow-hidden rounded-lg border border-neutral200 bg-white',
-  summary: 'flex-1 rounded-lg border border-neutral200 bg-white p-4',
-  centered: 'items-center rounded-lg border border-neutral200 bg-white p-6',
-  centeredError: 'items-center rounded-lg border border-debt bg-white p-6',
+  default: '',
+  groupPreview: 'overflow-hidden',
+  activityList: 'overflow-hidden',
+  summary: 'flex-1 p-4',
+  centered: 'items-center p-6',
+  centeredError: 'items-center border-debt p-6',
 };
 
-export function Card({ children, variant = 'default', ...props }: CardProps) {
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
+}
+
+export function Card({ children, className, variant = 'default', ...props }: CardProps) {
   return (
-    <View className={cardClassNames[variant]} {...props}>
+    <View className={joinClassNames(baseCardClassName, cardClassNames[variant], className)} {...props}>
       {children}
     </View>
   );

@@ -1,5 +1,5 @@
+import { useGroupsStore, getGroupsNetBalance } from '../store/groupsStore';
 import { GroupListItem } from '../types';
-import { groupsListMock, groupsNetBalanceMock } from '../mocks/groupsList.mock';
 
 type UseGroupsListResult = {
   groups: GroupListItem[];
@@ -14,9 +14,11 @@ type UseGroupsListResult = {
  * `useQuery({ queryKey: ['groups'], ... })` call later does not touch the UI.
  */
 export function useGroupsList(): UseGroupsListResult {
+  const groups = useGroupsStore((state) => state.groups);
+
   return {
-    groups: groupsListMock,
-    netBalance: groupsNetBalanceMock,
+    groups,
+    netBalance: getGroupsNetBalance(groups),
     isLoading: false,
   };
 }

@@ -1,8 +1,13 @@
 import { renderHook } from '@testing-library/react-native';
 
+import { useGroupsStore } from '../../groups/store/groupsStore';
 import { useHomeData } from '../hooks/useHomeData';
 
 describe('useHomeData', () => {
+  beforeEach(() => {
+    useGroupsStore.getState().reset();
+  });
+
   it('returns direct mock fields and query-shaped data', () => {
     const { result } = renderHook(() => useHomeData());
 
@@ -30,5 +35,40 @@ describe('useHomeData', () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.isError).toBe(false);
     expect(result.current.error).toBeNull();
+  });
+
+  it('derives the latest two created groups from the groups store', () => {
+    useGroupsStore.getState().createGroup({
+      category: 'EVENT',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['ana@example.com'],
+      name: 'Cumple de Ana',
+      owner: {
+        id: 'owner-1',
+        name: 'Alex',
+        initials: 'AL',
+        avatarUrl: null,
+        email: 'alex@example.com',
+      },
+    });
+
+    useGroupsStore.getState().createGroup({
+      category: 'TRAVEL',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['luz@example.com'],
+      name: 'Escapada a Tigre',
+      owner: {
+        id: 'owner-2',
+        name: 'Mora',
+        initials: 'MO',
+        avatarUrl: null,
+        email: 'mora@example.com',
+      },
+    });
+
+    const { result } = renderHook(() => useHomeData());
+
+    expect(result.current.activeGroups.map((group) => group.name)).toEqual(['Escapada a Tigre', 'Cumple de Ana']);
+    expect(result.current.activeGroups.map((group) => group.category)).toEqual(['Viajes', 'Eventos']);
   });
 });

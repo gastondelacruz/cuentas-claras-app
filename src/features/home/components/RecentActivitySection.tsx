@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Train, Utensils, Zap } from 'lucide-react-native';
 
 import type { HomeActivity } from '../types';
@@ -8,6 +8,7 @@ import { Card } from '../../../shared/ui/Card';
 
 type RecentActivitySectionProps = {
   activities: HomeActivity[];
+  onActivityPress: (groupId: string) => void;
 };
 
 const categoryIcon = {
@@ -16,7 +17,7 @@ const categoryIcon = {
   utilities: Zap,
 };
 
-export function RecentActivitySection({ activities }: RecentActivitySectionProps) {
+export function RecentActivitySection({ activities, onActivityPress }: RecentActivitySectionProps) {
   return (
     <View className="gap-3">
       <Text className="text-lg font-bold text-neutral900">Actividad reciente</Text>
@@ -25,9 +26,12 @@ export function RecentActivitySection({ activities }: RecentActivitySectionProps
           const Icon = categoryIcon[activity.category];
 
           return (
-            <View
+            <Pressable
               key={activity.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Abrir grupo de ${activity.title}`}
               className={index > 0 ? 'flex-row items-center gap-3 border-t border-neutral200 p-4' : 'flex-row items-center gap-3 p-4'}
+              onPress={() => onActivityPress(activity.groupId)}
             >
               <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral100">
                 <Icon color={colors.primary} size={20} />
@@ -40,7 +44,7 @@ export function RecentActivitySection({ activities }: RecentActivitySectionProps
                 <AmountText amount={activity.amount} variant="activity" />
                 <Text className="mt-1 text-xs text-neutral500">{activity.timeLabel}</Text>
               </View>
-            </View>
+            </Pressable>
           );
         })}
       </Card>

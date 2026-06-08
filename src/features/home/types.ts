@@ -29,6 +29,7 @@ export type HomeGroup = {
 
 export type HomeActivity = {
   id: string;
+  groupId: string;
   title: string;
   context: string;
   amount: number;

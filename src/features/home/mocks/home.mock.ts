@@ -64,6 +64,7 @@ export const homeMockData: HomeDashboardData = {
   recentActivity: [
     {
       id: 'sushi-dinner',
+      groupId: 'office-lunch',
       title: 'Cena de Sushi',
       context: 'Pagado por ti en Almuerzo Oficina',
       amount: 45,
@@ -72,6 +73,7 @@ export const homeMockData: HomeDashboardData = {
     },
     {
       id: 'train-tickets',
+      groupId: 'lisbon-trip',
       title: 'Billetes de Tren',
       context: 'Pagado por James en Viaje a Lisboa',
       amount: -12.8,
@@ -80,6 +82,7 @@ export const homeMockData: HomeDashboardData = {
     },
     {
       id: 'electricity-bill',
+      groupId: 'apartment-4b',
       title: 'Factura de la Luz',
       context: 'Pagado por Sarah en Gastos Piso 4B',
       amount: -85,

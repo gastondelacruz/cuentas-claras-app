@@ -28,6 +28,10 @@ export function HomeScreen() {
     navigation.getParent?.<RootNavigation>()?.navigate(screen);
   };
 
+  const navigateToGroupDetail = (groupId: string) => {
+    navigation.getParent?.<RootNavigation>()?.navigate("GroupDetail", { groupId });
+  };
+
   if (isLoading) {
     return (
       <ScreenContainer>
@@ -67,8 +71,8 @@ export function HomeScreen() {
         contentContainerClassName="gap-6 px-5 pb-28 pt-6"
       >
         <SummaryCards summary={data.summary} />
-        <ActiveGroupsSection groups={data.activeGroups} />
-        <RecentActivitySection activities={data.recentActivity} />
+        <ActiveGroupsSection groups={data.activeGroups} onGroupPress={navigateToGroupDetail} />
+        <RecentActivitySection activities={data.recentActivity} onActivityPress={navigateToGroupDetail} />
       </ScrollView>
 
       <FloatingCreateMenu

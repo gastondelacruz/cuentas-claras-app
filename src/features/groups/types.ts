@@ -4,6 +4,10 @@ export type GroupCategory = 'TRAVEL' | 'HOME' | 'FOOD' | 'EVENT' | 'OTHER';
 
 export type GroupStatus = { type: 'settled' } | { type: 'pending'; count: number } | { type: 'recent' };
 
+export type GroupImage =
+  | { type: 'default'; uri: null }
+  | { type: 'uploaded'; uri: string };
+
 export type GroupMemberPreview = {
   id: string;
   name: string;
@@ -20,6 +24,12 @@ export type GroupListItem = {
   members: GroupMemberPreview[];
   extraMembersCount: number;
   balance: number;
+};
+
+export type StoredGroup = GroupListItem & {
+  image: GroupImage;
+  invitedEmails: string[];
+  ownerEmail: string;
 };
 
 export type GroupDetail = {

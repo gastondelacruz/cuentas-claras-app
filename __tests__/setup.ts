@@ -27,6 +27,15 @@ jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
 }));
 
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = require('react-native');
+
+  return {
+    __esModule: true,
+    default: View,
+  };
+});
+
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
 jest.mock('react-native-gesture-handler', () => {
@@ -67,5 +76,6 @@ jest.mock('@react-navigation/native', () => {
       dispatch: jest.fn(),
       setOptions: jest.fn(),
     })),
+    useRoute: jest.fn(() => ({ params: undefined })),
   };
 });

@@ -72,7 +72,7 @@ export function GroupDetailScreen() {
 
       <FloatingCreateMenu
         onCreateGroup={() => navigation.navigate('NewGroup')}
-        onCreateExpense={() => navigation.navigate('AddExpense')}
+        onCreateExpense={() => navigation.navigate('AddExpense', { groupId: group.id })}
       />
     </ScreenContainer>
   );

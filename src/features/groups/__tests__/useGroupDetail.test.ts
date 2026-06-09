@@ -1,11 +1,69 @@
 import { renderHook } from '@testing-library/react-native';
 
+import { useExpensesStore } from '../../expenses/store/expensesStore';
+import { GroupExpense } from '../types';
 import { useGroupDetail } from '../hooks/useGroupDetail';
 import { useGroupsStore } from '../store/groupsStore';
+
+function makeExpense(id: string): GroupExpense {
+  return {
+    id,
+    title: `Gasto ${id}`,
+    paidByLabel: 'Pagado por mí',
+    timeLabel: 'Hoy',
+    totalAmount: 100,
+    category: 'FOOD',
+    userRelation: { type: 'lent', amount: 60 },
+  };
+}
 
 describe('useGroupDetail', () => {
   beforeEach(() => {
     useGroupsStore.getState().reset();
+    useExpensesStore.getState().reset();
+  });
+
+  it('merges store expenses on top of the seeded mock group', () => {
+    useExpensesStore.getState().addExpense('group-1', makeExpense('new-1'));
+
+    const { result } = renderHook(() => useGroupDetail('group-1'));
+
+    expect(result.current.recentExpenses[0]?.id).toBe('new-1');
+    expect(result.current.totalExpensesCount).toBe(25);
+  });
+
+  it('preserves the selected seeded group identity', () => {
+    const { result } = renderHook(() => useGroupDetail('group-2'));
+
+    expect(result.current.group).toMatchObject({
+      id: 'group-2',
+      name: 'Departamento',
+      category: 'HOME',
+    });
+  });
+
+  it('shows store expenses for a newly created group', () => {
+    const createdGroup = useGroupsStore.getState().createGroup({
+      name: 'Viaje a Mendoza',
+      category: 'TRAVEL',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['friend@example.com'],
+      owner: {
+        id: 'current-user',
+        name: 'Vos',
+        email: 'you@example.com',
+        initials: 'YO',
+        avatarUrl: null,
+      },
+    });
+
+    useExpensesStore.getState().addExpense(createdGroup.id, makeExpense('new-2'));
+
+    const { result } = renderHook(() => useGroupDetail(createdGroup.id));
+
+    expect(result.current.recentExpenses).toHaveLength(1);
+    expect(result.current.group.totalExpense).toBe(100);
+    expect(result.current.group.owedToYou).toBe(60);
   });
 
   it('uses Spanish current member copy for newly created groups', () => {

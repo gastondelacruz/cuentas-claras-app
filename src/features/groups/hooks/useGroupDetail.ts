@@ -1,7 +1,29 @@
+import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { GroupDetail, GroupExpense, MemberBalance } from '../types';
 import { groupDetailMock, memberBalancesMock, recentExpensesMock, totalExpensesCountMock } from '../mocks/groupDetail.mock';
 import { groupsListMock } from '../mocks/groupsList.mock';
 import { useGroupsStore } from '../store/groupsStore';
+
+const EMPTY_EXPENSES: GroupExpense[] = [];
+
+function sumExpenses(expenses: GroupExpense[]) {
+  return expenses.reduce(
+    (totals, expense) => {
+      totals.total += expense.totalAmount;
+
+      if (expense.userRelation.type === 'lent') {
+        totals.owedToYou += expense.userRelation.amount;
+      }
+
+      if (expense.userRelation.type === 'share') {
+        totals.youOwe += expense.userRelation.amount;
+      }
+
+      return totals;
+    },
+    { total: 0, owedToYou: 0, youOwe: 0 },
+  );
+}
 
 function getInitialsFromValue(value: string) {
   const tokens = value
@@ -32,12 +54,16 @@ type UseGroupDetailResult = {
  *
  * This is intentionally shaped like a TanStack Query hook so that swapping the
  * mock for a real `useQuery({ queryKey: ['group', groupId], ... })` call later
- * does not require touching the UI. For now `groupId` is ignored and the hook
- * always resolves the mock synchronously with `isLoading: false`.
+ * does not require touching the UI. For now the hook resolves synchronously,
+ * preserving the selected group identity while merging local expense state.
  */
 export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   const groupFromStore = useGroupsStore((state) => state.groups.find((group) => group.id === groupId));
+  const createdExpenses = useExpensesStore((state) =>
+    groupId ? state.expensesByGroup[groupId] ?? EMPTY_EXPENSES : EMPTY_EXPENSES,
+  );
   const isSeededMockGroup = groupsListMock.some((group) => group.id === groupId);
+  const createdTotals = sumExpenses(createdExpenses);
 
   if (groupFromStore && !isSeededMockGroup) {
     const memberBalances: MemberBalance[] = [
@@ -64,23 +90,31 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
         id: groupFromStore.id,
         name: groupFromStore.name,
         category: groupFromStore.category,
-        totalExpense: 0,
+        totalExpense: createdTotals.total,
         totalExpenseChangePercent: 0,
-        owedToYou: 0,
-        youOwe: 0,
+        owedToYou: createdTotals.owedToYou,
+        youOwe: createdTotals.youOwe,
       },
       memberBalances,
-      recentExpenses: [],
-      totalExpensesCount: 0,
+      recentExpenses: createdExpenses,
+      totalExpensesCount: createdExpenses.length,
       isLoading: false,
     };
   }
 
   return {
-    group: groupDetailMock,
+    group: {
+      ...groupDetailMock,
+      id: groupFromStore?.id ?? groupDetailMock.id,
+      name: groupFromStore?.name ?? groupDetailMock.name,
+      category: groupFromStore?.category ?? groupDetailMock.category,
+      totalExpense: groupDetailMock.totalExpense + createdTotals.total,
+      owedToYou: groupDetailMock.owedToYou + createdTotals.owedToYou,
+      youOwe: groupDetailMock.youOwe + createdTotals.youOwe,
+    },
     memberBalances: memberBalancesMock,
-    recentExpenses: recentExpensesMock,
-    totalExpensesCount: totalExpensesCountMock,
+    recentExpenses: [...createdExpenses, ...recentExpensesMock],
+    totalExpensesCount: totalExpensesCountMock + createdExpenses.length,
     isLoading: false,
   };
 }

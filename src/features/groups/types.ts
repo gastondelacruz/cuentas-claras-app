@@ -15,6 +15,10 @@ export type GroupMemberPreview = {
   avatarUrl: string | null;
 };
 
+export type GroupMember = GroupMemberPreview & {
+  isCurrentUser: boolean;
+};
+
 export type GroupListItem = {
   id: string;
   name: string;

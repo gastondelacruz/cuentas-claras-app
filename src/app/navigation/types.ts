@@ -5,7 +5,7 @@ export type RootStackParamList = {
   Main: undefined;
   GroupDetail: { groupId?: string } | undefined;
   NewGroup: undefined;
-  AddExpense: undefined;
+  AddExpense: { groupId?: string } | undefined;
   SettleDebts: undefined;
 };
 

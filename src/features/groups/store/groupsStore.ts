@@ -16,10 +16,17 @@ type CreateGroupInput = {
   owner: GroupOwner;
 };
 
+type UpdateGroupInput = CreateGroupInput & {
+  groupId: string;
+};
+
 type GroupsStore = {
   createGroup: (input: CreateGroupInput) => StoredGroup;
+  deleteGroup: (groupId: string) => void;
+  deletedGroupIds: string[];
   groups: StoredGroup[];
   reset: () => void;
+  updateGroup: (input: UpdateGroupInput) => StoredGroup;
 };
 
 const defaultGroupImage: GroupImage = { type: 'default', uri: null };
@@ -68,18 +75,67 @@ function buildPendingInvitesDescription(invitedEmails: string[]) {
     : `${invitedEmails.length} invitaciones pendientes`;
 }
 
+function isSeededMockGroup(groupId: string) {
+  return groupsListMock.some((group) => group.id === groupId);
+}
+
+function getSeededMockGroup(groupId: string) {
+  return groupsListMock.find((group) => group.id === groupId);
+}
+
+function parseInvitedEmails(invitedEmails: string[], allowEmpty: boolean) {
+  if (allowEmpty && invitedEmails.length === 0) {
+    return [];
+  }
+
+  const parsedInvitedEmails = invitedEmailsSchema.safeParse(invitedEmails);
+
+  if (!parsedInvitedEmails.success) {
+    throw new Error(parsedInvitedEmails.error.flatten().formErrors[0] ?? inviteMembersRequiredMessage);
+  }
+
+  return parsedInvitedEmails.data;
+}
+
+function buildCreatedGroupMembers(owner: GroupOwner, invitedEmails: string[]) {
+  const invitedMembers = invitedEmails.map(createInvitedMemberPreview);
+  const visibleMembers = [owner, ...invitedMembers].slice(0, 3);
+
+  return {
+    visibleMembers,
+    extraMembersCount: Math.max(0, invitedMembers.length + 1 - visibleMembers.length),
+  };
+}
+
+function buildSeededGroupPreviewMembers(groupId: string, invitedEmails: string[]) {
+  const seededGroup = getSeededMockGroup(groupId);
+
+  if (!seededGroup) {
+    return {
+      visibleMembers: invitedEmails.map(createInvitedMemberPreview).slice(0, 3),
+      extraMembersCount: Math.max(0, invitedEmails.length - 3),
+      description: buildPendingInvitesDescription(invitedEmails),
+    };
+  }
+
+  const invitedMembers = invitedEmails.map(createInvitedMemberPreview);
+  const visibleMembers = [...seededGroup.members, ...invitedMembers].slice(0, 3);
+  const overflowInvites = Math.max(0, seededGroup.members.length + invitedMembers.length - visibleMembers.length);
+
+  return {
+    visibleMembers,
+    extraMembersCount: seededGroup.extraMembersCount + overflowInvites,
+    description:
+      invitedEmails.length > 0 ? buildPendingInvitesDescription(invitedEmails) : seededGroup.description,
+  };
+}
+
 export const useGroupsStore = create<GroupsStore>()((set) => ({
+  deletedGroupIds: [],
   groups: getInitialGroups(),
   createGroup: ({ category, image, invitedEmails, name, owner }) => {
-    const parsedInvitedEmails = invitedEmailsSchema.safeParse(invitedEmails);
-
-    if (!parsedInvitedEmails.success) {
-      throw new Error(parsedInvitedEmails.error.flatten().formErrors[0] ?? inviteMembersRequiredMessage);
-    }
-
-    const normalizedInvitedEmails = parsedInvitedEmails.data;
-    const invitedMembers = normalizedInvitedEmails.map(createInvitedMemberPreview);
-    const visibleMembers = [owner, ...invitedMembers].slice(0, 3);
+    const normalizedInvitedEmails = parseInvitedEmails(invitedEmails, false);
+    const { visibleMembers, extraMembersCount } = buildCreatedGroupMembers(owner, normalizedInvitedEmails);
     const nextGroup: StoredGroup = {
       id: `group-${Date.now()}`,
       name,
@@ -87,7 +143,7 @@ export const useGroupsStore = create<GroupsStore>()((set) => ({
       category,
       status: { type: 'recent' },
       members: visibleMembers,
-      extraMembersCount: Math.max(0, invitedMembers.length + 1 - visibleMembers.length),
+      extraMembersCount,
       balance: 0,
       image,
       invitedEmails: normalizedInvitedEmails,
@@ -98,7 +154,75 @@ export const useGroupsStore = create<GroupsStore>()((set) => ({
 
     return nextGroup;
   },
-  reset: () => set({ groups: getInitialGroups() }),
+  updateGroup: ({ category, groupId, image, invitedEmails, name, owner }) => {
+    let updatedGroup: StoredGroup | undefined;
+
+    set((state) => {
+      const currentGroup = state.groups.find((group) => group.id === groupId);
+
+      if (!currentGroup) {
+        return state;
+      }
+
+      const seededGroup = isSeededMockGroup(groupId);
+      const normalizedInvitedEmails = parseInvitedEmails(invitedEmails, seededGroup);
+
+      const nextGroup: StoredGroup = seededGroup
+        ? (() => {
+            const { visibleMembers, extraMembersCount, description } = buildSeededGroupPreviewMembers(
+              groupId,
+              normalizedInvitedEmails,
+            );
+
+            return {
+              ...currentGroup,
+              name,
+              category,
+              image,
+              description,
+              members: visibleMembers,
+              extraMembersCount,
+              invitedEmails: normalizedInvitedEmails,
+              ownerEmail: owner.email,
+            };
+          })()
+        : (() => {
+            const { visibleMembers, extraMembersCount } = buildCreatedGroupMembers(owner, normalizedInvitedEmails);
+
+            return {
+              ...currentGroup,
+              name,
+              category,
+              image,
+              description: buildPendingInvitesDescription(normalizedInvitedEmails),
+              members: visibleMembers,
+              extraMembersCount,
+              invitedEmails: normalizedInvitedEmails,
+              ownerEmail: owner.email,
+            };
+          })();
+
+      updatedGroup = nextGroup;
+
+      return {
+        groups: state.groups.map((group) => (group.id === groupId ? nextGroup : group)),
+      };
+    });
+
+    if (!updatedGroup) {
+      throw new Error('Group not found');
+    }
+
+    return updatedGroup;
+  },
+  deleteGroup: (groupId) =>
+    set((state) => ({
+      deletedGroupIds: state.deletedGroupIds.includes(groupId)
+        ? state.deletedGroupIds
+        : [...state.deletedGroupIds, groupId],
+      groups: state.groups.filter((group) => group.id !== groupId),
+    })),
+  reset: () => set({ deletedGroupIds: [], groups: getInitialGroups() }),
 }));
 
 export function getGroupsNetBalance(groups: GroupListItem[]) {

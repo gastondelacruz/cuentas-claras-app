@@ -1,11 +1,12 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { RootStackParamList } from '../../../app/navigation/types';
 import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { BalanceMiniCards } from '../components/BalanceMiniCards';
 import { ExpenseRow } from '../components/ExpenseRow';
 import { GroupActionButtons } from '../components/GroupActionButtons';
@@ -13,6 +14,7 @@ import { GroupDetailHeader } from '../components/GroupDetailHeader';
 import { GroupTotalCard } from '../components/GroupTotalCard';
 import { MemberBalanceBubble } from '../components/MemberBalanceBubble';
 import { useGroupDetail } from '../hooks/useGroupDetail';
+import { useGroupsStore } from '../store/groupsStore';
 
 type GroupDetailRoute = RouteProp<RootStackParamList, 'GroupDetail'>;
 type GroupDetailNavigation = NativeStackNavigationProp<RootStackParamList>;
@@ -25,7 +27,29 @@ export function GroupDetailScreen() {
   const navigation = useNavigation<GroupDetailNavigation>();
   const route = useRoute<GroupDetailRoute>();
   const { group, memberBalances, recentExpenses, totalExpensesCount } = useGroupDetail(route.params?.groupId);
+  const deleteGroup = useGroupsStore((state) => state.deleteGroup);
+  const deleteGroupExpenses = useExpensesStore((state) => state.deleteGroupExpenses);
   const [showAllExpenses, setShowAllExpenses] = useState(false);
+
+  if (!group) {
+    return (
+      <ScreenContainer>
+        <View className="flex-1 items-center justify-center gap-4 px-6">
+          <Text className="text-center text-xl font-bold text-neutral900">Este grupo ya no está disponible</Text>
+          <Text className="text-center text-base text-neutral600">
+            Si lo eliminaste, no vas a poder volver a abrirlo en esta sesión.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.goBack()}
+            className="rounded-full bg-primary px-5 py-3"
+          >
+            <Text className="text-sm font-semibold text-white">Volver</Text>
+          </Pressable>
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   const canExpandExpenses = recentExpenses.length > RECENT_EXPENSES_LIMIT;
   const visibleExpenses =
@@ -33,9 +57,39 @@ export function GroupDetailScreen() {
       ? recentExpenses
       : recentExpenses.slice(0, RECENT_EXPENSES_LIMIT);
 
+  const handleConfirmDelete = () => {
+    Alert.alert('Eliminar grupo', '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => {
+          deleteGroup(group.id);
+          deleteGroupExpenses(group.id);
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
+
+  const handleOpenSettings = () => {
+    Alert.alert('Opciones del grupo', 'Elegí qué querés hacer con este grupo.', [
+      {
+        text: 'Editar grupo',
+        onPress: () => navigation.navigate('NewGroup', { groupId: group.id }),
+      },
+      {
+        text: 'Eliminar grupo',
+        style: 'destructive',
+        onPress: handleConfirmDelete,
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
   return (
     <ScreenContainer>
-      <GroupDetailHeader groupName={group.name} />
+      <GroupDetailHeader groupName={group.name} onPressSettings={handleOpenSettings} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-6 pb-28 pt-4">
         <View className="gap-4 px-4">

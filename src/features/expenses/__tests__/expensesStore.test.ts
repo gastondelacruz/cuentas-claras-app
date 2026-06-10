@@ -106,4 +106,16 @@ describe('expensesStore', () => {
 
     expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toHaveLength(0);
   });
+
+  it('removes stored expenses for a deleted group but preserves tombstones', () => {
+    useExpensesStore.getState().addExpense('group-1', makeExpense('e1'));
+    useExpensesStore.getState().deleteExpense('group-1', 'mock-1');
+    useExpensesStore.getState().addExpense('group-2', makeExpense('e2'));
+
+    useExpensesStore.getState().deleteGroupExpenses('group-1');
+
+    expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+    expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toEqual(['mock-1']);
+    expect(useExpensesStore.getState().getExpensesForGroup('group-2')).toHaveLength(1);
+  });
 });

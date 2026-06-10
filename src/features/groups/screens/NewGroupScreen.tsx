@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Camera, Contact, UserPlus, Users } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -14,6 +14,7 @@ import { Input } from '../../../shared/ui/Input';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { groupCategoryVisuals } from '../components/groupCategory';
+import { groupsListMock } from '../mocks/groupsList.mock';
 import {
   inviteEmailSchema,
   inviteMembersRequiredMessage,
@@ -36,6 +37,7 @@ type GroupMember = {
   avatarUrl: string | null;
 };
 
+type NewGroupRoute = RouteProp<RootStackParamList, 'NewGroup'>;
 type NewGroupNavigation = NativeStackNavigationProp<RootStackParamList, 'NewGroup'>;
 
 const groupTypeOptions: GroupTypeOption[] = [
@@ -74,13 +76,19 @@ function getInitialsFromValue(value: string) {
 
 export function NewGroupScreen() {
   const navigation = useNavigation<NewGroupNavigation>();
+  const route = useRoute<NewGroupRoute>();
   const authUser = useAuthStore((state) => state.user);
+  const groupToEdit = useGroupsStore((state) =>
+    state.groups.find((group) => group.id === route.params?.groupId),
+  );
   const createGroup = useGroupsStore((state) => state.createGroup);
-  const [selectedType, setSelectedType] = useState<GroupCategory>('TRAVEL');
+  const updateGroup = useGroupsStore((state) => state.updateGroup);
+  const isEditing = Boolean(groupToEdit && route.params?.groupId);
+  const [selectedType, setSelectedType] = useState<GroupCategory>(groupToEdit?.category ?? 'TRAVEL');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteError, setInviteError] = useState<string | undefined>();
-  const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
-  const [groupImage, setGroupImage] = useState<GroupImage>(defaultGroupImage);
+  const [invitedEmails, setInvitedEmails] = useState<string[]>(groupToEdit?.invitedEmails ?? []);
+  const [groupImage, setGroupImage] = useState<GroupImage>(groupToEdit?.image ?? defaultGroupImage);
   const [imageError, setImageError] = useState<string | undefined>();
   const [membersError, setMembersError] = useState<string | undefined>();
 
@@ -100,10 +108,19 @@ export function NewGroupScreen() {
     resolver: zodResolver(newGroupFormSchema),
     mode: 'onSubmit',
     reValidateMode: 'onBlur',
-    defaultValues: { groupName: '' },
+    defaultValues: { groupName: groupToEdit?.name ?? '' },
   });
 
-  const totalMembers = invitedEmails.length + 1;
+  const isSeededGroup = useMemo(
+    () => Boolean(groupToEdit && groupsListMock.some((group) => group.id === groupToEdit.id)),
+    [groupToEdit],
+  );
+
+  const readOnlyMembers = useMemo(
+    () => (isEditing && isSeededGroup ? groupsListMock.find((group) => group.id === groupToEdit?.id)?.members ?? [] : []),
+    [groupToEdit?.id, isEditing, isSeededGroup],
+  );
+  const totalMembers = readOnlyMembers.length + invitedEmails.length + 1;
 
   const handleInvite = () => {
     const parsedInvite = inviteEmailSchema.safeParse(inviteEmail);
@@ -166,12 +183,25 @@ export function NewGroupScreen() {
   };
 
   const onSubmit = ({ groupName }: NewGroupFormValues) => {
-    if (invitedEmails.length === 0) {
+    if (invitedEmails.length === 0 && readOnlyMembers.length === 0) {
       setMembersError(inviteMembersRequiredMessage);
       return;
     }
 
     setMembersError(undefined);
+
+    if (isEditing && groupToEdit) {
+      updateGroup({
+        groupId: groupToEdit.id,
+        name: groupName.trim(),
+        category: selectedType,
+        image: groupImage,
+        invitedEmails,
+        owner: currentMember,
+      });
+      navigation.goBack();
+      return;
+    }
 
     const createdGroup = createGroup({
       name: groupName.trim(),
@@ -186,7 +216,7 @@ export function NewGroupScreen() {
 
   return (
     <ScreenContainer>
-      <InternalScreenHeader title="Nuevo Grupo" />
+      <InternalScreenHeader title={isEditing ? 'Editar grupo' : 'Nuevo Grupo'} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -233,9 +263,9 @@ export function NewGroupScreen() {
         </View>
 
         <View className="gap-3">
-          <Text className="text-sm font-semibold text-neutral500">
-            Nombre del Grupo
-          </Text>
+              <Text className="text-sm font-semibold text-neutral500">
+             Nombre del Grupo
+              </Text>
           <Controller
             control={control}
             name="groupName"
@@ -359,7 +389,7 @@ export function NewGroupScreen() {
           ) : null}
 
           <View className="gap-3">
-            {invitedEmails.length === 0 ? (
+            {invitedEmails.length === 0 && readOnlyMembers.length === 0 ? (
               <View className="items-center gap-3 rounded-lg border-2 border-dashed border-primary/30 px-6 py-10">
                 <UserPlus color={colors.neutral500} size={36} strokeWidth={2} />
                 <Text className="text-center text-lg text-neutral500">
@@ -368,15 +398,26 @@ export function NewGroupScreen() {
                 </Text>
               </View>
             ) : (
-              invitedEmails.map((email) => (
-                <View
-                  key={email}
-                  className="flex-row items-center justify-between rounded-lg border border-neutral200 bg-white px-4 py-3"
-                >
-                  <Text className="text-base text-neutral900">{email}</Text>
-                  <Text className="text-sm font-semibold text-primary">Invitado</Text>
-                </View>
-              ))
+              <>
+                {readOnlyMembers.map((member) => (
+                  <View
+                    key={member.id}
+                    className="flex-row items-center justify-between rounded-lg border border-neutral200 bg-white px-4 py-3"
+                  >
+                    <Text className="text-base text-neutral900">{member.name}</Text>
+                    <Text className="text-sm font-semibold text-primary">Miembro actual</Text>
+                  </View>
+                ))}
+                {invitedEmails.map((email) => (
+                  <View
+                    key={email}
+                    className="flex-row items-center justify-between rounded-lg border border-neutral200 bg-white px-4 py-3"
+                  >
+                    <Text className="text-base text-neutral900">{email}</Text>
+                    <Text className="text-sm font-semibold text-primary">Invitado</Text>
+                  </View>
+                ))}
+              </>
             )}
           </View>
 
@@ -389,12 +430,14 @@ export function NewGroupScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Guardar grupo"
+          accessibilityLabel={isEditing ? 'Guardar cambios del grupo' : 'Guardar grupo'}
           onPress={handleSubmit(onSubmit)}
           className="mt-8 h-20 items-center justify-center rounded-lg bg-green-400"
           testID="save-group-button"
         >
-          <Text className="text-xl font-bold text-neutral900">Guardar Grupo</Text>
+          <Text className="text-xl font-bold text-neutral900">
+            {isEditing ? 'Guardar cambios' : 'Guardar Grupo'}
+          </Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>

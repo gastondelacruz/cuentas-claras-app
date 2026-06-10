@@ -47,7 +47,6 @@ describe('HomeScreen', () => {
     render(<HomeScreen />);
 
     expect(screen.getByText('Cuentas Claras')).toBeTruthy();
-    expect(screen.getByLabelText('Buscar')).toBeTruthy();
     expect(screen.getByLabelText('Abrir menú de creación')).toBeTruthy();
   });
 

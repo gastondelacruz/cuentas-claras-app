@@ -105,7 +105,7 @@ describe("navigation shell", () => {
 
     fireEvent.press(getByText("Perfil"));
     expect(await findByText("Alex Thompson")).toBeOnTheScreen();
-    expect(await findByText("Preferencias")).toBeOnTheScreen();
+    expect(await findByText("Gasto Total")).toBeOnTheScreen();
   });
 
   it("navigates to registered stack screens and switches stacks when auth state changes", async () => {

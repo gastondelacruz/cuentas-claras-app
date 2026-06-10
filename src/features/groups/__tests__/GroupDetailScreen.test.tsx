@@ -85,6 +85,22 @@ describe('GroupDetailScreen', () => {
     expect(navigationMock.navigate).toHaveBeenCalledWith('NewGroup', { groupId: 'group-1' });
   });
 
+  it('keeps only add expense and settle actions inside the group', () => {
+    render(<GroupDetailScreen />);
+
+    expect(screen.getByText('Añadir Gasto')).toBeTruthy();
+    expect(screen.getByText('Saldar Cuentas')).toBeTruthy();
+    expect(screen.queryByText('Ver Resumen')).toBeNull();
+  });
+
+  it('opens the settle debts stack screen from settle actions', () => {
+    render(<GroupDetailScreen />);
+
+    fireEvent.press(screen.getByText('Saldar Cuentas'));
+
+    expect(navigationMock.navigate).toHaveBeenCalledWith('SettleDebts');
+  });
+
   it('deletes the group after confirmation and clears its local expenses', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((title, _message, buttons) => {
       if (title === 'Eliminar grupo') {

@@ -39,10 +39,10 @@ describe("navigation shell", () => {
       "Register",
       "Home",
       "GroupsList",
+      "Activity",
       "GroupDetail",
       "NewGroup",
       "AddExpense",
-      "Activity",
       "SettleDebts",
       "Profile",
     ]);
@@ -91,6 +91,8 @@ describe("navigation shell", () => {
     for (const tabLabel of mainTabLabels) {
       expect(getAllByText(tabLabel).length).toBeGreaterThan(0);
     }
+
+    expect(queryByText("Saldos")).toBeNull();
 
     fireEvent.press(getByText("Grupos"));
     expect(await findByText("Balance Neto Total")).toBeOnTheScreen();

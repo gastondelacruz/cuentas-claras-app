@@ -1,4 +1,4 @@
-import { BarChart2, Landmark, PlusCircle, type LucideIcon } from 'lucide-react-native';
+import { Landmark, PlusCircle, type LucideIcon } from 'lucide-react-native';
 import { FlatList, Pressable, Text } from 'react-native';
 
 import { colors } from '../../../shared/theme/colors';
@@ -13,13 +13,17 @@ type GroupAction = {
   onPress: () => void;
 };
 
-const actions: GroupAction[] = [
-  { key: 'add-expense', label: 'Añadir Gasto', Icon: PlusCircle, variant: 'solid', onPress: () => {} },
-  { key: 'settle', label: 'Saldar Cuentas', Icon: Landmark, variant: 'outline', onPress: () => {} },
-  { key: 'summary', label: 'Ver Resumen', Icon: BarChart2, variant: 'outline', onPress: () => {} },
-];
+type GroupActionButtonsProps = {
+  onAddExpense: () => void;
+  onSettleDebts: () => void;
+};
 
-export function GroupActionButtons() {
+export function GroupActionButtons({ onAddExpense, onSettleDebts }: GroupActionButtonsProps) {
+  const actions: GroupAction[] = [
+    { key: 'add-expense', label: 'Añadir Gasto', Icon: PlusCircle, variant: 'solid', onPress: onAddExpense },
+    { key: 'settle', label: 'Saldar Cuentas', Icon: Landmark, variant: 'outline', onPress: onSettleDebts },
+  ];
+
   return (
     <FlatList
       horizontal

@@ -78,5 +78,3 @@ export const recentExpensesMock: GroupExpense[] = [
     date: '2024-02-18T08:00:00.000Z',
   },
 ];
-
-export const totalExpensesCountMock = 24;

@@ -2,11 +2,11 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Check, ShoppingBag, TrainFront, Utensils } from "lucide-react-native";
+import { Check, ShoppingBag, Trash2, TrainFront, Utensils } from "lucide-react-native";
 import { CalendarDays, ChevronDown, Globe2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { RootStackParamList } from "../../../app/navigation/types";
 import { useGroupMembers } from "../../groups/hooks/useGroupMembers";
@@ -57,6 +57,7 @@ export function AddExpenseScreen() {
   const groups = useGroupsStore((state) => state.groups);
   const addExpense = useExpensesStore((state) => state.addExpense);
   const updateExpense = useExpensesStore((state) => state.updateExpense);
+  const deleteExpense = useExpensesStore((state) => state.deleteExpense);
 
   const expenseToEdit = useExpenseToEdit(route.params?.groupId, route.params?.expenseId);
   const isEditing = Boolean(expenseToEdit);
@@ -183,6 +184,28 @@ export function AddExpenseScreen() {
 
     addExpense(groupId, expense);
     navigation.replace("GroupDetail", { groupId });
+  };
+
+  const onDelete = () => {
+    if (!expenseToEdit || !groupId) {
+      return;
+    }
+
+    Alert.alert(
+      "Eliminar gasto",
+      "¿Seguro que querés eliminar este gasto? Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            deleteExpense(groupId, expenseToEdit.id);
+            navigation.goBack();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -411,6 +434,19 @@ export function AddExpenseScreen() {
             {isEditing ? "Guardar cambios" : "Crear Gasto"}
           </Text>
         </Pressable>
+
+        {isEditing ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar gasto"
+            className="h-16 flex-row items-center justify-center gap-3 rounded-lg border border-error bg-white"
+            onPress={onDelete}
+            testID="delete-expense-button"
+          >
+            <Trash2 color={colors.error} size={22} strokeWidth={2.4} />
+            <Text className="text-lg font-bold text-error">Eliminar gasto</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
       <SelectModal

@@ -3,17 +3,25 @@ import { create } from 'zustand';
 import { GroupExpense } from '../../groups/types';
 
 const EMPTY_EXPENSES: GroupExpense[] = [];
+const EMPTY_IDS: string[] = [];
 
 type ExpensesStore = {
   expensesByGroup: Record<string, GroupExpense[]>;
+  // Tombstones: ids of expenses the user deleted. Needed because seeded mock
+  // expenses live outside the store, so the mock layer must know which ones to
+  // hide even though they were never tracked here.
+  deletedExpenseIdsByGroup: Record<string, string[]>;
   addExpense: (groupId: string, expense: GroupExpense) => void;
   updateExpense: (groupId: string, expense: GroupExpense) => void;
+  deleteExpense: (groupId: string, expenseId: string) => void;
   getExpensesForGroup: (groupId: string) => GroupExpense[];
+  getDeletedExpenseIds: (groupId: string) => string[];
   reset: () => void;
 };
 
 export const useExpensesStore = create<ExpensesStore>()((set, get) => ({
   expensesByGroup: {},
+  deletedExpenseIdsByGroup: {},
   addExpense: (groupId, expense) =>
     set((state) => ({
       expensesByGroup: {
@@ -36,6 +44,28 @@ export const useExpensesStore = create<ExpensesStore>()((set, get) => ({
         expensesByGroup: { ...state.expensesByGroup, [groupId]: next },
       };
     }),
+  // Remove an expense from a group. Drops any store-tracked entry and records a
+  // tombstone so the mock layer can hide a seeded mock expense with the same id.
+  deleteExpense: (groupId, expenseId) =>
+    set((state) => {
+      const current = state.expensesByGroup[groupId] ?? EMPTY_EXPENSES;
+      const tombstones = state.deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS;
+      const alreadyTombstoned = tombstones.includes(expenseId);
+
+      return {
+        expensesByGroup: {
+          ...state.expensesByGroup,
+          [groupId]: current.filter((item) => item.id !== expenseId),
+        },
+        deletedExpenseIdsByGroup: alreadyTombstoned
+          ? state.deletedExpenseIdsByGroup
+          : {
+              ...state.deletedExpenseIdsByGroup,
+              [groupId]: [...tombstones, expenseId],
+            },
+      };
+    }),
   getExpensesForGroup: (groupId) => get().expensesByGroup[groupId] ?? EMPTY_EXPENSES,
-  reset: () => set({ expensesByGroup: {} }),
+  getDeletedExpenseIds: (groupId) => get().deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS,
+  reset: () => set({ expensesByGroup: {}, deletedExpenseIdsByGroup: {} }),
 }));

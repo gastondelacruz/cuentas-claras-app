@@ -14,6 +14,9 @@ function makeExpense(id: string): GroupExpense {
     totalAmount: 100,
     category: 'FOOD',
     userRelation: { type: 'lent', amount: 60 },
+    paidById: 'current-user',
+    participantIds: ['current-user'],
+    date: '2024-05-20T00:00:00.000Z',
   };
 }
 
@@ -30,6 +33,19 @@ describe('useGroupDetail', () => {
 
     expect(result.current.recentExpenses[0]?.id).toBe('new-1');
     expect(result.current.totalExpensesCount).toBe(25);
+  });
+
+  it('overrides a seeded mock expense without duplicating it', () => {
+    // 'e1' is a seeded mock expense; editing it lands in the store under the same id.
+    useExpensesStore.getState().updateExpense('group-1', makeExpense('e1'));
+
+    const { result } = renderHook(() => useGroupDetail('group-1'));
+
+    const e1Matches = result.current.recentExpenses.filter((expense) => expense.id === 'e1');
+    expect(e1Matches).toHaveLength(1);
+    expect(result.current.recentExpenses[0]?.id).toBe('e1');
+    // Count stays at the mock baseline: the override replaces, it does not add.
+    expect(result.current.totalExpensesCount).toBe(24);
   });
 
   it('preserves the selected seeded group identity', () => {

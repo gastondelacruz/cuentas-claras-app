@@ -15,6 +15,8 @@ export type BuildGroupExpenseInput = {
   participants: ExpenseParticipant[];
   currentUserId: string;
   now?: Date;
+  // When editing an existing expense, pass its id to keep identity stable.
+  id?: string;
 };
 
 function roundToCents(value: number): number {
@@ -85,12 +87,15 @@ export function buildGroupExpense(input: BuildGroupExpenseInput): GroupExpense {
   const userIncluded = participantIds.includes(currentUserId);
 
   return {
-    id: `expense-${now.getTime()}`,
+    id: input.id ?? `expense-${now.getTime()}`,
     title: description,
     paidByLabel,
     timeLabel: buildTimeLabel(date, now),
     totalAmount: amount,
     category,
     userRelation: buildUserRelation(amount, perHead, youPaid, userIncluded),
+    paidById,
+    participantIds,
+    date: date.toISOString(),
   };
 }

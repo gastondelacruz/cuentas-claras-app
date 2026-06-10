@@ -56,7 +56,14 @@ export function GroupDetailScreen() {
 
           <View className="gap-3">
             {recentExpenses.map((expense) => (
-              <ExpenseRow key={expense.id} expense={expense} />
+              <ExpenseRow
+                key={expense.id}
+                expense={expense}
+                testID={`group-expense-${expense.id}`}
+                onPress={() =>
+                  navigation.navigate('AddExpense', { groupId: group.id, expenseId: expense.id })
+                }
+              />
             ))}
           </View>
 

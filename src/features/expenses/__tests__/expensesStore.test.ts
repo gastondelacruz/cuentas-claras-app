@@ -1,7 +1,7 @@
 import { GroupExpense } from '../../groups/types';
 import { useExpensesStore } from '../store/expensesStore';
 
-function makeExpense(id: string): GroupExpense {
+function makeExpense(id: string, overrides: Partial<GroupExpense> = {}): GroupExpense {
   return {
     id,
     title: `Gasto ${id}`,
@@ -10,6 +10,10 @@ function makeExpense(id: string): GroupExpense {
     totalAmount: 100,
     category: 'FOOD',
     userRelation: { type: 'none', amount: 0 },
+    paidById: 'current-user',
+    participantIds: ['current-user'],
+    date: '2024-05-20T00:00:00.000Z',
+    ...overrides,
   };
 }
 
@@ -44,5 +48,26 @@ describe('expensesStore', () => {
     useExpensesStore.getState().reset();
 
     expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+  });
+
+  it('replaces an existing expense in place on update', () => {
+    const { addExpense, updateExpense } = useExpensesStore.getState();
+
+    addExpense('group-1', makeExpense('e1', { title: 'Original' }));
+    addExpense('group-1', makeExpense('e2'));
+
+    updateExpense('group-1', makeExpense('e1', { title: 'Editado', totalAmount: 250 }));
+
+    const expenses = useExpensesStore.getState().getExpensesForGroup('group-1');
+    expect(expenses.map((e) => e.id)).toEqual(['e2', 'e1']);
+    expect(expenses.find((e) => e.id === 'e1')).toMatchObject({ title: 'Editado', totalAmount: 250 });
+  });
+
+  it('prepends the expense on update when its id is not tracked yet', () => {
+    useExpensesStore.getState().updateExpense('group-1', makeExpense('mock-1', { title: 'Desde mock' }));
+
+    const expenses = useExpensesStore.getState().getExpensesForGroup('group-1');
+    expect(expenses).toHaveLength(1);
+    expect(expenses[0]).toMatchObject({ id: 'mock-1', title: 'Desde mock' });
   });
 });

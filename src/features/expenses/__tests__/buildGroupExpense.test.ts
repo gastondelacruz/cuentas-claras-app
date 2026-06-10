@@ -55,6 +55,39 @@ describe('buildGroupExpense', () => {
     expect(expense.userRelation).toEqual({ type: 'none', amount: 0 });
   });
 
+  it('persists the raw form inputs needed to edit the expense', () => {
+    const expense = buildGroupExpense({
+      ...baseInput,
+      paidById: 'alex',
+      participantIds: ['you', 'alex'],
+    });
+
+    expect(expense.paidById).toBe('alex');
+    expect(expense.participantIds).toEqual(['you', 'alex']);
+    expect(expense.date).toBe(new Date(2024, 4, 20).toISOString());
+  });
+
+  it('keeps the provided id when editing instead of generating a new one', () => {
+    const expense = buildGroupExpense({
+      ...baseInput,
+      id: 'expense-existing',
+      paidById: 'you',
+      participantIds: ['you'],
+    });
+
+    expect(expense.id).toBe('expense-existing');
+  });
+
+  it('generates an id when none is provided', () => {
+    const expense = buildGroupExpense({
+      ...baseInput,
+      paidById: 'you',
+      participantIds: ['you'],
+    });
+
+    expect(expense.id).toMatch(/^expense-\d+$/);
+  });
+
   it('builds relative time labels', () => {
     const yesterday = buildGroupExpense({
       ...baseInput,

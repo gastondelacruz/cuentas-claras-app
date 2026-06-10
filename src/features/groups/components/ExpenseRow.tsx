@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '../../../shared/ui/Card';
 import { formatCurrency } from '../../../shared/utils/formatAmount';
@@ -7,15 +7,16 @@ import { categoryVisuals } from './expenseCategory';
 
 type ExpenseRowProps = {
   expense: GroupExpense;
+  onPress?: (expense: GroupExpense) => void;
+  testID?: string;
 };
 
-export function ExpenseRow({ expense }: ExpenseRowProps) {
+export function ExpenseRow({ expense, onPress, testID }: ExpenseRowProps) {
   const { title, paidByLabel, timeLabel, totalAmount, category, userRelation } = expense;
   const { Icon, containerClassName, iconColor } = categoryVisuals[category];
 
-  return (
-    <Card>
-      <View className="flex-row items-center gap-3 p-3">
+  const content = (
+    <View className="flex-row items-center gap-3 p-3">
         <View className={`h-10 w-10 items-center justify-center rounded-full ${containerClassName}`}>
           <Icon color={iconColor} size={20} />
         </View>
@@ -39,6 +40,22 @@ export function ExpenseRow({ expense }: ExpenseRowProps) {
           ) : null}
         </View>
       </View>
+  );
+
+  if (!onPress) {
+    return <Card>{content}</Card>;
+  }
+
+  return (
+    <Card>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Editar gasto ${title}`}
+        onPress={() => onPress(expense)}
+        testID={testID}
+      >
+        {content}
+      </Pressable>
     </Card>
   );
 }

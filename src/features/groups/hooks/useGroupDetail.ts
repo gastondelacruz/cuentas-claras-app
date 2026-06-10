@@ -1,10 +1,11 @@
 import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { GroupDetail, GroupExpense, MemberBalance } from '../types';
-import { groupDetailMock, memberBalancesMock, recentExpensesMock, totalExpensesCountMock } from '../mocks/groupDetail.mock';
+import { groupDetailMock, memberBalancesMock, recentExpensesMock } from '../mocks/groupDetail.mock';
 import { groupsListMock } from '../mocks/groupsList.mock';
 import { useGroupsStore } from '../store/groupsStore';
 
 const EMPTY_EXPENSES: GroupExpense[] = [];
+const EMPTY_IDS: string[] = [];
 
 function sumExpenses(expenses: GroupExpense[]) {
   return expenses.reduce(
@@ -62,6 +63,9 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   const createdExpenses = useExpensesStore((state) =>
     groupId ? state.expensesByGroup[groupId] ?? EMPTY_EXPENSES : EMPTY_EXPENSES,
   );
+  const deletedExpenseIds = useExpensesStore((state) =>
+    groupId ? state.deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS : EMPTY_IDS,
+  );
   const isSeededMockGroup = groupsListMock.some((group) => group.id === groupId);
   const createdTotals = sumExpenses(createdExpenses);
 
@@ -103,10 +107,15 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   }
 
   // A store entry can override a seeded mock expense when it shares its id
-  // (i.e. the user edited a mock). Drop the overridden mock to avoid duplicates.
+  // (i.e. the user edited a mock); a tombstone can mark one as deleted. Drop both
+  // overridden and deleted mocks so the list reflects the real available set.
   const createdIds = new Set(createdExpenses.map((expense) => expense.id));
-  const remainingMockExpenses = recentExpensesMock.filter((expense) => !createdIds.has(expense.id));
-  const overriddenMockCount = recentExpensesMock.length - remainingMockExpenses.length;
+  const deletedIds = new Set(deletedExpenseIds);
+  const remainingMockExpenses = recentExpensesMock.filter(
+    (expense) => !createdIds.has(expense.id) && !deletedIds.has(expense.id),
+  );
+  const recentExpenses = [...createdExpenses, ...remainingMockExpenses];
+  const realTotals = sumExpenses(recentExpenses);
 
   return {
     group: {
@@ -114,13 +123,14 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
       id: groupFromStore?.id ?? groupDetailMock.id,
       name: groupFromStore?.name ?? groupDetailMock.name,
       category: groupFromStore?.category ?? groupDetailMock.category,
-      totalExpense: groupDetailMock.totalExpense + createdTotals.total,
-      owedToYou: groupDetailMock.owedToYou + createdTotals.owedToYou,
-      youOwe: groupDetailMock.youOwe + createdTotals.youOwe,
+      totalExpense: realTotals.total,
+      owedToYou: realTotals.owedToYou,
+      youOwe: realTotals.youOwe,
     },
     memberBalances: memberBalancesMock,
-    recentExpenses: [...createdExpenses, ...remainingMockExpenses],
-    totalExpensesCount: totalExpensesCountMock + createdExpenses.length - overriddenMockCount,
+    recentExpenses,
+    // Honest count: the number of expenses actually available, not a fixed mock total.
+    totalExpensesCount: recentExpenses.length,
     isLoading: false,
   };
 }

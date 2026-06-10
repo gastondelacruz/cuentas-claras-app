@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Alert } from 'react-native';
 
 import { useGroupsStore } from '../../groups/store/groupsStore';
 import { AddExpenseScreen } from '../screens/AddExpenseScreen';
@@ -254,6 +255,43 @@ describe('AddExpenseScreen', () => {
       expect(screen.getByTestId('expense-group-field').props.accessibilityState).toMatchObject({
         disabled: true,
       });
+    });
+
+    it('does not show the delete button in create mode', () => {
+      render(<AddExpenseScreen />);
+
+      expect(screen.queryByTestId('delete-expense-button')).toBeNull();
+    });
+
+    it('shows the delete button while editing', () => {
+      editSeededExpense();
+
+      render(<AddExpenseScreen />);
+
+      expect(screen.getByTestId('delete-expense-button')).toBeTruthy();
+    });
+
+    it('deletes the expense after confirmation and navigates back', () => {
+      editSeededExpense();
+
+      const alertSpy = jest.spyOn(Alert, 'alert');
+
+      render(<AddExpenseScreen />);
+
+      fireEvent.press(screen.getByTestId('delete-expense-button'));
+
+      expect(alertSpy).toHaveBeenCalledTimes(1);
+      const buttons = alertSpy.mock.calls[0][2];
+      const confirmButton = buttons?.find((button) => button.style === 'destructive');
+
+      act(() => {
+        confirmButton?.onPress?.();
+      });
+
+      expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toContain('e1');
+      expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
+
+      alertSpy.mockRestore();
     });
   });
 });

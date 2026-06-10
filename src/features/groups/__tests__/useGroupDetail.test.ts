@@ -32,7 +32,11 @@ describe('useGroupDetail', () => {
     const { result } = renderHook(() => useGroupDetail('group-1'));
 
     expect(result.current.recentExpenses[0]?.id).toBe('new-1');
-    expect(result.current.totalExpensesCount).toBe(25);
+    // Honest count: 3 seeded mock expenses + 1 created.
+    expect(result.current.totalExpensesCount).toBe(4);
+    expect(result.current.group.totalExpense).toBe(552.5);
+    expect(result.current.group.owedToYou).toBe(240);
+    expect(result.current.group.youOwe).toBeCloseTo(53.12);
   });
 
   it('overrides a seeded mock expense without duplicating it', () => {
@@ -44,8 +48,35 @@ describe('useGroupDetail', () => {
     const e1Matches = result.current.recentExpenses.filter((expense) => expense.id === 'e1');
     expect(e1Matches).toHaveLength(1);
     expect(result.current.recentExpenses[0]?.id).toBe('e1');
-    // Count stays at the mock baseline: the override replaces, it does not add.
-    expect(result.current.totalExpensesCount).toBe(24);
+    // The override replaces the mock, it does not add: 3 expenses remain.
+    expect(result.current.totalExpensesCount).toBe(3);
+    expect(result.current.group.totalExpense).toBe(368.5);
+    expect(result.current.group.owedToYou).toBe(240);
+    expect(result.current.group.youOwe).toBeCloseTo(7.12);
+  });
+
+  it('hides a deleted seeded mock expense and lowers the count', () => {
+    // 'e1' is a seeded mock expense; deleting it records a tombstone.
+    useExpensesStore.getState().deleteExpense('group-1', 'e1');
+
+    const { result } = renderHook(() => useGroupDetail('group-1'));
+
+    expect(result.current.recentExpenses.some((expense) => expense.id === 'e1')).toBe(false);
+    expect(result.current.totalExpensesCount).toBe(2);
+    expect(result.current.group.totalExpense).toBe(268.5);
+    expect(result.current.group.owedToYou).toBe(180);
+    expect(result.current.group.youOwe).toBeCloseTo(7.12);
+  });
+
+  it('drops a created expense from the list when deleted', () => {
+    useExpensesStore.getState().addExpense('group-1', makeExpense('new-1'));
+    useExpensesStore.getState().deleteExpense('group-1', 'new-1');
+
+    const { result } = renderHook(() => useGroupDetail('group-1'));
+
+    expect(result.current.recentExpenses.some((expense) => expense.id === 'new-1')).toBe(false);
+    // Back to the 3 seeded mock expenses.
+    expect(result.current.totalExpensesCount).toBe(3);
   });
 
   it('preserves the selected seeded group identity', () => {

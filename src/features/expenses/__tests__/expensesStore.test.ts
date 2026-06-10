@@ -70,4 +70,40 @@ describe('expensesStore', () => {
     expect(expenses).toHaveLength(1);
     expect(expenses[0]).toMatchObject({ id: 'mock-1', title: 'Desde mock' });
   });
+
+  it('removes a tracked expense on delete', () => {
+    const { addExpense, deleteExpense } = useExpensesStore.getState();
+
+    addExpense('group-1', makeExpense('e1'));
+    addExpense('group-1', makeExpense('e2'));
+
+    deleteExpense('group-1', 'e1');
+
+    expect(useExpensesStore.getState().getExpensesForGroup('group-1').map((e) => e.id)).toEqual([
+      'e2',
+    ]);
+  });
+
+  it('records a tombstone for deleted ids even when not tracked', () => {
+    useExpensesStore.getState().deleteExpense('group-1', 'mock-1');
+
+    expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toEqual(['mock-1']);
+    expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+  });
+
+  it('does not duplicate a tombstone when deleting the same id twice', () => {
+    const { deleteExpense } = useExpensesStore.getState();
+
+    deleteExpense('group-1', 'mock-1');
+    deleteExpense('group-1', 'mock-1');
+
+    expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toEqual(['mock-1']);
+  });
+
+  it('clears tombstones on reset', () => {
+    useExpensesStore.getState().deleteExpense('group-1', 'mock-1');
+    useExpensesStore.getState().reset();
+
+    expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toHaveLength(0);
+  });
 });

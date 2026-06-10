@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { useGroupsStore } from '../../groups/store/groupsStore';
 import { AddExpenseScreen } from '../screens/AddExpenseScreen';
@@ -7,11 +7,34 @@ import { useExpensesStore } from '../store/expensesStore';
 
 const firstGroupId = () => useGroupsStore.getState().groups[0].id;
 
+type NavigationMock = {
+  navigate: jest.Mock;
+  replace: jest.Mock;
+  goBack: jest.Mock;
+  addListener: jest.Mock;
+  removeListener: jest.Mock;
+  dispatch: jest.Mock;
+  setOptions: jest.Mock;
+};
+
+let navigationMock: NavigationMock;
+
 describe('AddExpenseScreen', () => {
   beforeEach(() => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
     jest.mocked(useRoute).mockReturnValue({ params: undefined } as ReturnType<typeof useRoute>);
+
+    navigationMock = {
+      navigate: jest.fn(),
+      replace: jest.fn(),
+      goBack: jest.fn(),
+      addListener: jest.fn(() => jest.fn()),
+      removeListener: jest.fn(),
+      dispatch: jest.fn(),
+      setOptions: jest.fn(),
+    };
+    jest.mocked(useNavigation).mockReturnValue(navigationMock as never);
   });
 
   it('shows validation errors in Spanish when the form is empty', async () => {
@@ -172,5 +195,65 @@ describe('AddExpenseScreen', () => {
     fireEvent.press(within(modal).getByText('Alex'));
 
     expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('Alex');
+  });
+
+  describe('edit mode', () => {
+    const editSeededExpense = () => {
+      jest.mocked(useRoute).mockReturnValue({
+        params: { groupId: 'group-1', expenseId: 'e1' },
+      } as ReturnType<typeof useRoute>);
+    };
+
+    it('prefills the form from the selected expense', () => {
+      editSeededExpense();
+
+      render(<AddExpenseScreen />);
+
+      expect(screen.getByText('Editar gasto')).toBeTruthy();
+      expect(screen.getByText('Guardar cambios')).toBeTruthy();
+      expect(screen.getByTestId('expense-amount-input').props.value).toBe('184');
+      expect(screen.getByTestId('expense-description-input').props.value).toBe(
+        'Cena Italiana @ Luigis',
+      );
+      expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('Alex');
+      expect(screen.getByTestId('expense-category-FOOD').props.accessibilityState).toMatchObject({
+        selected: true,
+      });
+    });
+
+    it('updates the expense in place and navigates back on save', async () => {
+      editSeededExpense();
+
+      render(<AddExpenseScreen />);
+
+      fireEvent.changeText(screen.getByTestId('expense-amount-input'), '500');
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('create-expense-button'));
+      });
+
+      await waitFor(() => {
+        const expenses = useExpensesStore.getState().getExpensesForGroup('group-1');
+        expect(expenses).toHaveLength(1);
+        expect(expenses[0]).toMatchObject({
+          id: 'e1',
+          title: 'Cena Italiana @ Luigis',
+          totalAmount: 500,
+        });
+      });
+
+      expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
+      expect(navigationMock.replace).not.toHaveBeenCalled();
+    });
+
+    it('keeps the group fixed while editing', () => {
+      editSeededExpense();
+
+      render(<AddExpenseScreen />);
+
+      expect(screen.getByTestId('expense-group-field').props.accessibilityState).toMatchObject({
+        disabled: true,
+      });
+    });
   });
 });

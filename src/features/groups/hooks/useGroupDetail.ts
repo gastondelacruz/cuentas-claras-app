@@ -102,6 +102,12 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
     };
   }
 
+  // A store entry can override a seeded mock expense when it shares its id
+  // (i.e. the user edited a mock). Drop the overridden mock to avoid duplicates.
+  const createdIds = new Set(createdExpenses.map((expense) => expense.id));
+  const remainingMockExpenses = recentExpensesMock.filter((expense) => !createdIds.has(expense.id));
+  const overriddenMockCount = recentExpensesMock.length - remainingMockExpenses.length;
+
   return {
     group: {
       ...groupDetailMock,
@@ -113,8 +119,8 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
       youOwe: groupDetailMock.youOwe + createdTotals.youOwe,
     },
     memberBalances: memberBalancesMock,
-    recentExpenses: [...createdExpenses, ...recentExpensesMock],
-    totalExpensesCount: totalExpensesCountMock + createdExpenses.length,
+    recentExpenses: [...createdExpenses, ...remainingMockExpenses],
+    totalExpensesCount: totalExpensesCountMock + createdExpenses.length - overriddenMockCount,
     isLoading: false,
   };
 }

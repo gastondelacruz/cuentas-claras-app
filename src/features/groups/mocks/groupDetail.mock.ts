@@ -37,6 +37,9 @@ export const memberBalancesMock: MemberBalance[] = [
   },
 ];
 
+// Raw inputs (paidById, participantIds, date) reference the seeded group-1
+// member ids exposed by `useGroupMembers`: the current user plus m1 (Alex) and
+// m2 (Sarah). They let the mock expenses be edited like store-created ones.
 export const recentExpensesMock: GroupExpense[] = [
   {
     id: 'e1',
@@ -46,6 +49,9 @@ export const recentExpensesMock: GroupExpense[] = [
     totalAmount: 184.0,
     category: 'FOOD',
     userRelation: { type: 'share', amount: 46.0 },
+    paidById: 'm1',
+    participantIds: ['current-user', 'm1', 'm2'],
+    date: '2024-02-19T20:00:00.000Z',
   },
   {
     id: 'e2',
@@ -55,6 +61,9 @@ export const recentExpensesMock: GroupExpense[] = [
     totalAmount: 240.0,
     category: 'TRANSPORT',
     userRelation: { type: 'lent', amount: 180.0 },
+    paidById: 'current-user',
+    participantIds: ['current-user', 'm1', 'm2'],
+    date: '2024-02-18T09:30:00.000Z',
   },
   {
     id: 'e3',
@@ -64,6 +73,9 @@ export const recentExpensesMock: GroupExpense[] = [
     totalAmount: 28.5,
     category: 'FOOD',
     userRelation: { type: 'share', amount: 7.12 },
+    paidById: 'm2',
+    participantIds: ['current-user', 'm1', 'm2'],
+    date: '2024-02-18T08:00:00.000Z',
   },
 ];
 

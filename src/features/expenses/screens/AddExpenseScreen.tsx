@@ -4,7 +4,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Check, ShoppingBag, TrainFront, Utensils } from "lucide-react-native";
 import { CalendarDays, ChevronDown, Globe2 } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
@@ -17,8 +17,10 @@ import { Avatar } from "../../../shared/ui/Avatar";
 import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { SelectModal, SelectOption } from "../components/SelectModal";
+import { useExpenseToEdit } from "../hooks/useExpenseToEdit";
 import { useExpensesStore } from "../store/expensesStore";
 import { buildGroupExpense } from "../utils/buildGroupExpense";
+import { formatAmountForInput } from "../utils/formatAmountForInput";
 import { maskAmountInput } from "../utils/maskAmountInput";
 import {
   NewExpenseFormInput,
@@ -54,6 +56,10 @@ export function AddExpenseScreen() {
   const route = useRoute<AddExpenseRoute>();
   const groups = useGroupsStore((state) => state.groups);
   const addExpense = useExpensesStore((state) => state.addExpense);
+  const updateExpense = useExpensesStore((state) => state.updateExpense);
+
+  const expenseToEdit = useExpenseToEdit(route.params?.groupId, route.params?.expenseId);
+  const isEditing = Boolean(expenseToEdit);
 
   const {
     control,
@@ -63,26 +69,46 @@ export function AddExpenseScreen() {
     resolver: zodResolver(newExpenseFormSchema),
     mode: "onSubmit",
     reValidateMode: "onBlur",
-    defaultValues: { amount: "", description: "" },
+    defaultValues: {
+      amount: expenseToEdit ? formatAmountForInput(expenseToEdit.totalAmount) : "",
+      description: expenseToEdit?.title ?? "",
+    },
   });
 
+  // In edit mode the group is fixed; in create mode it falls back to the first group.
   const [groupId, setGroupId] = useState<string | undefined>(route.params?.groupId ?? groups[0]?.id);
   const members = useGroupMembers(groupId);
   const currentUserId = members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id;
 
-  const [paidById, setPaidById] = useState<string | undefined>(currentUserId);
-  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory>("FOOD");
-  const [date, setDate] = useState<Date>(new Date());
+  const [paidById, setPaidById] = useState<string | undefined>(
+    expenseToEdit?.paidById ?? currentUserId,
+  );
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory>(
+    expenseToEdit?.category ?? "FOOD",
+  );
+  const [date, setDate] = useState<Date>(() =>
+    expenseToEdit ? new Date(expenseToEdit.date) : new Date(),
+  );
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>(() =>
-    members.map((member) => member.id),
+    expenseToEdit ? expenseToEdit.participantIds : members.map((member) => member.id),
   );
   const [paidByOpen, setPaidByOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [groupError, setGroupError] = useState<string | undefined>();
 
+  // The member-sync effect resets payer/participants to the group's members.
+  // Skip its initial run while editing so the prefilled values are preserved;
+  // the group cannot change in edit mode, so it never needs to run afterwards.
+  const skipMemberSync = useRef(isEditing);
+
   // When the selected group changes, reset participants/payer to its members.
   useEffect(() => {
+    if (skipMemberSync.current) {
+      skipMemberSync.current = false;
+      return;
+    }
+
     setSelectedParticipantIds(members.map((member) => member.id));
     setPaidById(members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id);
   }, [members]);
@@ -137,6 +163,7 @@ export function AddExpenseScreen() {
     setGroupError(undefined);
 
     const expense = buildGroupExpense({
+      id: expenseToEdit?.id,
       amount: values.amount,
       description: values.description,
       category: selectedCategory,
@@ -148,13 +175,19 @@ export function AddExpenseScreen() {
       now: new Date(),
     });
 
+    if (isEditing) {
+      updateExpense(groupId, expense);
+      navigation.goBack();
+      return;
+    }
+
     addExpense(groupId, expense);
     navigation.replace("GroupDetail", { groupId });
   };
 
   return (
     <ScreenContainer>
-      <InternalScreenHeader title="Crear gasto" />
+      <InternalScreenHeader title={isEditing ? "Editar gasto" : "Crear gasto"} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -281,6 +314,7 @@ export function AddExpenseScreen() {
             value={groupLabel}
             icon="group"
             onPress={() => setGroupOpen(true)}
+            disabled={isEditing}
             testID="expense-group-field"
           />
           <FieldButton
@@ -368,12 +402,14 @@ export function AddExpenseScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Crear gasto"
+          accessibilityLabel={isEditing ? "Guardar cambios" : "Crear gasto"}
           className="mt-2 h-20 items-center justify-center rounded-lg bg-green-400"
           onPress={handleSubmit(onSubmit)}
           testID="create-expense-button"
         >
-          <Text className="text-xl font-bold text-neutral900">Crear Gasto</Text>
+          <Text className="text-xl font-bold text-neutral900">
+            {isEditing ? "Guardar cambios" : "Crear Gasto"}
+          </Text>
         </Pressable>
       </ScrollView>
 
@@ -421,17 +457,24 @@ type FieldButtonProps = {
   value: string;
   icon: "chevron" | "group" | "calendar";
   onPress: () => void;
+  disabled?: boolean;
   testID?: string;
 };
 
-function FieldButton({ label, value, icon, onPress, testID }: FieldButtonProps) {
+function FieldButton({ label, value, icon, onPress, disabled = false, testID }: FieldButtonProps) {
   return (
     <View className="gap-3">
       <Text className="text-lg text-neutral900">{label}</Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        className="h-16 flex-row items-center rounded-lg border border-primary/35 bg-white px-5"
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        className={
+          disabled
+            ? "h-16 flex-row items-center rounded-lg border border-neutral200 bg-neutral200/40 px-5"
+            : "h-16 flex-row items-center rounded-lg border border-primary/35 bg-white px-5"
+        }
         onPress={onPress}
         testID={testID}
       >

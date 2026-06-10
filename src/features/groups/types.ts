@@ -72,4 +72,10 @@ export type GroupExpense = {
   totalAmount: number;
   category: ExpenseCategory;
   userRelation: ExpenseUserRelation;
+  // Raw form inputs persisted so the expense can be edited (refilled into the
+  // create form). `paidByLabel`, `timeLabel` and `userRelation` are denormalized
+  // values derived from these for display only.
+  paidById: string;
+  participantIds: string[];
+  date: string; // ISO 8601
 };

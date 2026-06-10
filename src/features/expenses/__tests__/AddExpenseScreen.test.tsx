@@ -146,6 +146,31 @@ describe('AddExpenseScreen', () => {
     expect(screen.getByText('Diego')).toBeTruthy();
   });
 
+  it('blocks creating an expense when the route group was deleted after opening the screen', async () => {
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: 'group-1' } } as ReturnType<typeof useRoute>);
+
+    render(<AddExpenseScreen />);
+
+    act(() => {
+      useGroupsStore.getState().deleteGroup('group-1');
+    });
+
+    fireEvent.changeText(screen.getByTestId('expense-amount-input'), '1500');
+    fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Cena compartida');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('create-expense-button'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('El grupo seleccionado ya no está disponible. Elegí otro grupo.')).toBeTruthy();
+    });
+
+    expect(screen.getByTestId('expense-group-field')).toHaveTextContent('Seleccioná un grupo');
+    expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+    expect(navigationMock.replace).not.toHaveBeenCalled();
+  });
+
   it('keeps at least one participant selected', () => {
     render(<AddExpenseScreen />);
 

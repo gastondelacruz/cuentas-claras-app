@@ -1,12 +1,20 @@
 import {
   createNavigationContainerRef,
   NavigationContainer,
+  useNavigation,
+  useRoute,
 } from "@react-navigation/native";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { RootNavigator } from "../navigation/RootNavigator";
 import { registeredRouteNames, RootStackParamList } from "../navigation/types";
+import { useExpensesStore } from "../../features/expenses/store/expensesStore";
+import { useGroupsStore } from "../../features/groups/store/groupsStore";
 import { useAuthStore } from "../../shared/store/authStore";
+
+const actualNavigation = jest.requireActual<typeof import("@react-navigation/native")>(
+  "@react-navigation/native",
+);
 
 const mainTabLabels = [
   "Inicio",
@@ -18,6 +26,10 @@ const mainTabLabels = [
 describe("navigation shell", () => {
   beforeEach(() => {
     useAuthStore.getState().clearSession();
+    useGroupsStore.getState().reset();
+    useExpensesStore.getState().reset();
+    jest.mocked(useNavigation).mockImplementation(actualNavigation.useNavigation as never);
+    jest.mocked(useRoute).mockImplementation(actualNavigation.useRoute as never);
   });
 
   it("registers all route names expected by the bootstrap spec", () => {
@@ -120,7 +132,7 @@ describe("navigation shell", () => {
       navigationRef.navigate("GroupDetail", { groupId: "group-1" });
     });
 
-    expect(await findByText("Viaje a Europa 2024")).toBeOnTheScreen();
+    expect(await findByText("Viaje a la costa")).toBeOnTheScreen();
 
     act(() => {
       navigationRef.navigate("AddExpense");
@@ -133,6 +145,6 @@ describe("navigation shell", () => {
     });
 
     expect(await findByText("OnboardingScreen")).toBeOnTheScreen();
-    expect(queryByText("Viaje a Europa 2024")).toBeNull();
+    expect(queryByText("Viaje a la costa")).toBeNull();
   });
 });

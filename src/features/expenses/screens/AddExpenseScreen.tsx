@@ -54,6 +54,7 @@ function formatExpenseDate(date: Date) {
 export function AddExpenseScreen() {
   const navigation = useNavigation<AddExpenseNavigation>();
   const route = useRoute<AddExpenseRoute>();
+  const deletedGroupIds = useGroupsStore((state) => state.deletedGroupIds);
   const groups = useGroupsStore((state) => state.groups);
   const addExpense = useExpensesStore((state) => state.addExpense);
   const updateExpense = useExpensesStore((state) => state.updateExpense);
@@ -124,6 +125,11 @@ export function AddExpenseScreen() {
     [groups],
   );
 
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.id === groupId),
+    [groupId, groups],
+  );
+
   const paidByLabel = members.find((member) => member.id === paidById)?.name ?? "Seleccioná quién pagó";
   const groupLabel = groups.find((group) => group.id === groupId)?.name ?? "Seleccioná un grupo";
   const allParticipantsSelected =
@@ -158,6 +164,12 @@ export function AddExpenseScreen() {
   const onSubmit = (values: NewExpenseFormValues) => {
     if (!groupId) {
       setGroupError("Seleccioná un grupo para el gasto");
+      return;
+    }
+
+    if (!selectedGroup || deletedGroupIds.includes(groupId)) {
+      setGroupId(undefined);
+      setGroupError("El grupo seleccionado ya no está disponible. Elegí otro grupo.");
       return;
     }
 

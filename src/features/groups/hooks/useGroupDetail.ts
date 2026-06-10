@@ -43,7 +43,7 @@ function getInitialsFromValue(value: string) {
 }
 
 type UseGroupDetailResult = {
-  group: GroupDetail;
+  group: GroupDetail | null;
   memberBalances: MemberBalance[];
   recentExpenses: GroupExpense[];
   totalExpensesCount: number;
@@ -60,6 +60,9 @@ type UseGroupDetailResult = {
  */
 export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   const groupFromStore = useGroupsStore((state) => state.groups.find((group) => group.id === groupId));
+  const isDeletedGroup = useGroupsStore((state) =>
+    groupId ? state.deletedGroupIds.includes(groupId) : false,
+  );
   const createdExpenses = useExpensesStore((state) =>
     groupId ? state.expensesByGroup[groupId] ?? EMPTY_EXPENSES : EMPTY_EXPENSES,
   );
@@ -67,6 +70,17 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
     groupId ? state.deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS : EMPTY_IDS,
   );
   const isSeededMockGroup = groupsListMock.some((group) => group.id === groupId);
+
+  if (!groupId || isDeletedGroup || (!groupFromStore && !isSeededMockGroup)) {
+    return {
+      group: null,
+      memberBalances: [],
+      recentExpenses: [],
+      totalExpensesCount: 0,
+      isLoading: false,
+    };
+  }
+
   const createdTotals = sumExpenses(createdExpenses);
 
   if (groupFromStore && !isSeededMockGroup) {

@@ -14,6 +14,7 @@ type ExpensesStore = {
   addExpense: (groupId: string, expense: GroupExpense) => void;
   updateExpense: (groupId: string, expense: GroupExpense) => void;
   deleteExpense: (groupId: string, expenseId: string) => void;
+  deleteGroupExpenses: (groupId: string) => void;
   getExpensesForGroup: (groupId: string) => GroupExpense[];
   getDeletedExpenseIds: (groupId: string) => string[];
   reset: () => void;
@@ -63,6 +64,17 @@ export const useExpensesStore = create<ExpensesStore>()((set, get) => ({
               ...state.deletedExpenseIdsByGroup,
               [groupId]: [...tombstones, expenseId],
             },
+        };
+    }),
+  deleteGroupExpenses: (groupId) =>
+    set((state) => {
+      const nextExpensesByGroup = { ...state.expensesByGroup };
+
+      delete nextExpensesByGroup[groupId];
+
+      return {
+        expensesByGroup: nextExpensesByGroup,
+        deletedExpenseIdsByGroup: state.deletedExpenseIdsByGroup,
       };
     }),
   getExpensesForGroup: (groupId) => get().expensesByGroup[groupId] ?? EMPTY_EXPENSES,

@@ -1,4 +1,5 @@
 import { recentExpensesMock } from '../../groups/mocks/groupDetail.mock';
+import { useGroupsStore } from '../../groups/store/groupsStore';
 import { GroupExpense } from '../../groups/types';
 import { useExpensesStore } from '../store/expensesStore';
 
@@ -10,6 +11,12 @@ import { useExpensesStore } from '../store/expensesStore';
  * can be edited even though they do not originate from the store.
  */
 export function useExpenseToEdit(groupId?: string, expenseId?: string): GroupExpense | undefined {
+  const isDeletedGroup = useGroupsStore((state) =>
+    groupId ? state.deletedGroupIds.includes(groupId) : false,
+  );
+  const isDeletedExpense = useExpensesStore((state) =>
+    groupId && expenseId ? (state.deletedExpenseIdsByGroup[groupId] ?? []).includes(expenseId) : false,
+  );
   const storedExpense = useExpensesStore((state) => {
     if (!groupId || !expenseId) {
       return undefined;
@@ -19,6 +26,10 @@ export function useExpenseToEdit(groupId?: string, expenseId?: string): GroupExp
   });
 
   if (!expenseId) {
+    return undefined;
+  }
+
+  if (isDeletedGroup || isDeletedExpense) {
     return undefined;
   }
 

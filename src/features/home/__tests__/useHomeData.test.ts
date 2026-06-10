@@ -71,4 +71,33 @@ describe('useHomeData', () => {
     expect(result.current.activeGroups.map((group) => group.name)).toEqual(['Escapada a Tigre', 'Cumple de Ana']);
     expect(result.current.activeGroups.map((group) => group.category)).toEqual(['Viajes', 'Eventos']);
   });
+
+  it('reflects seeded group invite previews after editing a mock group', () => {
+    useGroupsStore.getState().updateGroup({
+      groupId: 'group-1',
+      name: 'Viaje a la costa',
+      category: 'TRAVEL',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['friend@example.com'],
+      owner: {
+        id: 'current-user',
+        name: 'Vos',
+        initials: 'YO',
+        avatarUrl: null,
+        email: 'you@example.com',
+      },
+    });
+
+    const { result } = renderHook(() => useHomeData());
+    const updatedGroup = result.current.activeGroups.find((group) => group.id === 'group-1');
+
+    expect(updatedGroup).toMatchObject({
+      members: [
+        { id: 'm1', name: 'Alex' },
+        { id: 'm2', name: 'Sarah' },
+        { id: 'invite-0-friend@example.com', name: 'friend@example.com' },
+      ],
+      extraMembersCount: 2,
+    });
+  });
 });

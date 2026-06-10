@@ -48,17 +48,7 @@ export function buildGroupMembers(
     return [currentUser];
   }
 
-  const isSeededMockGroup = groupsListMock.some((mockGroup) => mockGroup.id === group.id);
-
-  if (isSeededMockGroup) {
-    const previewMembers: GroupMember[] = group.members.map((member) => ({
-      ...member,
-      isCurrentUser: false,
-    }));
-
-    return [currentUser, ...previewMembers];
-  }
-
+  const seededMockGroup = groupsListMock.find((mockGroup) => mockGroup.id === group.id);
   const invitedMembers: GroupMember[] = group.invitedEmails.map((email, index) => ({
     id: `invite-${index}-${email}`,
     name: email,
@@ -66,6 +56,15 @@ export function buildGroupMembers(
     avatarUrl: null,
     isCurrentUser: false,
   }));
+
+  if (seededMockGroup) {
+    const previewMembers: GroupMember[] = seededMockGroup.members.map((member) => ({
+      ...member,
+      isCurrentUser: false,
+    }));
+
+    return [currentUser, ...previewMembers, ...invitedMembers];
+  }
 
   return [currentUser, ...invitedMembers];
 }

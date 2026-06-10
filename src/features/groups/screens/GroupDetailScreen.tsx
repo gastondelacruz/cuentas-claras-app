@@ -87,6 +87,10 @@ export function GroupDetailScreen() {
     ]);
   };
 
+  const handleOpenBalances = () => {
+    navigation.navigate('SettleDebts');
+  };
+
   return (
     <ScreenContainer>
       <GroupDetailHeader groupName={group.name} onPressSettings={handleOpenSettings} />
@@ -97,12 +101,15 @@ export function GroupDetailScreen() {
           <BalanceMiniCards owedToYou={group.owedToYou} youOwe={group.youOwe} />
         </View>
 
-        <GroupActionButtons />
+        <GroupActionButtons
+          onAddExpense={() => navigation.navigate('AddExpense', { groupId: group.id })}
+          onSettleDebts={handleOpenBalances}
+        />
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between px-4">
             <Text className="text-lg font-bold text-neutral900">Balances</Text>
-            <Pressable accessibilityRole="button" onPress={() => {}}>
+            <Pressable accessibilityRole="button" onPress={handleOpenBalances}>
               <Text className="text-sm text-primary">Ver quién debe a quién</Text>
             </Pressable>
           </View>

@@ -1,12 +1,10 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-  Bell,
   CircleDollarSign,
   Home,
   User,
 } from "lucide-react-native";
 
-import { ActivityScreen } from "../../features/activity/screens/ActivityScreen";
 import { GroupsListScreen } from "../../features/groups/screens/GroupsListScreen";
 import { HomeScreen } from "../../features/home/screens/HomeScreen";
 import { ProfileScreen } from "../../features/profile/screens/ProfileScreen";
@@ -39,14 +37,6 @@ export function MainTabs() {
         options={{
           tabBarLabel: "Grupos",
           tabBarIcon: ({ color }) => <CircleDollarSign color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Activity"
-        component={ActivityScreen}
-        options={{
-          tabBarLabel: "Actividad",
-          tabBarIcon: ({ color }) => <Bell color={color} />,
         }}
       />
       <Tab.Screen

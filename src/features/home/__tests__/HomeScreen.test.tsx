@@ -1,39 +1,76 @@
 import { useNavigation } from '@react-navigation/native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import { homeMockData } from '../mocks/home.mock';
+import { useExpensesStore } from '../../expenses/store/expensesStore';
+import type { GroupExpense } from '../../groups/types';
+import { useGroupsStore } from '../../groups/store/groupsStore';
+import { useAuthStore } from '../../../shared/store/authStore';
 import { HomeScreen } from '../screens/HomeScreen';
-import type { UseHomeDataResult } from '../types';
-import { useHomeData } from '../hooks/useHomeData';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 
-jest.mock('../hooks/useHomeData', () => ({
-  useHomeData: jest.fn(),
-}));
-
-const mockedUseHomeData = jest.mocked(useHomeData);
 const mockedUseNavigation = jest.mocked(useNavigation);
 const navigate = jest.fn();
 const parentNavigate = jest.fn();
 
-function mockHomeData(overrides: Partial<UseHomeDataResult> = {}) {
-  mockedUseHomeData.mockReturnValue({
-    data: homeMockData,
-    summary: homeMockData.summary,
-    activeGroups: homeMockData.activeGroups,
-    recentActivity: homeMockData.recentActivity,
-    isLoading: false,
-    isError: false,
-    error: null,
-    ...overrides,
+function createGroup(name: string, invitedEmails: string[]) {
+  return useGroupsStore.getState().createGroup({
+    name,
+    category: 'TRAVEL',
+    image: { type: 'default', uri: null },
+    invitedEmails,
+    owner: {
+      id: 'current-user',
+      name: 'Vos',
+      email: 'you@example.com',
+      initials: 'YO',
+      avatarUrl: null,
+    },
+  });
+}
+
+function addExpense(groupId: string, expense: GroupExpense) {
+  useExpensesStore.getState().addExpense(groupId, expense);
+}
+
+function seedDashboard() {
+  const homeGroup = createGroup('Viaje a Lisboa', ['alex@example.com', 'sarah@example.com', 'james@example.com']);
+  const secondGroup = createGroup('Departamento', ['diego@example.com']);
+
+  addExpense(homeGroup.id, {
+    id: 'expense-home-1',
+    title: 'Cena de Sushi',
+    paidByLabel: 'Pagado por mí',
+    timeLabel: 'hace 2h',
+    totalAmount: 120,
+    category: 'FOOD',
+    userRelation: { type: 'lent', amount: 60 },
+    paidById: 'current-user',
+    participantIds: ['current-user', 'invite-0-alex@example.com', 'invite-1-sarah@example.com'],
+    date: '2024-05-21T12:00:00.000Z',
+  });
+
+  addExpense(secondGroup.id, {
+    id: 'expense-home-2',
+    title: 'Billetes de Tren',
+    paidByLabel: 'Pagado por Diego',
+    timeLabel: 'hace 4h',
+    totalAmount: 85,
+    category: 'TRANSPORT',
+    userRelation: { type: 'share', amount: 20 },
+    paidById: 'invite-0-diego@example.com',
+    participantIds: ['current-user', 'invite-0-diego@example.com'],
+    date: '2024-05-21T10:00:00.000Z',
   });
 }
 
 describe('HomeScreen', () => {
   beforeEach(() => {
+    useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
+    useGroupsStore.getState().reset();
+    useExpensesStore.getState().reset();
     jest.clearAllMocks();
     mockedUseNavigation.mockReturnValue({
       navigate,
@@ -42,7 +79,7 @@ describe('HomeScreen', () => {
   });
 
   it('renders the loaded dashboard shell', () => {
-    mockHomeData();
+    seedDashboard();
 
     render(<HomeScreen />);
 
@@ -50,35 +87,34 @@ describe('HomeScreen', () => {
     expect(screen.getByLabelText('Abrir menú de creación')).toBeTruthy();
   });
 
-  it('renders summary cards with exact formatted amounts and chips', () => {
-    mockHomeData();
+  it('renders summary cards with store-driven totals', () => {
+    seedDashboard();
 
     render(<HomeScreen />);
 
     expect(screen.getByText('Te deben')).toBeTruthy();
-    expect(screen.getByText('+$1.420,50')).toBeTruthy();
-    expect(screen.getByText('3 Personas')).toBeTruthy();
+    expect(screen.getByText('+$60,00')).toBeTruthy();
+    expect(screen.getByText('2 Personas')).toBeTruthy();
     expect(screen.getByText('Debes')).toBeTruthy();
-    expect(screen.getByText('-$342,15')).toBeTruthy();
-    expect(screen.getByText('2 Grupos')).toBeTruthy();
+    expect(screen.getByText('-$20,00')).toBeTruthy();
+    expect(screen.getByText('1 Grupo')).toBeTruthy();
   });
 
-  it('renders active groups with covers, avatars, extra badge, and debt labels', () => {
-    mockHomeData();
+  it('renders active groups and the view-all card', () => {
+    seedDashboard();
 
     render(<HomeScreen />);
+
     expect(screen.getByText('Grupos activos')).toBeTruthy();
     expect(screen.getByText('Viaje a Lisboa')).toBeTruthy();
-    expect(screen.getByText('Almuerzo Oficina')).toBeTruthy();
-    expect(screen.getByText('+2')).toBeTruthy();
-    expect(screen.getByText('4 deudas activas')).toBeTruthy();
-    expect(screen.getByLabelText('James')).toBeTruthy();
+    expect(screen.getByText('Departamento')).toBeTruthy();
+    expect(screen.getAllByText('Recién creado')).toHaveLength(2);
     expect(screen.getByLabelText('Ver todos los grupos')).toBeTruthy();
     expect(screen.getByText('Ver lista completa')).toBeTruthy();
   });
 
   it('navigates to the groups list from the extra active groups card', () => {
-    mockHomeData();
+    seedDashboard();
 
     render(<HomeScreen />);
 
@@ -87,47 +123,25 @@ describe('HomeScreen', () => {
     expect(navigate).toHaveBeenCalledWith('GroupsList');
   });
 
-  it('renders recent activity rows with context, signed amounts, and time labels', () => {
-    mockHomeData();
+  it('renders recent activity rows with store-created expenses', () => {
+    seedDashboard();
 
     render(<HomeScreen />);
+
     expect(screen.getByText('Actividad reciente')).toBeTruthy();
     expect(screen.getByText('Cena de Sushi')).toBeTruthy();
     expect(screen.getByText('Billetes de Tren')).toBeTruthy();
-    expect(screen.getByText('Factura de la Luz')).toBeTruthy();
-    expect(screen.getByText('Pagado por ti en Almuerzo Oficina')).toBeTruthy();
-    expect(screen.getByText('+$45,00')).toBeTruthy();
+    expect(screen.getByText('Pagado por ti en Viaje a Lisboa')).toBeTruthy();
+    expect(screen.getByText('Pagado por Diego en Departamento')).toBeTruthy();
+    expect(screen.getByText('+$120,00')).toBeTruthy();
     expect(screen.getByText('-$85,00')).toBeTruthy();
     expect(screen.getByText('hace 2h')).toBeTruthy();
   });
 
-  it('renders the loading state', () => {
-    mockHomeData({ data: null, isLoading: true });
-
+  it('renders the empty state without groups or expenses', () => {
     render(<HomeScreen />);
-    expect(screen.getByText('Cargando inicio...')).toBeTruthy();
-  });
 
-  it('renders the empty state', () => {
-    const data = { ...homeMockData, activeGroups: [], recentActivity: [] };
-    mockHomeData({ data, activeGroups: [], recentActivity: [] });
-
-    render(<HomeScreen />);
-    expect(screen.getByText('Todavia no hay movimientos')).toBeTruthy();
-  });
-
-  it('renders the error state', () => {
-    mockHomeData({ data: null, isError: true, error: new Error('Mock failure') });
-
-    render(<HomeScreen />);
-    expect(screen.getByText('No pudimos cargar el inicio')).toBeTruthy();
-    expect(screen.getByText('Mock failure')).toBeTruthy();
-  });
-
-  it('renders the empty state when query-shaped data is null', () => {
-    mockHomeData({ data: null });
-
-    render(<HomeScreen />);
-    expect(screen.getByText('Todavia no hay movimientos')).toBeTruthy();
+    expect(screen.getByText('Aún no tienes movimientos')).toBeTruthy();
+    expect(screen.getByLabelText('Crear un Grupo')).toBeTruthy();
   });
 });

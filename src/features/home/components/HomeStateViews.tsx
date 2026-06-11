@@ -2,6 +2,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 
 import { colors } from '../../../shared/theme/colors';
 import { Card } from '../../../shared/ui/Card';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 
 export function HomeLoadingView() {
   return (
@@ -12,14 +13,18 @@ export function HomeLoadingView() {
   );
 }
 
-export function HomeEmptyView() {
+type HomeEmptyViewProps = {
+  onCreateGroup: () => void;
+};
+
+export function HomeEmptyView({ onCreateGroup }: HomeEmptyViewProps) {
   return (
-    <View className="flex-1 justify-center p-6">
-      <Card variant="centered">
-        <Text className="text-xl font-bold text-neutral900">Todavia no hay movimientos</Text>
-        <Text className="mt-2 text-center text-base text-neutral500">Crea tu primer grupo o gasto para ver tu resumen aca.</Text>
-      </Card>
-    </View>
+    <EmptyState
+      buttonLabel="Crear un Grupo"
+      description="Crea tu primer grupo para empezar a dividir gastos con tus amigos."
+      onPress={onCreateGroup}
+      title="Aún no tienes movimientos"
+    />
   );
 }
 

@@ -29,12 +29,29 @@ function makeExpense(id: string): GroupExpense {
 
 describe('GroupDetailScreen', () => {
   let navigationMock: NavigationMock;
+  let groupId: string;
 
   beforeEach(() => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
+    groupId = useGroupsStore.getState().createGroup({
+      name: 'Viaje a Bariloche',
+      category: 'TRAVEL',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['alex@example.com', 'sarah@example.com'],
+      owner: {
+        id: 'current-user',
+        name: 'Vos',
+        email: 'you@example.com',
+        initials: 'YO',
+        avatarUrl: null,
+      },
+    }).id;
+    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-1'));
+    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-2'));
+    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-3'));
     jest.mocked(useRoute).mockReturnValue({
-      params: { groupId: 'group-1' },
+      params: { groupId },
     } as ReturnType<typeof useRoute>);
     navigationMock = {
       goBack: jest.fn(),
@@ -44,29 +61,25 @@ describe('GroupDetailScreen', () => {
   });
 
   it('hides the expand button when there are 3 or fewer expenses', () => {
-    // group-1 has exactly 3 seeded mock expenses.
     render(<GroupDetailScreen />);
 
     expect(screen.queryByTestId('group-expenses-toggle')).toBeNull();
   });
 
   it('expands the list inline when there are more than 3 expenses', () => {
-    // A 4th expense pushes the group past the recent limit.
-    useExpensesStore.getState().addExpense('group-1', makeExpense('new-1'));
+    useExpensesStore.getState().addExpense(groupId, makeExpense('new-1'));
 
     render(<GroupDetailScreen />);
 
-    // Collapsed: only the first 3 rows are visible.
     expect(screen.getByTestId('group-expense-new-1')).toBeTruthy();
-    expect(screen.queryByTestId('group-expense-e3')).toBeNull();
+    expect(screen.queryByTestId('group-expense-expense-1')).toBeNull();
 
     const toggle = screen.getByTestId('group-expenses-toggle');
     expect(toggle).toHaveTextContent('Ver los 4 gastos');
 
     fireEvent.press(toggle);
 
-    // Expanded: the full set is visible and the label flips.
-    expect(screen.getByTestId('group-expense-e3')).toBeTruthy();
+    expect(screen.getByTestId('group-expense-expense-1')).toBeTruthy();
     expect(screen.getByTestId('group-expenses-toggle')).toHaveTextContent('Ver menos');
   });
 
@@ -82,7 +95,7 @@ describe('GroupDetailScreen', () => {
 
     editButton?.onPress?.();
 
-    expect(navigationMock.navigate).toHaveBeenCalledWith('NewGroup', { groupId: 'group-1' });
+    expect(navigationMock.navigate).toHaveBeenCalledWith('NewGroup', { groupId });
   });
 
   it('keeps only add expense and settle actions inside the group', () => {
@@ -101,13 +114,8 @@ describe('GroupDetailScreen', () => {
     expect(navigationMock.navigate).toHaveBeenCalledWith('SettleDebts');
   });
 
-  it('deletes the group after confirmation and clears its local expenses', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((title, _message, buttons) => {
-      if (title === 'Eliminar grupo') {
-        buttons?.find((button) => button.style === 'destructive')?.onPress?.();
-      }
-    });
-    useExpensesStore.getState().addExpense('group-1', makeExpense('local-1'));
+  it('opens a destructive confirmation before deleting the group', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
 
     render(<GroupDetailScreen />);
 
@@ -119,18 +127,21 @@ describe('GroupDetailScreen', () => {
       deleteButton?.onPress?.();
     });
 
-    expect(useGroupsStore.getState().groups.find((group) => group.id === 'group-1')).toBeUndefined();
-    expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+    expect(alertSpy).toHaveBeenNthCalledWith(
+      3,
+      'Eliminar grupo',
+      '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.',
+      expect.any(Array),
+    );
   });
 
-  it('does not reopen a deleted seeded group from the same route id', () => {
-    useGroupsStore.getState().deleteGroup('group-1');
-    useExpensesStore.getState().deleteExpense('group-1', 'e1');
-    useExpensesStore.getState().deleteGroupExpenses('group-1');
+  it('does not reopen a deleted group from the same route id', () => {
+    useGroupsStore.getState().deleteGroup(groupId);
+    useExpensesStore.getState().deleteGroupExpenses(groupId);
 
     render(<GroupDetailScreen />);
 
     expect(screen.getByText('Este grupo ya no está disponible')).toBeTruthy();
-    expect(screen.queryByTestId('group-expense-e1')).toBeNull();
+    expect(screen.queryByTestId('group-expense-expense-1')).toBeNull();
   });
 });

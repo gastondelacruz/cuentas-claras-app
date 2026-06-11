@@ -1,3 +1,4 @@
+import { createId } from '../../../shared/utils/createId';
 import { ExpenseCategory, ExpenseUserRelation, GroupExpense } from '../../groups/types';
 
 export type ExpenseParticipant = {
@@ -87,7 +88,7 @@ export function buildGroupExpense(input: BuildGroupExpenseInput): GroupExpense {
   const userIncluded = participantIds.includes(currentUserId);
 
   return {
-    id: input.id ?? `expense-${now.getTime()}`,
+    id: input.id ?? createId(),
     title: description,
     paidByLabel,
     timeLabel: buildTimeLabel(date, now),

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 
-import { groupsListMock, groupsNetBalanceMock } from '../mocks/groupsList.mock';
+import { createId } from '../../../shared/utils/createId';
+import { groupsListMock } from '../mocks/groupsList.mock';
 import { inviteMembersRequiredMessage, invitedEmailsSchema } from '../schemas/new-group-schema';
-import { GroupCategory, GroupImage, GroupListItem, GroupMemberPreview, StoredGroup } from '../types';
+import { GroupCategory, GroupImage, GroupMemberPreview, StoredGroup } from '../types';
 
 type GroupOwner = GroupMemberPreview & {
   email: string;
@@ -137,7 +138,7 @@ export const useGroupsStore = create<GroupsStore>()((set) => ({
     const normalizedInvitedEmails = parseInvitedEmails(invitedEmails, false);
     const { visibleMembers, extraMembersCount } = buildCreatedGroupMembers(owner, normalizedInvitedEmails);
     const nextGroup: StoredGroup = {
-      id: `group-${Date.now()}`,
+      id: createId(),
       name,
       description: buildPendingInvitesDescription(normalizedInvitedEmails),
       category,
@@ -224,15 +225,3 @@ export const useGroupsStore = create<GroupsStore>()((set) => ({
     })),
   reset: () => set({ deletedGroupIds: [], groups: getInitialGroups() }),
 }));
-
-export function getGroupsNetBalance(groups: GroupListItem[]) {
-  const seededGroupIds = new Set(groupsListMock.map((group) => group.id));
-
-  return groups.reduce((total, group) => {
-    if (seededGroupIds.has(group.id)) {
-      return total;
-    }
-
-    return total + group.balance;
-  }, groupsNetBalanceMock);
-}

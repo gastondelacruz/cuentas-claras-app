@@ -27,6 +27,14 @@ export type HomeGroup = {
   activeDebtsLabel: string;
 };
 
+export type HomeActivityCategory =
+  | 'food'
+  | 'transport'
+  | 'utilities'
+  | 'shopping'
+  | 'entertainment'
+  | 'other';
+
 export type HomeActivity = {
   id: string;
   groupId: string;
@@ -34,7 +42,7 @@ export type HomeActivity = {
   context: string;
   amount: number;
   timeLabel: string;
-  category: 'food' | 'transport' | 'utilities';
+  category: HomeActivityCategory;
 };
 
 export type HomeDashboardData = {

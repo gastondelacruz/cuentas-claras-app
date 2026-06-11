@@ -6,43 +6,6 @@ describe('buildGroupMembers', () => {
     useGroupsStore.getState().reset();
   });
 
-  it('returns current user plus seeded group preview members', () => {
-    const group = useGroupsStore.getState().groups.find((item) => item.id === 'group-1');
-
-    const members = buildGroupMembers(group, { id: 'current-user', email: 'you@example.com' });
-
-    expect(members.map((member) => member.name)).toEqual(['Vos', 'Alex', 'Sarah']);
-    expect(members[0]).toMatchObject({ id: 'current-user', isCurrentUser: true });
-    expect(members[1]).toMatchObject({ id: 'm1', isCurrentUser: false });
-  });
-
-  it('returns seeded mock members plus invited emails after editing a seeded group', () => {
-    useGroupsStore.getState().updateGroup({
-      groupId: 'group-1',
-      name: 'Viaje a la costa',
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['friend@example.com'],
-      owner: {
-        id: 'current-user',
-        name: 'Vos',
-        email: 'you@example.com',
-        initials: 'YO',
-        avatarUrl: null,
-      },
-    });
-
-    const group = useGroupsStore.getState().groups.find((item) => item.id === 'group-1');
-    const members = buildGroupMembers(group, { id: 'current-user', email: 'you@example.com' });
-
-    expect(members.map((member) => member.name)).toEqual(['Vos', 'Alex', 'Sarah', 'friend@example.com']);
-    expect(members[3]).toMatchObject({
-      id: 'invite-0-friend@example.com',
-      initials: 'F',
-      isCurrentUser: false,
-    });
-  });
-
   it('returns current user plus invited emails for user-created groups', () => {
     const group = useGroupsStore.getState().createGroup({
       name: 'Viaje a Mendoza',

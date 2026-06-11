@@ -195,6 +195,16 @@ export function AddExpenseScreen() {
     }
 
     addExpense(groupId, expense);
+    if (route.params?.groupId) {
+      if (route.params.groupId !== groupId) {
+        navigation.popTo('GroupDetail', { groupId });
+        return;
+      }
+
+      navigation.goBack();
+      return;
+    }
+
     navigation.replace("GroupDetail", { groupId });
   };
 

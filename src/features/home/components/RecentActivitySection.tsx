@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
-import { Train, Utensils, Zap } from 'lucide-react-native';
+import { Receipt, ShoppingBag, Ticket, Train, Utensils, Zap } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
-import type { HomeActivity } from '../types';
+import type { HomeActivity, HomeActivityCategory } from '../types';
 import { colors } from '../../../shared/theme/colors';
 import { AmountText } from '../../../shared/ui/AmountText';
 import { Card } from '../../../shared/ui/Card';
@@ -11,10 +12,13 @@ type RecentActivitySectionProps = {
   onActivityPress: (groupId: string) => void;
 };
 
-const categoryIcon = {
+const categoryIcon: Record<HomeActivityCategory, LucideIcon> = {
   food: Utensils,
   transport: Train,
   utilities: Zap,
+  shopping: ShoppingBag,
+  entertainment: Ticket,
+  other: Receipt,
 };
 
 export function RecentActivitySection({ activities, onActivityPress }: RecentActivitySectionProps) {
@@ -23,7 +27,7 @@ export function RecentActivitySection({ activities, onActivityPress }: RecentAct
       <Text className="text-lg font-bold text-neutral900">Actividad reciente</Text>
       <Card variant="activityList">
         {activities.map((activity, index) => {
-          const Icon = categoryIcon[activity.category];
+          const Icon = categoryIcon[activity.category] ?? Receipt;
 
           return (
             <Pressable

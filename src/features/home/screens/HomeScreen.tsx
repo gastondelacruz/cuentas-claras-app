@@ -62,7 +62,7 @@ export function HomeScreen() {
     return (
       <ScreenContainer>
         <AppTopBar />
-        <HomeEmptyView />
+        <HomeEmptyView onCreateGroup={() => navigateToRootScreen("NewGroup")} />
       </ScreenContainer>
     );
   }

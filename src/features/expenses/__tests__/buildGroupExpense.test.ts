@@ -78,14 +78,22 @@ describe('buildGroupExpense', () => {
     expect(expense.id).toBe('expense-existing');
   });
 
-  it('generates an id when none is provided', () => {
-    const expense = buildGroupExpense({
+  it('generates a unique id when none is provided', () => {
+    const first = buildGroupExpense({
+      ...baseInput,
+      paidById: 'you',
+      participantIds: ['you'],
+    });
+    const second = buildGroupExpense({
       ...baseInput,
       paidById: 'you',
       participantIds: ['you'],
     });
 
-    expect(expense.id).toMatch(/^expense-\d+$/);
+    expect(first.id).toEqual(expect.any(String));
+    expect(first.id.length).toBeGreaterThan(0);
+    // Concurrent creations must not collide, even within the same millisecond.
+    expect(first.id).not.toBe(second.id);
   });
 
   it('builds relative time labels', () => {

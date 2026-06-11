@@ -17,6 +17,13 @@ jest.mock('expo-font', () => ({
   useFonts: jest.fn(() => [true, null]),
 }));
 
+let cryptoUuidCounter = 0;
+jest.mock('expo-crypto', () => ({
+  // Deterministic but unique per call, so concurrent entity creations in tests
+  // never collide (mirrors real UUID uniqueness without native randomness).
+  randomUUID: jest.fn(() => `test-uuid-${(cryptoUuidCounter += 1)}`),
+}));
+
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(async () => undefined),
   hideAsync: jest.fn(async () => undefined),

@@ -3,7 +3,6 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type MainTabParamList = {
   Home: undefined;
   GroupsList: undefined;
-  Activity: undefined;
   Profile: undefined;
 };
 
@@ -24,7 +23,6 @@ export const registeredRouteNames = [
   'Register',
   'Home',
   'GroupsList',
-  'Activity',
   'GroupDetail',
   'NewGroup',
   'AddExpense',

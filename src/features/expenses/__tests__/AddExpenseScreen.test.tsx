@@ -3,14 +3,15 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Alert } from 'react-native';
 
 import { useGroupsStore } from '../../groups/store/groupsStore';
+import type { GroupExpense } from '../../groups/types';
+import { useAuthStore } from '../../../shared/store/authStore';
 import { AddExpenseScreen } from '../screens/AddExpenseScreen';
 import { useExpensesStore } from '../store/expensesStore';
-
-const firstGroupId = () => useGroupsStore.getState().groups[0].id;
 
 type NavigationMock = {
   navigate: jest.Mock;
   replace: jest.Mock;
+  popTo: jest.Mock;
   goBack: jest.Mock;
   addListener: jest.Mock;
   removeListener: jest.Mock;
@@ -20,15 +21,56 @@ type NavigationMock = {
 
 let navigationMock: NavigationMock;
 
+function createGroup(name: string, invitedEmails: string[]) {
+  return useGroupsStore.getState().createGroup({
+    name,
+    category: 'TRAVEL',
+    image: { type: 'default', uri: null },
+    invitedEmails,
+    owner: {
+      id: 'current-user',
+      name: 'Vos',
+      email: 'you@example.com',
+      initials: 'YO',
+      avatarUrl: null,
+    },
+  });
+}
+
+function createExpense(groupId: string, expense: GroupExpense) {
+  useExpensesStore.getState().addExpense(groupId, expense);
+}
+
 describe('AddExpenseScreen', () => {
+  let primaryGroupId: string;
+  let secondaryGroupId: string;
+  let editableExpenseId: string;
+
   beforeEach(() => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
+    useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
+    secondaryGroupId = createGroup('Departamento', ['diego@example.com', 'lucia@example.com']).id;
+    primaryGroupId = createGroup('Viaje a Lisboa', ['alex@example.com', 'sarah@example.com']).id;
+    editableExpenseId = 'expense-1';
+    createExpense(primaryGroupId, {
+      id: editableExpenseId,
+      title: 'Cena Italiana @ Luigis',
+      paidByLabel: 'Pagado por alex@example.com',
+      timeLabel: 'Hoy',
+      totalAmount: 184,
+      category: 'FOOD',
+      userRelation: { type: 'share', amount: 92 },
+      paidById: 'invite-0-alex@example.com',
+      participantIds: ['current-user', 'invite-0-alex@example.com'],
+      date: '2024-05-20T00:00:00.000Z',
+    });
     jest.mocked(useRoute).mockReturnValue({ params: undefined } as ReturnType<typeof useRoute>);
 
     navigationMock = {
       navigate: jest.fn(),
       replace: jest.fn(),
+      popTo: jest.fn(),
       goBack: jest.fn(),
       addListener: jest.fn(() => jest.fn()),
       removeListener: jest.fn(),
@@ -64,7 +106,7 @@ describe('AddExpenseScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('El monto debe ser mayor a 0')).toBeTruthy();
     });
-    expect(useExpensesStore.getState().getExpensesForGroup(firstGroupId())).toHaveLength(0);
+    expect(useExpensesStore.getState().getExpensesForGroup(primaryGroupId)).toHaveLength(1);
   });
 
   it('creates the expense for the selected group when valid', async () => {
@@ -78,8 +120,8 @@ describe('AddExpenseScreen', () => {
     });
 
     await waitFor(() => {
-      const expenses = useExpensesStore.getState().getExpensesForGroup(firstGroupId());
-      expect(expenses).toHaveLength(1);
+      const expenses = useExpensesStore.getState().getExpensesForGroup(primaryGroupId);
+      expect(expenses).toHaveLength(2);
       expect(expenses[0]).toMatchObject({
         title: 'Cena compartida',
         totalAmount: 1500.5,
@@ -100,7 +142,7 @@ describe('AddExpenseScreen', () => {
     });
 
     await waitFor(() => {
-      const expenses = useExpensesStore.getState().getExpensesForGroup(firstGroupId());
+      const expenses = useExpensesStore.getState().getExpensesForGroup(primaryGroupId);
       expect(expenses[0]?.category).toBe('SHOPPING');
     });
   });
@@ -117,42 +159,82 @@ describe('AddExpenseScreen', () => {
   it('lists the real members of the selected group', () => {
     render(<AddExpenseScreen />);
 
-    // group-1 seeded members (Alex, Sarah) plus the current user.
     expect(screen.getAllByText('Vos').length).toBeGreaterThan(0);
-    expect(screen.getByText('Alex')).toBeTruthy();
-    expect(screen.getByText('Sarah')).toBeTruthy();
+    expect(screen.getByText('alex@example.com')).toBeTruthy();
+    expect(screen.getByText('sarah@example.com')).toBeTruthy();
   });
 
   it('refreshes participants when the group changes', () => {
     render(<AddExpenseScreen />);
 
-    expect(screen.getByText('Alex')).toBeTruthy();
+    expect(screen.getByText('alex@example.com')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('expense-group-field'));
     const modal = screen.getByTestId('expense-group-modal');
     fireEvent.press(within(modal).getByText('Departamento'));
 
-    // group-2 members (Diego, Lucía) replace group-1 members.
-    expect(screen.getByText('Diego')).toBeTruthy();
-    expect(screen.queryByText('Alex')).toBeNull();
+    expect(screen.getByText('diego@example.com')).toBeTruthy();
+    expect(screen.queryByText('alex@example.com')).toBeNull();
   });
 
   it('preselects the group received from navigation params', () => {
-    jest.mocked(useRoute).mockReturnValue({ params: { groupId: 'group-2' } } as ReturnType<typeof useRoute>);
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: secondaryGroupId } } as ReturnType<typeof useRoute>);
 
     render(<AddExpenseScreen />);
 
     expect(screen.getByTestId('expense-group-field')).toHaveTextContent('Departamento');
-    expect(screen.getByText('Diego')).toBeTruthy();
+    expect(screen.getByText('diego@example.com')).toBeTruthy();
+  });
+
+  it('returns to the existing group detail when saving from that group', async () => {
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: primaryGroupId } } as ReturnType<typeof useRoute>);
+
+    render(<AddExpenseScreen />);
+
+    fireEvent.changeText(screen.getByTestId('expense-amount-input'), '1500');
+    fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Cena compartida');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('create-expense-button'));
+    });
+
+    await waitFor(() => {
+      expect(useExpensesStore.getState().getExpensesForGroup(primaryGroupId)).toHaveLength(2);
+    });
+    expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
+    expect(navigationMock.popTo).not.toHaveBeenCalled();
+    expect(navigationMock.replace).not.toHaveBeenCalled();
+  });
+
+  it('pops to the selected group detail when changing groups before saving', async () => {
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: primaryGroupId } } as ReturnType<typeof useRoute>);
+
+    render(<AddExpenseScreen />);
+
+    fireEvent.press(screen.getByTestId('expense-group-field'));
+    fireEvent.press(within(screen.getByTestId('expense-group-modal')).getByText('Departamento'));
+    fireEvent.changeText(screen.getByTestId('expense-amount-input'), '900');
+    fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Compras');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('create-expense-button'));
+    });
+
+    await waitFor(() => {
+      expect(useExpensesStore.getState().getExpensesForGroup(secondaryGroupId)).toHaveLength(1);
+    });
+    expect(navigationMock.popTo).toHaveBeenCalledWith('GroupDetail', { groupId: secondaryGroupId });
+    expect(navigationMock.goBack).not.toHaveBeenCalled();
+    expect(navigationMock.replace).not.toHaveBeenCalled();
   });
 
   it('blocks creating an expense when the route group was deleted after opening the screen', async () => {
-    jest.mocked(useRoute).mockReturnValue({ params: { groupId: 'group-1' } } as ReturnType<typeof useRoute>);
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: primaryGroupId } } as ReturnType<typeof useRoute>);
 
     render(<AddExpenseScreen />);
 
     act(() => {
-      useGroupsStore.getState().deleteGroup('group-1');
+      useGroupsStore.getState().deleteGroup(primaryGroupId);
     });
 
     fireEvent.changeText(screen.getByTestId('expense-amount-input'), '1500');
@@ -167,7 +249,7 @@ describe('AddExpenseScreen', () => {
     });
 
     expect(screen.getByTestId('expense-group-field')).toHaveTextContent('Seleccioná un grupo');
-    expect(useExpensesStore.getState().getExpensesForGroup('group-1')).toHaveLength(0);
+    expect(useExpensesStore.getState().getExpensesForGroup(primaryGroupId)).toHaveLength(1);
     expect(navigationMock.replace).not.toHaveBeenCalled();
   });
 
@@ -176,11 +258,10 @@ describe('AddExpenseScreen', () => {
 
     expect(screen.getAllByText('Incluido en el gasto')).toHaveLength(3);
 
-    fireEvent.press(screen.getByTestId('expense-participant-m1'));
-    fireEvent.press(screen.getByTestId('expense-participant-m2'));
+    fireEvent.press(screen.getByTestId('expense-participant-invite-0-alex@example.com'));
+    fireEvent.press(screen.getByTestId('expense-participant-invite-1-sarah@example.com'));
     expect(screen.getAllByText('Incluido en el gasto')).toHaveLength(1);
 
-    // Attempting to deselect the last participant is ignored.
     fireEvent.press(screen.getByTestId('expense-participant-current-user'));
     expect(screen.getAllByText('Incluido en el gasto')).toHaveLength(1);
   });
@@ -188,7 +269,7 @@ describe('AddExpenseScreen', () => {
   it('re-selects everyone with "Seleccionar todos"', () => {
     render(<AddExpenseScreen />);
 
-    fireEvent.press(screen.getByTestId('expense-participant-m1'));
+    fireEvent.press(screen.getByTestId('expense-participant-invite-0-alex@example.com'));
     expect(screen.getAllByText('Incluido en el gasto')).toHaveLength(2);
 
     fireEvent.press(screen.getByTestId('expense-select-all'));
@@ -201,7 +282,7 @@ describe('AddExpenseScreen', () => {
     const selectAllButton = screen.getByTestId('expense-select-all');
     expect(selectAllButton.props.accessibilityState).toMatchObject({ disabled: true });
 
-    fireEvent.press(screen.getByTestId('expense-participant-m1'));
+    fireEvent.press(screen.getByTestId('expense-participant-invite-0-alex@example.com'));
     expect(screen.getByTestId('expense-select-all').props.accessibilityState).toMatchObject({
       disabled: false,
     });
@@ -218,37 +299,35 @@ describe('AddExpenseScreen', () => {
     fireEvent.press(screen.getByTestId('expense-paidby-field'));
 
     const modal = screen.getByTestId('expense-paidby-modal');
-    fireEvent.press(within(modal).getByText('Alex'));
+    fireEvent.press(within(modal).getByText('alex@example.com'));
 
-    expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('Alex');
+    expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('alex@example.com');
   });
 
   describe('edit mode', () => {
-    const editSeededExpense = () => {
+    const editStoredExpense = () => {
       jest.mocked(useRoute).mockReturnValue({
-        params: { groupId: 'group-1', expenseId: 'e1' },
+        params: { groupId: primaryGroupId, expenseId: editableExpenseId },
       } as ReturnType<typeof useRoute>);
     };
 
     it('prefills the form from the selected expense', () => {
-      editSeededExpense();
+      editStoredExpense();
 
       render(<AddExpenseScreen />);
 
       expect(screen.getByText('Editar gasto')).toBeTruthy();
       expect(screen.getByText('Guardar cambios')).toBeTruthy();
       expect(screen.getByTestId('expense-amount-input').props.value).toBe('184');
-      expect(screen.getByTestId('expense-description-input').props.value).toBe(
-        'Cena Italiana @ Luigis',
-      );
-      expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('Alex');
+      expect(screen.getByTestId('expense-description-input').props.value).toBe('Cena Italiana @ Luigis');
+      expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('alex@example.com');
       expect(screen.getByTestId('expense-category-FOOD').props.accessibilityState).toMatchObject({
         selected: true,
       });
     });
 
     it('updates the expense in place and navigates back on save', async () => {
-      editSeededExpense();
+      editStoredExpense();
 
       render(<AddExpenseScreen />);
 
@@ -259,10 +338,10 @@ describe('AddExpenseScreen', () => {
       });
 
       await waitFor(() => {
-        const expenses = useExpensesStore.getState().getExpensesForGroup('group-1');
+        const expenses = useExpensesStore.getState().getExpensesForGroup(primaryGroupId);
         expect(expenses).toHaveLength(1);
         expect(expenses[0]).toMatchObject({
-          id: 'e1',
+          id: editableExpenseId,
           title: 'Cena Italiana @ Luigis',
           totalAmount: 500,
         });
@@ -273,7 +352,7 @@ describe('AddExpenseScreen', () => {
     });
 
     it('keeps the group fixed while editing', () => {
-      editSeededExpense();
+      editStoredExpense();
 
       render(<AddExpenseScreen />);
 
@@ -289,7 +368,7 @@ describe('AddExpenseScreen', () => {
     });
 
     it('shows the delete button while editing', () => {
-      editSeededExpense();
+      editStoredExpense();
 
       render(<AddExpenseScreen />);
 
@@ -297,7 +376,7 @@ describe('AddExpenseScreen', () => {
     });
 
     it('deletes the expense after confirmation and navigates back', () => {
-      editSeededExpense();
+      editStoredExpense();
 
       const alertSpy = jest.spyOn(Alert, 'alert');
 
@@ -313,7 +392,7 @@ describe('AddExpenseScreen', () => {
         confirmButton?.onPress?.();
       });
 
-      expect(useExpensesStore.getState().getDeletedExpenseIds('group-1')).toContain('e1');
+      expect(useExpensesStore.getState().getDeletedExpenseIds(primaryGroupId)).toContain(editableExpenseId);
       expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
 
       alertSpy.mockRestore();

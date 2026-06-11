@@ -6,6 +6,7 @@ import { ScrollView, View } from "react-native";
 
 import { MainTabParamList, RootStackParamList } from "../../../app/navigation/types";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { EmptyState } from "../../../shared/ui/EmptyState";
 import { FloatingCreateMenu } from "../../../shared/ui/FloatingCreateMenu";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { CreateGroupCard } from "../components/CreateGroupCard";
@@ -23,6 +24,7 @@ export function GroupsListScreen() {
   const [filter, setFilter] = useState<GroupsFilter>("all");
 
   const rootNavigation = navigation.getParent?.<RootNavigation>();
+  const navigateToNewGroup = () => rootNavigation?.navigate("NewGroup");
 
   const visibleGroups = groups.filter((group) => {
     if (filter === "owed") return group.balance > 0;
@@ -33,33 +35,44 @@ export function GroupsListScreen() {
   return (
     <ScreenContainer>
       <AppTopBar />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerClassName="gap-5 px-5 pb-28 pt-5"
-      >
-        <NetBalanceCard netBalance={netBalance} />
+      {groups.length === 0 ? (
+        <EmptyState
+          buttonLabel="Crear un Grupo"
+          description="Crea tu primer grupo para empezar a dividir gastos con tus amigos."
+          onPress={navigateToNewGroup}
+          title="Aún no tienes movimientos"
+        />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="gap-5 px-5 pb-28 pt-5"
+        >
+          <NetBalanceCard netBalance={netBalance} />
 
-        <GroupsFilterTabs value={filter} onChange={setFilter} />
+          <GroupsFilterTabs value={filter} onChange={setFilter} />
 
-        <View className="gap-4">
-          {visibleGroups.map((group) => (
-            <GroupListCard
-              key={group.id}
-              group={group}
-              onPress={() =>
-                rootNavigation?.navigate("GroupDetail", { groupId: group.id })
-              }
-            />
-          ))}
-        </View>
+          <View className="gap-4">
+            {visibleGroups.map((group) => (
+              <GroupListCard
+                key={group.id}
+                group={group}
+                onPress={() =>
+                  rootNavigation?.navigate("GroupDetail", { groupId: group.id })
+                }
+              />
+            ))}
+          </View>
 
-        <CreateGroupCard onPress={() => rootNavigation?.navigate("NewGroup")} />
-      </ScrollView>
+          <CreateGroupCard onPress={navigateToNewGroup} />
+        </ScrollView>
+      )}
 
-      <FloatingCreateMenu
-        onCreateGroup={() => rootNavigation?.navigate("NewGroup")}
-        onCreateExpense={() => rootNavigation?.navigate("AddExpense")}
-      />
+      {groups.length > 0 ? (
+        <FloatingCreateMenu
+          onCreateGroup={navigateToNewGroup}
+          onCreateExpense={() => rootNavigation?.navigate("AddExpense")}
+        />
+      ) : null}
     </ScreenContainer>
   );
 }

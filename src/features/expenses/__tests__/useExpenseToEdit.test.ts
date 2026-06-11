@@ -1,6 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
 
-import { recentExpensesMock } from '../../groups/mocks/groupDetail.mock';
 import { GroupExpense } from '../../groups/types';
 import { useGroupsStore } from '../../groups/store/groupsStore';
 import { useExpenseToEdit } from '../hooks/useExpenseToEdit';
@@ -28,10 +27,10 @@ describe('useExpenseToEdit', () => {
     useExpensesStore.getState().reset();
   });
 
-  it('returns a valid seeded expense when it was not deleted', () => {
+  it('returns undefined for an unknown expense with no store entry', () => {
     const { result } = renderHook(() => useExpenseToEdit('group-1', 'e1'));
 
-    expect(result.current).toEqual(recentExpensesMock[0]);
+    expect(result.current).toBeUndefined();
   });
 
   it('returns a local stored expense for created groups', () => {

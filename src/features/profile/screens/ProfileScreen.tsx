@@ -6,16 +6,17 @@ import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { Card } from "../../../shared/ui/Card";
 import { Chip } from "../../../shared/ui/Chip";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
+import { formatAmount, formatCurrency } from "../../../shared/utils/formatAmount";
+import { useProfileData } from "../hooks/useProfileData";
 
-const profile = {
-  name: "Alex Thompson",
-  email: "alex.thompson@lumifinance.com",
-  status: "Verificado",
-  avatarUrl:
-    "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&h=240&fit=crop&crop=faces",
+type ProfileUser = {
+  avatarUrl: string;
+  email: string;
+  name: string;
+  status: string;
 };
 
-function ProfileCard() {
+function ProfileCard({ profile }: { profile: ProfileUser }) {
   return (
     <View className="items-center rounded-lg bg-white px-5 py-8 shadow-sm">
       <View className="relative mb-5">
@@ -72,6 +73,9 @@ function SummaryCard({
 }
 
 export function ProfileScreen() {
+  const { user, summary } = useProfileData();
+  const activeDebtsValue = summary.youOwe > 0 ? formatAmount(-summary.youOwe) : formatCurrency(0);
+
   return (
     <ScreenContainer>
       <AppTopBar />
@@ -80,20 +84,20 @@ export function ProfileScreen() {
         contentContainerClassName="gap-8 pb-28 pt-6"
       >
         <View className="gap-8 px-5">
-          <ProfileCard />
+          <ProfileCard profile={user} />
 
           <View className="flex-row gap-3">
             <SummaryCard
               title="Gasto Total"
-              value="$2.450"
-              detail="+12% vs mes pasado"
+              value={formatCurrency(summary.totalExpenses)}
+              detail={`${summary.totalExpenseCount} ${summary.totalExpenseCount === 1 ? "gasto" : "gastos"} registrados`}
               valueClassName="text-neutral900"
               detailTone="success"
             />
             <SummaryCard
               title="Deudas Activas"
-              value="-$142,50"
-              detail="3 pendientes de liquidar"
+              value={activeDebtsValue}
+              detail={`${summary.activeDebtGroupsCount} ${summary.activeDebtGroupsCount === 1 ? "grupo" : "grupos"} pendientes`}
               valueClassName="text-debt"
               detailTone="debt"
             />

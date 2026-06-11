@@ -4,7 +4,7 @@ import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
 import { Card } from '../../../shared/ui/Card';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { formatCurrency } from '../../../shared/utils/formatAmount';
-import { settleDebtsItemsMock, settleDebtsSummaryMock } from '../mocks/settleDebts.mock';
+import { useSettleDebts } from '../hooks/useSettleDebts';
 import { SettlementItem, SettlementPerson } from '../types';
 
 function SettlementAvatar({ person, tone }: { person: SettlementPerson; tone: 'success' | 'debt' | 'neutral' }) {
@@ -66,6 +66,8 @@ function SettlementRow({ item }: { item: SettlementItem }) {
 }
 
 export function SettleDebtsScreen() {
+  const { summary, items } = useSettleDebts();
+
   return (
     <ScreenContainer>
       <InternalScreenHeader title="Saldos" />
@@ -77,14 +79,14 @@ export function SettleDebtsScreen() {
           <View className="flex-row items-center justify-between gap-4">
             <View className="flex-1 gap-1">
               <Text className="text-base text-neutral700">Te deben</Text>
-              <Text className="text-4xl font-bold text-success">{formatCurrency(settleDebtsSummaryMock.owedToYou)}</Text>
+              <Text className="text-4xl font-bold text-success">{formatCurrency(summary.owedToYou)}</Text>
             </View>
 
             <View className="h-16 w-px bg-neutral200" />
 
             <View className="flex-1 gap-1">
               <Text className="text-base text-neutral700">Debes</Text>
-              <Text className="text-4xl font-bold text-debt">{formatCurrency(settleDebtsSummaryMock.youOwe)}</Text>
+              <Text className="text-4xl font-bold text-debt">{formatCurrency(summary.youOwe)}</Text>
             </View>
           </View>
         </Card>
@@ -92,11 +94,18 @@ export function SettleDebtsScreen() {
         <View className="gap-3">
           <Text className="text-2xl font-bold text-neutral900">Quién debe a quién</Text>
 
-          <View className="gap-3">
-            {settleDebtsItemsMock.map((item) => (
-              <SettlementRow key={item.id} item={item} />
-            ))}
-          </View>
+          {items.length === 0 ? (
+            <Card className="items-center gap-1 px-5 py-8">
+              <Text className="text-lg font-semibold text-neutral900">Estás al día</Text>
+              <Text className="text-base text-neutral500">No tenés deudas pendientes por saldar.</Text>
+            </Card>
+          ) : (
+            <View className="gap-3">
+              {items.map((item) => (
+                <SettlementRow key={item.id} item={item} />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>

@@ -168,21 +168,35 @@ describe('NewGroupScreen', () => {
     });
   });
 
-  it('keeps seeded members visible while adding invites in edit mode', async () => {
+  it('keeps existing invites visible while adding more in edit mode', async () => {
+    const createdGroup = useGroupsStore.getState().createGroup({
+      name: 'Viaje a Mendoza',
+      category: 'TRAVEL',
+      image: { type: 'default', uri: null },
+      invitedEmails: ['alex@example.com', 'sarah@example.com'],
+      owner: {
+        id: 'current-user',
+        name: 'Vos',
+        email: 'you@example.com',
+        initials: 'YO',
+        avatarUrl: null,
+      },
+    });
+
     jest.mocked(useRoute).mockReturnValue({
-      params: { groupId: 'group-1' },
+      params: { groupId: createdGroup.id },
     } as ReturnType<typeof useRoute>);
 
     render(<NewGroupScreen />);
 
-    expect(screen.getByText('Alex')).toBeTruthy();
-    expect(screen.getByText('Sarah')).toBeTruthy();
+    expect(screen.getByText('alex@example.com')).toBeTruthy();
+    expect(screen.getByText('sarah@example.com')).toBeTruthy();
 
     fireEvent.changeText(screen.getByTestId('invite-email-input'), 'friend@example.com');
     fireEvent.press(screen.getByTestId('invite-member-button'));
 
-    expect(screen.getByText('Alex')).toBeTruthy();
-    expect(screen.getByText('Sarah')).toBeTruthy();
+    expect(screen.getByText('alex@example.com')).toBeTruthy();
+    expect(screen.getByText('sarah@example.com')).toBeTruthy();
     expect(screen.getByText('friend@example.com')).toBeTruthy();
 
     await act(async () => {
@@ -190,14 +204,9 @@ describe('NewGroupScreen', () => {
     });
 
     await waitFor(() => {
-      expect(useGroupsStore.getState().groups.find((group) => group.id === 'group-1')).toMatchObject({
-        invitedEmails: ['friend@example.com'],
-        members: [
-          { id: 'm1', name: 'Alex' },
-          { id: 'm2', name: 'Sarah' },
-          { id: 'invite-0-friend@example.com', name: 'friend@example.com' },
-        ],
-        extraMembersCount: 2,
+      expect(useGroupsStore.getState().groups.find((group) => group.id === createdGroup.id)).toMatchObject({
+        invitedEmails: ['alex@example.com', 'sarah@example.com', 'friend@example.com'],
+        extraMembersCount: 1,
       });
       expect(navigationMock.goBack).toHaveBeenCalled();
     });

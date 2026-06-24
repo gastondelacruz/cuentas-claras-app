@@ -16,7 +16,7 @@ type AuthStore = {
 export const useAuthStore = create<AuthStore>()((set) => ({
   user: null,
   accessToken: null,
-  isAuthenticated: true,
+  isAuthenticated: false,
   setSession: (user, token) =>
     set({ user, accessToken: token, isAuthenticated: true }),
   clearSession: () =>

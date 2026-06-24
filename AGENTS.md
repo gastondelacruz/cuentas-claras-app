@@ -123,14 +123,24 @@ When performing these actions, read the corresponding skill first:
 | Adding web or DOM-backed Expo surfaces | `use-dom` |
 | Adding web/SEO-facing behavior | `seo` |
 
+## TDD Policy
+
+All feature work must follow TDD:
+
+1. **Write tests first** — before implementing a screen, component, hook, or store change, write the test cases that define the expected behavior.
+2. **Tests must cover** at minimum: render without crashing, key user interactions, navigation side effects, and store calls.
+3. **Never skip tests** on UI-only work. If it has behavior (navigation, state, user input), it has tests.
+
 ## Verification
 
-Before reporting work as complete, run:
+Before reporting work as complete — without exception — run the **full** test suite:
 
 ```bash
 npm test -- --runInBand
 npm run typecheck
 npx expo-doctor
 ```
+
+**All 3 commands must pass cleanly.** Running only a subset of tests (e.g. `--testPathPattern`) is not acceptable as a final gate. If any test fails, fix it before declaring done.
 
 For Expo Go compatibility, this app currently targets Expo SDK 54.

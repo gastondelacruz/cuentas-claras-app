@@ -84,14 +84,9 @@ describe('navigation shell', () => {
       </NavigationContainer>,
     );
 
-    expect(await findByText('OnboardingScreen')).toBeOnTheScreen();
+    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
-
-    act(() => {
-      navigationRef.navigate('Login');
-    });
-    expect(await findByText('LoginScreen')).toBeOnTheScreen();
 
     act(() => {
       navigationRef.navigate('Register');
@@ -137,14 +132,14 @@ describe('navigation shell', () => {
       </NavigationContainer>,
     );
 
-    expect(await findByText('OnboardingScreen')).toBeOnTheScreen();
+    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
 
     act(() => {
       useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
     });
 
     expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
-    expect(queryByText('OnboardingScreen')).toBeNull();
+    expect(queryByText('Bienvenido de nuevo')).toBeNull();
     expect(queryByText('HomeScreen')).toBeNull();
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
@@ -165,7 +160,7 @@ describe('navigation shell', () => {
       useAuthStore.getState().clearSession();
     });
 
-    expect(await findByText('OnboardingScreen')).toBeOnTheScreen();
+    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
     expect(queryByText('Viaje a la costa')).toBeNull();
   });
 });

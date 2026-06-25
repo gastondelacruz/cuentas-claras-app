@@ -1,5 +1,6 @@
 .atl/
 openspec/
+.playwright-mcp/
 # Dependencies
 node_modules/
 

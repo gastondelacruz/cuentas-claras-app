@@ -64,8 +64,7 @@ describe('navigation shell', () => {
   it('registers all route names expected by the bootstrap spec', () => {
     expect(registeredRouteNames).toEqual([
       'Onboarding',
-      'Login',
-      'Register',
+      'Auth',
       'Home',
       'GroupsList',
       'GroupDetail',
@@ -78,20 +77,20 @@ describe('navigation shell', () => {
 
   it('renders auth stack while unauthenticated', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
-    const { findByText } = render(
+    const { findAllByText, findByText } = render(
       <NavigationContainer ref={navigationRef}>
         <RootNavigator />
       </NavigationContainer>,
     );
 
-    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
 
     act(() => {
-      navigationRef.navigate('Register');
+      navigationRef.navigate('Auth', { initialTab: 'register' });
     });
-    expect(await findByText('RegisterScreen')).toBeOnTheScreen();
+    expect(await findByText('Crear Cuenta')).toBeOnTheScreen();
   });
 
   it('renders main tabs while authenticated', async () => {
@@ -126,20 +125,20 @@ describe('navigation shell', () => {
 
   it('navigates to registered stack screens and switches stacks when auth state changes', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
-    const { findByText, queryByText } = render(
+    const { findByText, findAllByText, queryByText } = render(
       <NavigationContainer ref={navigationRef}>
         <RootNavigator />
       </NavigationContainer>,
     );
 
-    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
 
     act(() => {
       useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
     });
 
     expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
-    expect(queryByText('Bienvenido de nuevo')).toBeNull();
+    expect(queryByText('Iniciar Sesión')).toBeNull();
     expect(queryByText('HomeScreen')).toBeNull();
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
@@ -160,7 +159,7 @@ describe('navigation shell', () => {
       useAuthStore.getState().clearSession();
     });
 
-    expect(await findByText('Bienvenido de nuevo')).toBeOnTheScreen();
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
     expect(queryByText('Viaje a la costa')).toBeNull();
   });
 });

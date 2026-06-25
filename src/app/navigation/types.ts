@@ -8,8 +8,7 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Login: undefined;
-  Register: undefined;
+  Auth: { initialTab?: 'login' | 'register' } | undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   GroupDetail: { groupId?: string } | undefined;
   NewGroup: { groupId?: string } | undefined;
@@ -19,8 +18,7 @@ export type RootStackParamList = {
 
 export const registeredRouteNames = [
   'Onboarding',
-  'Login',
-  'Register',
+  'Auth',
   'Home',
   'GroupsList',
   'GroupDetail',

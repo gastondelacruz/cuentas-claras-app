@@ -1,6 +1,6 @@
 import { client } from "../../../shared/api/client";
 
-export type LoginResponse = {
+export type AuthResponse = {
   data: {
     accessToken: string;
     refreshToken: string;
@@ -15,7 +15,20 @@ export type LoginResponse = {
 export async function loginUser(
   email: string,
   password: string,
-): Promise<LoginResponse> {
-  const response = await client.post<LoginResponse>("/v1/auth/login", { email, password });
+): Promise<AuthResponse> {
+  const response = await client.post<AuthResponse>("/v1/auth/login", { email, password });
+  return response.data;
+}
+
+export async function registerUser(
+  name: string,
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
+  const response = await client.post<AuthResponse>("/v1/auth/register", {
+    name,
+    email,
+    password,
+  });
   return response.data;
 }

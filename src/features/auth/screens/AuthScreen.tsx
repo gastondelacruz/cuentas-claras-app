@@ -48,6 +48,8 @@ export function AuthScreen({ route }: Props) {
     setPassword: setRegisterPassword,
     showPassword: showRegisterPassword,
     setShowPassword: setShowRegisterPassword,
+    errors: registerErrors,
+    isPending: isRegisterPending,
     handleRegister,
   } = useRegisterForm();
 
@@ -206,22 +208,43 @@ export function AuthScreen({ route }: Props) {
 
               {/* Name */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Nombre Completo</Text>
+                <Text
+                  testID="register-name-label"
+                  className={
+                    registerErrors.name
+                      ? 'text-red-600 text-sm font-medium mb-1'
+                      : 'text-[#1a1c1e] text-sm font-medium mb-1'
+                  }
+                >
+                  Nombre Completo
+                </Text>
                 <TextInput
-                  className="border border-[#bbcbbb] rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] mb-4"
+                  className={`border rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] ${registerErrors.name ? 'border-red-500' : 'border-[#bbcbbb] mb-4'}`}
                   placeholder="Juan García"
                   placeholderTextColor="#9ca3af"
                   autoCapitalize="words"
                   value={name}
                   onChangeText={setName}
                 />
+                {registerErrors.name ? (
+                  <Text className="text-red-500 text-xs mb-2">{registerErrors.name}</Text>
+                ) : null}
               </View>
 
               {/* Email */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Correo Electrónico</Text>
+                <Text
+                  testID="register-email-label"
+                  className={
+                    registerErrors.email
+                      ? 'text-red-600 text-sm font-medium mb-1'
+                      : 'text-[#1a1c1e] text-sm font-medium mb-1'
+                  }
+                >
+                  Correo Electrónico
+                </Text>
                 <TextInput
-                  className="border border-[#bbcbbb] rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] mb-4"
+                  className={`border rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] ${registerErrors.email ? 'border-red-500' : 'border-[#bbcbbb] mb-4'}`}
                   placeholder="juan@ejemplo.com"
                   placeholderTextColor="#9ca3af"
                   keyboardType="email-address"
@@ -229,12 +252,26 @@ export function AuthScreen({ route }: Props) {
                   value={registerEmail}
                   onChangeText={setRegisterEmail}
                 />
+                {registerErrors.email ? (
+                  <Text className="text-red-500 text-xs mb-2">{registerErrors.email}</Text>
+                ) : null}
               </View>
 
               {/* Password */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Contraseña</Text>
-                <View className="flex-row items-center border border-[#bbcbbb] rounded-xl bg-[#f3f3f6] mb-4">
+                <Text
+                  testID="register-password-label"
+                  className={
+                    registerErrors.password
+                      ? 'text-red-600 text-sm font-medium mb-1'
+                      : 'text-[#1a1c1e] text-sm font-medium mb-1'
+                  }
+                >
+                  Contraseña
+                </Text>
+                <View
+                  className={`flex-row items-center border rounded-xl bg-[#f3f3f6] ${registerErrors.password ? 'border-red-500' : 'border-[#bbcbbb] mb-4'}`}
+                >
                   <TextInput
                     className="flex-1 px-4 py-3 text-[#1a1c1e]"
                     placeholder="••••••••"
@@ -252,15 +289,23 @@ export function AuthScreen({ route }: Props) {
                     </Text>
                   </TouchableOpacity>
                 </View>
+                {registerErrors.password ? (
+                  <Text className="text-red-500 text-xs mb-2">{registerErrors.password}</Text>
+                ) : null}
               </View>
 
               {/* Register button */}
               <TouchableOpacity
-                className="bg-[#006d37] rounded-full py-4 w-full items-center mb-5"
+                className={`bg-[#006d37] rounded-full py-4 w-full items-center mb-5 ${isRegisterPending ? 'opacity-50' : ''}`}
                 onPress={handleRegister}
                 testID="register-button"
+                disabled={isRegisterPending}
               >
-                <Text className="text-white font-semibold text-base">Registrarse</Text>
+                {isRegisterPending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-semibold text-base">Registrarse</Text>
+                )}
               </TouchableOpacity>
 
               {/* Divider */}

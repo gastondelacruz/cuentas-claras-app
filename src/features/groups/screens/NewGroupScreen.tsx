@@ -1,218 +1,49 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as ImagePicker from 'expo-image-picker';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Camera, Contact, UserPlus, Users } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { RootStackParamList } from '../../../app/navigation/types';
-import { useAuthStore } from '../../../shared/store/authStore';
 import { colors } from '../../../shared/theme/colors';
 import { Input } from '../../../shared/ui/Input';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { groupCategoryVisuals } from '../components/groupCategory';
-import { groupsListMock } from '../mocks/groupsList.mock';
-import {
-  inviteEmailSchema,
-  inviteMembersRequiredMessage,
-  NewGroupFormValues,
-  newGroupFormSchema,
-} from '../schemas/new-group-schema';
-import { useGroupsStore } from '../store/groupsStore';
-import { GroupCategory, GroupImage } from '../types';
+import { useNewGroupForm } from '../hooks/useNewGroupForm';
+import { GroupCategory } from '../types';
 
 type GroupTypeOption = {
   category: GroupCategory;
   label: string;
 };
 
-type GroupMember = {
-  id: string;
-  name: string;
-  email: string;
-  initials: string;
-  avatarUrl: string | null;
-};
-
-type NewGroupRoute = RouteProp<RootStackParamList, 'NewGroup'>;
-type NewGroupNavigation = NativeStackNavigationProp<RootStackParamList, 'NewGroup'>;
-
 const groupTypeOptions: GroupTypeOption[] = [
-  { category: "TRAVEL", label: "Viaje" },
-  { category: "HOME", label: "Hogar" },
-  { category: "FOOD", label: "Comida" },
-  { category: "EVENT", label: "Evento" },
-  { category: "OTHER", label: "Otro" },
+  { category: 'TRAVEL', label: 'Viaje' },
+  { category: 'HOME', label: 'Hogar' },
+  { category: 'FOOD', label: 'Comida' },
+  { category: 'EVENT', label: 'Evento' },
+  { category: 'OTHER', label: 'Otro' },
 ];
 
-const defaultCurrentMember: GroupMember = {
-  id: 'current-user',
-  name: 'Vos',
-  email: 'jane.doe@example.com',
-  initials: 'YO',
-  avatarUrl: null,
-};
-
-const defaultGroupImage: GroupImage = { type: 'default', uri: null };
-
-function getInitialsFromValue(value: string) {
-  const tokens = value
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  if (tokens.length === 0) {
-    return 'YO';
-  }
-
-  return tokens
-    .slice(0, 2)
-    .map((token) => token[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
 export function NewGroupScreen() {
-  const navigation = useNavigation<NewGroupNavigation>();
-  const route = useRoute<NewGroupRoute>();
-  const authUser = useAuthStore((state) => state.user);
-  const groupToEdit = useGroupsStore((state) =>
-    state.groups.find((group) => group.id === route.params?.groupId),
-  );
-  const createGroup = useGroupsStore((state) => state.createGroup);
-  const updateGroup = useGroupsStore((state) => state.updateGroup);
-  const isEditing = Boolean(groupToEdit && route.params?.groupId);
-  const [selectedType, setSelectedType] = useState<GroupCategory>(groupToEdit?.category ?? 'TRAVEL');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteError, setInviteError] = useState<string | undefined>();
-  const [invitedEmails, setInvitedEmails] = useState<string[]>(groupToEdit?.invitedEmails ?? []);
-  const [groupImage, setGroupImage] = useState<GroupImage>(groupToEdit?.image ?? defaultGroupImage);
-  const [imageError, setImageError] = useState<string | undefined>();
-  const [membersError, setMembersError] = useState<string | undefined>();
-
-  const currentMember = useMemo<GroupMember>(() => {
-    const email = authUser?.email ?? defaultCurrentMember.email;
-
-    return {
-      id: authUser?.id ?? defaultCurrentMember.id,
-      name: defaultCurrentMember.name,
-      email,
-      initials: getInitialsFromValue(email.split('@')[0] ?? email),
-      avatarUrl: null,
-    };
-  }, [authUser]);
-
-  const { control, handleSubmit } = useForm<NewGroupFormValues>({
-    resolver: zodResolver(newGroupFormSchema),
-    mode: 'onSubmit',
-    reValidateMode: 'onBlur',
-    defaultValues: { groupName: groupToEdit?.name ?? '' },
-  });
-
-  const isSeededGroup = useMemo(
-    () => Boolean(groupToEdit && groupsListMock.some((group) => group.id === groupToEdit.id)),
-    [groupToEdit],
-  );
-
-  const readOnlyMembers = useMemo(
-    () => (isEditing && isSeededGroup ? groupsListMock.find((group) => group.id === groupToEdit?.id)?.members ?? [] : []),
-    [groupToEdit?.id, isEditing, isSeededGroup],
-  );
-  const totalMembers = readOnlyMembers.length + invitedEmails.length + 1;
-
-  const handleInvite = () => {
-    const parsedInvite = inviteEmailSchema.safeParse(inviteEmail);
-
-    if (!parsedInvite.success) {
-      setInviteError(parsedInvite.error.flatten().formErrors[0] ?? 'Ingresá un correo electrónico válido');
-      return;
-    }
-
-    const normalizedEmail = parsedInvite.data;
-
-    if (normalizedEmail === currentMember.email.toLowerCase()) {
-      setInviteError('Ya formás parte de este grupo');
-      return;
-    }
-
-    if (invitedEmails.includes(normalizedEmail)) {
-      setInviteError('Este correo ya está invitado');
-      return;
-    }
-
-    setInvitedEmails((current) => [...current, normalizedEmail]);
-    setInviteEmail('');
-    setInviteError(undefined);
-    setMembersError(undefined);
-  };
-
-  const handlePickImage = async () => {
-    setImageError(undefined);
-
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        setImageError('Necesitás permiso para ver tus fotos');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const selectedAsset = result.assets[0];
-
-      if (!selectedAsset?.uri) {
-        return;
-      }
-
-      setGroupImage({ type: 'uploaded', uri: selectedAsset.uri });
-    } catch {
-      setImageError('No pudimos abrir tus fotos');
-    }
-  };
-
-  const onSubmit = ({ groupName }: NewGroupFormValues) => {
-    if (invitedEmails.length === 0 && readOnlyMembers.length === 0) {
-      setMembersError(inviteMembersRequiredMessage);
-      return;
-    }
-
-    setMembersError(undefined);
-
-    if (isEditing && groupToEdit) {
-      updateGroup({
-        groupId: groupToEdit.id,
-        name: groupName.trim(),
-        category: selectedType,
-        image: groupImage,
-        invitedEmails,
-        owner: currentMember,
-      });
-      navigation.goBack();
-      return;
-    }
-
-    const createdGroup = createGroup({
-      name: groupName.trim(),
-      category: selectedType,
-      image: groupImage,
-      invitedEmails,
-      owner: currentMember,
-    });
-
-    navigation.replace('GroupDetail', { groupId: createdGroup.id });
-  };
+  const {
+    control,
+    handleSubmit,
+    isEditing,
+    selectedType,
+    setSelectedType,
+    inviteEmail,
+    setInviteEmail,
+    inviteError,
+    invitedEmails,
+    groupImage,
+    imageError,
+    membersError,
+    currentMember,
+    readOnlyMembers,
+    totalMembers,
+    handleInvite,
+    handlePickImage,
+    onSubmit,
+  } = useNewGroupForm();
 
   return (
     <ScreenContainer>
@@ -263,9 +94,7 @@ export function NewGroupScreen() {
         </View>
 
         <View className="gap-3">
-              <Text className="text-sm font-semibold text-neutral500">
-             Nombre del Grupo
-              </Text>
+          <Text className="text-sm font-semibold text-neutral500">Nombre del Grupo</Text>
           <Controller
             control={control}
             name="groupName"
@@ -306,8 +135,8 @@ export function NewGroupScreen() {
                   onPress={() => setSelectedType(category)}
                   className={
                     selected
-                      ? "h-12 flex-row items-center gap-3 rounded-full bg-green-400 px-5"
-                      : "h-12 flex-row items-center gap-3 rounded-full bg-neutral200 px-5"
+                      ? 'h-12 flex-row items-center gap-3 rounded-full bg-green-400 px-5'
+                      : 'h-12 flex-row items-center gap-3 rounded-full bg-neutral200 px-5'
                   }
                 >
                   <Icon color={colors.neutral900} size={20} strokeWidth={2.4} />
@@ -330,25 +159,17 @@ export function NewGroupScreen() {
               className="flex-row items-center gap-2"
             >
               <Contact color={colors.primary} size={20} strokeWidth={2.4} />
-              <Text className="text-base font-semibold text-primary">
-                Contactos
-              </Text>
+              <Text className="text-base font-semibold text-primary">Contactos</Text>
             </Pressable>
           </View>
 
           <View className="flex-row items-center gap-4 rounded-lg border border-neutral200 bg-white px-5 py-4">
             <View className="h-12 w-12 items-center justify-center rounded-full bg-primaryBg">
-              <Text className="text-base font-bold text-primary">
-                {currentMember.initials}
-              </Text>
+              <Text className="text-base font-bold text-primary">{currentMember.initials}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-lg font-bold text-neutral900">
-                {currentMember.name}
-              </Text>
-              <Text className="text-sm text-neutral500">
-                {currentMember.email}
-              </Text>
+              <Text className="text-lg font-bold text-neutral900">{currentMember.name}</Text>
+              <Text className="text-sm text-neutral500">{currentMember.email}</Text>
             </View>
           </View>
 
@@ -360,10 +181,6 @@ export function NewGroupScreen() {
               keyboardType="email-address"
               onChangeText={(value) => {
                 setInviteEmail(value);
-
-                if (inviteError) {
-                  setInviteError(undefined);
-                }
               }}
               placeholder="nombre@correo.com"
               placeholderTextColor={colors.neutral500}
@@ -393,8 +210,7 @@ export function NewGroupScreen() {
               <View className="items-center gap-3 rounded-lg border-2 border-dashed border-primary/30 px-6 py-10">
                 <UserPlus color={colors.neutral500} size={36} strokeWidth={2} />
                 <Text className="text-center text-lg text-neutral500">
-                  Aún no hay miembros invitados. Agregá correos para invitarlos al
-                  grupo.
+                  Aún no hay miembros invitados. Agregá correos para invitarlos al grupo.
                 </Text>
               </View>
             ) : (

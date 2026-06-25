@@ -1,26 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+} from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { RootStackParamList } from "../../../app/navigation/types";
-import { useAuthStore } from "../../../shared/store/authStore";
-import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { RootStackParamList } from '../../../app/navigation/types';
+import { AppTopBar } from '../../../shared/ui/AppTopBar';
+import { useLoginForm } from '../hooks/useLoginForm';
+import { useRegisterForm } from '../hooks/useRegisterForm';
 
-type Props = NativeStackScreenProps<RootStackParamList, "Auth">;
+type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
 export function AuthScreen({ route }: Props) {
-  const insets = useSafeAreaInsets();
-  const setSession = useAuthStore((s) => s.setSession);
-
-  const [activeTab, setActiveTab] = useState<"login" | "register">(
-    route.params?.initialTab ?? "login",
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>(
+    route.params?.initialTab ?? 'login',
   );
 
   useEffect(() => {
@@ -29,30 +27,29 @@ export function AuthScreen({ route }: Props) {
     }
   }, [route.params?.initialTab]);
 
-  // Login state
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const {
+    email: loginEmail,
+    setEmail: setLoginEmail,
+    password: loginPassword,
+    setPassword: setLoginPassword,
+    showPassword: showLoginPassword,
+    setShowPassword: setShowLoginPassword,
+    errors: loginErrors,
+    isPending: isLoginPending,
+    handleLogin,
+  } = useLoginForm();
 
-  // Register state
-  const [name, setName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-
-  function handleLogin() {
-    setSession(
-      { id: "mock-user", email: loginEmail || "user@example.com" },
-      "mock-token",
-    );
-  }
-
-  function handleRegister() {
-    setSession(
-      { id: "mock-user", email: registerEmail || "user@example.com" },
-      "mock-token",
-    );
-  }
+  const {
+    name,
+    setName,
+    email: registerEmail,
+    setEmail: setRegisterEmail,
+    password: registerPassword,
+    setPassword: setRegisterPassword,
+    showPassword: showRegisterPassword,
+    setShowPassword: setShowRegisterPassword,
+    handleRegister,
+  } = useRegisterForm();
 
   return (
     <ScrollView
@@ -60,16 +57,13 @@ export function AuthScreen({ route }: Props) {
       contentContainerStyle={{ paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
     >
-      {/* App bar */}
       <AppTopBar />
 
-      {/* Content */}
       <View className="px-4 py-8">
-        {/* Card */}
         <View
           className="bg-white rounded-2xl p-6"
           style={{
-            shadowColor: "#000",
+            shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
             shadowRadius: 8,
@@ -79,38 +73,29 @@ export function AuthScreen({ route }: Props) {
           {/* Tab switcher */}
           <View className="flex-row bg-[#eeeef0] rounded-full p-1 mb-6">
             <TouchableOpacity
-              className={`flex-1 py-2 items-center rounded-full ${activeTab === "login" ? "bg-white" : ""}`}
-              onPress={() => setActiveTab("login")}
+              className={`flex-1 py-2 items-center rounded-full ${activeTab === 'login' ? 'bg-white' : ''}`}
+              onPress={() => setActiveTab('login')}
             >
               <Text
-                className={
-                  activeTab === "login"
-                    ? "font-bold text-[#1a1c1e]"
-                    : "text-gray-500"
-                }
+                className={activeTab === 'login' ? 'font-bold text-[#1a1c1e]' : 'text-gray-500'}
               >
                 Entrar
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 py-2 items-center rounded-full ${activeTab === "register" ? "bg-white" : ""}`}
-              onPress={() => setActiveTab("register")}
+              className={`flex-1 py-2 items-center rounded-full ${activeTab === 'register' ? 'bg-white' : ''}`}
+              onPress={() => setActiveTab('register')}
             >
               <Text
-                className={
-                  activeTab === "register"
-                    ? "font-bold text-[#1a1c1e]"
-                    : "text-gray-500"
-                }
+                className={activeTab === 'register' ? 'font-bold text-[#1a1c1e]' : 'text-gray-500'}
               >
                 Registrarse
               </Text>
             </TouchableOpacity>
           </View>
 
-          {activeTab === "login" ? (
+          {activeTab === 'login' ? (
             <>
-              {/* Login heading */}
               <View className="mb-6">
                 <Text className="text-2xl font-bold text-[#1a1c1e] text-center">
                   Iniciar Sesión
@@ -122,11 +107,18 @@ export function AuthScreen({ route }: Props) {
 
               {/* Email */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">
+                <Text
+                  testID="email-label"
+                  className={
+                    loginErrors.email
+                      ? 'text-red-600 text-sm font-medium mb-1'
+                      : 'text-[#1a1c1e] text-sm font-medium mb-1'
+                  }
+                >
                   Correo Electrónico
                 </Text>
                 <TextInput
-                  className="border border-[#bbcbbb] rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] mb-4"
+                  className={`border rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] ${loginErrors.email ? 'border-red-500' : 'border-[#bbcbbb] mb-4'}`}
                   placeholder="juan@ejemplo.com"
                   placeholderTextColor="#9ca3af"
                   keyboardType="email-address"
@@ -134,14 +126,26 @@ export function AuthScreen({ route }: Props) {
                   value={loginEmail}
                   onChangeText={setLoginEmail}
                 />
+                {loginErrors.email ? (
+                  <Text className="text-red-500 text-xs mb-2">{loginErrors.email}</Text>
+                ) : null}
               </View>
 
               {/* Password */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">
+                <Text
+                  testID="password-label"
+                  className={
+                    loginErrors.password
+                      ? 'text-red-600 text-sm font-medium mb-1'
+                      : 'text-[#1a1c1e] text-sm font-medium mb-1'
+                  }
+                >
                   Contraseña
                 </Text>
-                <View className="flex-row items-center border border-[#bbcbbb] rounded-xl bg-[#f3f3f6] mb-4">
+                <View
+                  className={`flex-row items-center border rounded-xl bg-[#f3f3f6] ${loginErrors.password ? 'border-red-500' : 'border-[#bbcbbb] mb-4'}`}
+                >
                   <TextInput
                     className="flex-1 px-4 py-3 text-[#1a1c1e]"
                     placeholder="••••••••"
@@ -155,47 +159,46 @@ export function AuthScreen({ route }: Props) {
                     onPress={() => setShowLoginPassword((v) => !v)}
                   >
                     <Text className="text-gray-500 text-sm">
-                      {showLoginPassword ? "🙈" : "👁"}
+                      {showLoginPassword ? '🙈' : '👁'}
                     </Text>
                   </TouchableOpacity>
                 </View>
+                {loginErrors.password ? (
+                  <Text className="text-red-500 text-xs mb-2">{loginErrors.password}</Text>
+                ) : null}
               </View>
 
               {/* Login button */}
               <TouchableOpacity
-                className="bg-[#006d37] rounded-full py-4 w-full items-center mb-5"
+                className={`bg-[#006d37] rounded-full py-4 w-full items-center mb-5 ${isLoginPending ? 'opacity-50' : ''}`}
                 onPress={handleLogin}
                 testID="login-button"
+                disabled={isLoginPending}
               >
-                <Text className="text-white font-semibold text-base">
-                  Iniciar Sesión
-                </Text>
+                {isLoginPending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-semibold text-base">Iniciar Sesión</Text>
+                )}
               </TouchableOpacity>
 
               {/* Divider */}
               <View className="flex-row items-center mb-5">
                 <View className="flex-1 h-px bg-gray-200" />
-                <Text className="text-gray-400 mx-3 text-sm">
-                  o continuar con
-                </Text>
+                <Text className="text-gray-400 mx-3 text-sm">o continuar con</Text>
                 <View className="flex-1 h-px bg-gray-200" />
               </View>
 
               {/* Google */}
               <TouchableOpacity className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3">
                 <Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
-                <Text className="text-[#1a1c1e] font-medium">
-                  Continuar con Google
-                </Text>
+                <Text className="text-[#1a1c1e] font-medium">Continuar con Google</Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
-              {/* Register heading */}
               <View className="mb-6">
-                <Text className="text-2xl font-bold text-[#1a1c1e] text-center">
-                  Crear Cuenta
-                </Text>
+                <Text className="text-2xl font-bold text-[#1a1c1e] text-center">Crear Cuenta</Text>
                 <Text className="text-sm text-gray-500 text-center mt-1">
                   Únete a Cuentas Claras y gestiona tus finanzas sin estrés.
                 </Text>
@@ -203,9 +206,7 @@ export function AuthScreen({ route }: Props) {
 
               {/* Name */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">
-                  Nombre Completo
-                </Text>
+                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Nombre Completo</Text>
                 <TextInput
                   className="border border-[#bbcbbb] rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] mb-4"
                   placeholder="Juan García"
@@ -218,9 +219,7 @@ export function AuthScreen({ route }: Props) {
 
               {/* Email */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">
-                  Correo Electrónico
-                </Text>
+                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Correo Electrónico</Text>
                 <TextInput
                   className="border border-[#bbcbbb] rounded-xl px-4 py-3 bg-[#f3f3f6] text-[#1a1c1e] mb-4"
                   placeholder="juan@ejemplo.com"
@@ -234,9 +233,7 @@ export function AuthScreen({ route }: Props) {
 
               {/* Password */}
               <View>
-                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">
-                  Contraseña
-                </Text>
+                <Text className="text-[#1a1c1e] text-sm font-medium mb-1">Contraseña</Text>
                 <View className="flex-row items-center border border-[#bbcbbb] rounded-xl bg-[#f3f3f6] mb-4">
                   <TextInput
                     className="flex-1 px-4 py-3 text-[#1a1c1e]"
@@ -251,7 +248,7 @@ export function AuthScreen({ route }: Props) {
                     onPress={() => setShowRegisterPassword((v) => !v)}
                   >
                     <Text className="text-gray-500 text-sm">
-                      {showRegisterPassword ? "🙈" : "👁"}
+                      {showRegisterPassword ? '🙈' : '👁'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -263,26 +260,20 @@ export function AuthScreen({ route }: Props) {
                 onPress={handleRegister}
                 testID="register-button"
               >
-                <Text className="text-white font-semibold text-base">
-                  Registrarse
-                </Text>
+                <Text className="text-white font-semibold text-base">Registrarse</Text>
               </TouchableOpacity>
 
               {/* Divider */}
               <View className="flex-row items-center mb-5">
                 <View className="flex-1 h-px bg-gray-200" />
-                <Text className="text-gray-400 mx-3 text-sm">
-                  o continuar con
-                </Text>
+                <Text className="text-gray-400 mx-3 text-sm">o continuar con</Text>
                 <View className="flex-1 h-px bg-gray-200" />
               </View>
 
               {/* Google */}
               <TouchableOpacity className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3">
                 <Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
-                <Text className="text-[#1a1c1e] font-medium">
-                  Continuar con Google
-                </Text>
+                <Text className="text-[#1a1c1e] font-medium">Continuar con Google</Text>
               </TouchableOpacity>
             </>
           )}

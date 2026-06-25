@@ -13,6 +13,21 @@ import { useGroupsStore } from '../../features/groups/store/groupsStore';
 import type { GroupExpense } from '../../features/groups/types';
 import { useAuthStore } from '../../shared/store/authStore';
 
+jest.mock('../../features/auth/hooks/useLogin', () => ({
+  useLogin: jest.fn(() => ({
+    mutate: jest.fn(),
+    isPending: false,
+    error: null,
+  })),
+}));
+
+jest.mock('react-native-toast-message', () => ({
+  __esModule: true,
+  default: {
+    show: jest.fn(),
+  },
+}));
+
 const actualNavigation = jest.requireActual<typeof import('@react-navigation/native')>('@react-navigation/native');
 
 const mainTabLabels = ['Inicio', 'Grupos', 'Perfil'] as const;

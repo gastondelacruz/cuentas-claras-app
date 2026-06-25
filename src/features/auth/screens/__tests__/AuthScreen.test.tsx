@@ -4,6 +4,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '../../../../shared/store/authStore';
 import { setRefreshToken } from '../../../../shared/api/tokenStorage';
 import { useLogin } from '../../hooks/useLogin';
+import { useRegister } from '../../hooks/useRegister';
 import { AuthScreen } from '../AuthScreen';
 
 jest.mock('../../../../shared/store/authStore', () => ({
@@ -18,12 +19,17 @@ jest.mock('../../hooks/useLogin', () => ({
   useLogin: jest.fn(),
 }));
 
+jest.mock('../../hooks/useRegister', () => ({
+  useRegister: jest.fn(),
+}));
+
 jest.mock('react-native-toast-message', () => ({
   show: jest.fn(),
 }));
 
 const mockedUseAuthStore = jest.mocked(useAuthStore);
 const mockedUseLogin = jest.mocked(useLogin);
+const mockedUseRegister = jest.mocked(useRegister);
 const mockedToast = jest.mocked(Toast);
 const mockedSetRefreshToken = jest.mocked(setRefreshToken);
 const setSession = jest.fn();
@@ -40,6 +46,11 @@ beforeEach(() => {
     (selector as (s: unknown) => unknown)({ setSession }) as never,
   );
   mockedUseLogin.mockReturnValue({
+    mutate: jest.fn(),
+    isPending: false,
+    error: null,
+  } as never);
+  mockedUseRegister.mockReturnValue({
     mutate: jest.fn(),
     isPending: false,
     error: null,
@@ -75,13 +86,146 @@ describe('AuthScreen', () => {
     expect(screen.getAllByText('Iniciar Sesión').length).toBeGreaterThan(0);
   });
 
-  it('register submit button calls setSession', () => {
+  // --- Register validation tests ---
+
+  it('pressing register button with short name shows name validation error and name label turns red', async () => {
     renderAuth('register');
-    fireEvent.press(screen.getByTestId('register-button'));
-    expect(setSession).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'mock-user', name: 'Mock User' }),
-      'mock-token',
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+    expect(screen.getByText('El nombre debe tener al menos 2 caracteres')).toBeTruthy();
+    const nameLabel = screen.getByTestId('register-name-label');
+    expect(nameLabel.props.className).toContain('text-red-600');
+  });
+
+  it('pressing register button with invalid email shows email validation error', async () => {
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Juan');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'notanemail');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+    expect(screen.getByText('Ingresá un email válido')).toBeTruthy();
+  });
+
+  it('pressing register button with short password shows password error and password label turns red', async () => {
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Juan');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'user@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'short');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+    expect(screen.getByText('La contraseña debe tener al menos 8 caracteres')).toBeTruthy();
+    const passwordLabel = screen.getByTestId('register-password-label');
+    expect(passwordLabel.props.className).toContain('text-red-600');
+  });
+
+  it('pressing register button with valid data calls useRegister mutate', async () => {
+    const mockMutate = jest.fn();
+    mockedUseRegister.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      error: null,
+    } as never);
+
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { name: 'Gastón', email: 'gaston@example.com', password: 'validpassword' },
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
     );
+  });
+
+  it('when useRegister mutation succeeds, setSession is called with user data and tokens are stored', async () => {
+    let onSuccessCallback: ((response: {
+      data: {
+        accessToken: string;
+        refreshToken: string;
+        user: { id: string; name: string; email: string };
+      };
+    }) => void) | undefined;
+    const mockMutate = jest.fn((_vars, options) => {
+      onSuccessCallback = options?.onSuccess;
+    });
+    mockedUseRegister.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      error: null,
+    } as never);
+    mockedSetRefreshToken.mockResolvedValue();
+
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+
+    const mockResponse = {
+      data: {
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
+        user: {
+          id: 'user-123',
+          name: 'Gastón',
+          email: 'gaston@example.com',
+        },
+      },
+    };
+    await act(async () => {
+      await onSuccessCallback?.(mockResponse);
+    });
+
+    expect(mockedSetRefreshToken).toHaveBeenCalledWith('test-refresh-token');
+    expect(setSession).toHaveBeenCalledWith(
+      { id: 'user-123', name: 'Gastón', email: 'gaston@example.com' },
+      'test-access-token',
+    );
+  });
+
+  it('when useRegister mutation fails, shows error toast and does NOT call setSession', async () => {
+    let onErrorCallback: ((error: Error) => void) | undefined;
+    const mockMutate = jest.fn((_vars, options) => {
+      onErrorCallback = options?.onError;
+    });
+    mockedUseRegister.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      error: null,
+    } as never);
+
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+
+    const mockError = new Error('El email ya está registrado');
+    act(() => {
+      onErrorCallback?.(mockError);
+    });
+
+    expect(mockedToast.show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'error',
+        text1: 'Error al registrarse',
+        text2: 'Verificá tus datos',
+      }),
+    );
+    expect(setSession).not.toHaveBeenCalled();
   });
 
   // --- New validation tests (login tab) ---

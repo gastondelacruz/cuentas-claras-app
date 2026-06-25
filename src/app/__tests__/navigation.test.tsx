@@ -21,6 +21,14 @@ jest.mock('../../features/auth/hooks/useLogin', () => ({
   })),
 }));
 
+jest.mock('../../features/auth/hooks/useRegister', () => ({
+  useRegister: jest.fn(() => ({
+    mutate: jest.fn(),
+    isPending: false,
+    error: null,
+  })),
+}));
+
 jest.mock('react-native-toast-message', () => ({
   __esModule: true,
   default: {

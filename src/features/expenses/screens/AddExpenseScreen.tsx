@@ -1,32 +1,17 @@
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Check, ShoppingBag, Trash2, TrainFront, Utensils } from "lucide-react-native";
-import { CalendarDays, ChevronDown, Globe2 } from "lucide-react-native";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Check, ShoppingBag, Trash2, TrainFront, Utensils } from 'lucide-react-native';
+import { CalendarDays, ChevronDown, Globe2 } from 'lucide-react-native';
+import { Controller } from 'react-hook-form';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { RootStackParamList } from "../../../app/navigation/types";
-import { useGroupMembers } from "../../groups/hooks/useGroupMembers";
-import { ExpenseCategory } from "../../groups/types";
-import { useGroupsStore } from "../../groups/store/groupsStore";
-import { colors } from "../../../shared/theme/colors";
-import { Avatar } from "../../../shared/ui/Avatar";
-import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
-import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
-import { SelectModal, SelectOption } from "../components/SelectModal";
-import { useExpenseToEdit } from "../hooks/useExpenseToEdit";
-import { useExpensesStore } from "../store/expensesStore";
-import { buildGroupExpense } from "../utils/buildGroupExpense";
-import { formatAmountForInput } from "../utils/formatAmountForInput";
-import { maskAmountInput } from "../utils/maskAmountInput";
-import {
-  NewExpenseFormInput,
-  NewExpenseFormValues,
-  newExpenseFormSchema,
-} from "../schemas/new-expense-schema";
+import { colors } from '../../../shared/theme/colors';
+import { Avatar } from '../../../shared/ui/Avatar';
+import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
+import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { SelectModal } from '../components/SelectModal';
+import { useAddExpenseForm } from '../hooks/useAddExpenseForm';
+import { maskAmountInput } from '../utils/maskAmountInput';
+import { ExpenseCategory } from '../../groups/types';
 
 type Category = {
   label: string;
@@ -34,205 +19,58 @@ type Category = {
   value: ExpenseCategory;
 };
 
-type AddExpenseNavigation = NativeStackNavigationProp<RootStackParamList, "AddExpense">;
-type AddExpenseRoute = RouteProp<RootStackParamList, "AddExpense">;
-
 const categories: Category[] = [
-  { label: "Comida", Icon: Utensils, value: "FOOD" },
-  { label: "Compras", Icon: ShoppingBag, value: "SHOPPING" },
-  { label: "Transporte", Icon: TrainFront, value: "TRANSPORT" },
+  { label: 'Comida', Icon: Utensils, value: 'FOOD' },
+  { label: 'Compras', Icon: ShoppingBag, value: 'SHOPPING' },
+  { label: 'Transporte', Icon: TrainFront, value: 'TRANSPORT' },
 ];
 
 function formatExpenseDate(date: Date) {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   }).format(date);
 }
 
 export function AddExpenseScreen() {
-  const navigation = useNavigation<AddExpenseNavigation>();
-  const route = useRoute<AddExpenseRoute>();
-  const deletedGroupIds = useGroupsStore((state) => state.deletedGroupIds);
-  const groups = useGroupsStore((state) => state.groups);
-  const addExpense = useExpensesStore((state) => state.addExpense);
-  const updateExpense = useExpensesStore((state) => state.updateExpense);
-  const deleteExpense = useExpensesStore((state) => state.deleteExpense);
-
-  const expenseToEdit = useExpenseToEdit(route.params?.groupId, route.params?.expenseId);
-  const isEditing = Boolean(expenseToEdit);
-
   const {
     control,
     handleSubmit,
-    formState: { errors },
-  } = useForm<NewExpenseFormInput, unknown, NewExpenseFormValues>({
-    resolver: zodResolver(newExpenseFormSchema),
-    mode: "onSubmit",
-    reValidateMode: "onBlur",
-    defaultValues: {
-      amount: expenseToEdit ? formatAmountForInput(expenseToEdit.totalAmount) : "",
-      description: expenseToEdit?.title ?? "",
-    },
-  });
-
-  // In edit mode the group is fixed; in create mode it falls back to the first group.
-  const [groupId, setGroupId] = useState<string | undefined>(route.params?.groupId ?? groups[0]?.id);
-  const members = useGroupMembers(groupId);
-  const currentUserId = members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id;
-
-  const [paidById, setPaidById] = useState<string | undefined>(
-    expenseToEdit?.paidById ?? currentUserId,
-  );
-  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory>(
-    expenseToEdit?.category ?? "FOOD",
-  );
-  const [date, setDate] = useState<Date>(() =>
-    expenseToEdit ? new Date(expenseToEdit.date) : new Date(),
-  );
-  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>(() =>
-    expenseToEdit ? expenseToEdit.participantIds : members.map((member) => member.id),
-  );
-  const [paidByOpen, setPaidByOpen] = useState(false);
-  const [groupOpen, setGroupOpen] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [groupError, setGroupError] = useState<string | undefined>();
-
-  // The member-sync effect resets payer/participants to the group's members.
-  // Skip its initial run while editing so the prefilled values are preserved;
-  // the group cannot change in edit mode, so it never needs to run afterwards.
-  const skipMemberSync = useRef(isEditing);
-
-  // When the selected group changes, reset participants/payer to its members.
-  useEffect(() => {
-    if (skipMemberSync.current) {
-      skipMemberSync.current = false;
-      return;
-    }
-
-    setSelectedParticipantIds(members.map((member) => member.id));
-    setPaidById(members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id);
-  }, [members]);
-
-  const paidByOptions = useMemo<SelectOption[]>(
-    () => members.map((member) => ({ id: member.id, label: member.name })),
-    [members],
-  );
-
-  const groupOptions = useMemo<SelectOption[]>(
-    () => groups.map((group) => ({ id: group.id, label: group.name, sublabel: group.description })),
-    [groups],
-  );
-
-  const selectedGroup = useMemo(
-    () => groups.find((group) => group.id === groupId),
-    [groupId, groups],
-  );
-
-  const paidByLabel = members.find((member) => member.id === paidById)?.name ?? "Seleccioná quién pagó";
-  const groupLabel = groups.find((group) => group.id === groupId)?.name ?? "Seleccioná un grupo";
-  const allParticipantsSelected =
-    members.length > 0 && selectedParticipantIds.length === members.length;
-
-  const toggleParticipant = (id: string) => {
-    setSelectedParticipantIds((current) => {
-      if (current.includes(id)) {
-        if (current.length === 1) {
-          return current;
-        }
-
-        return current.filter((participantId) => participantId !== id);
-      }
-
-      return [...current, id];
-    });
-  };
-
-  const selectAllParticipants = () => {
-    setSelectedParticipantIds(members.map((member) => member.id));
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
-
-    if (event.type === "set" && selectedDate) {
-      setDate(selectedDate);
-    }
-  };
-
-  const onSubmit = (values: NewExpenseFormValues) => {
-    if (!groupId) {
-      setGroupError("Seleccioná un grupo para el gasto");
-      return;
-    }
-
-    if (!selectedGroup || deletedGroupIds.includes(groupId)) {
-      setGroupId(undefined);
-      setGroupError("El grupo seleccionado ya no está disponible. Elegí otro grupo.");
-      return;
-    }
-
-    setGroupError(undefined);
-
-    const expense = buildGroupExpense({
-      id: expenseToEdit?.id,
-      amount: values.amount,
-      description: values.description,
-      category: selectedCategory,
-      date,
-      paidById: paidById ?? currentUserId ?? "",
-      participantIds: selectedParticipantIds,
-      participants: members,
-      currentUserId: currentUserId ?? "",
-      now: new Date(),
-    });
-
-    if (isEditing) {
-      updateExpense(groupId, expense);
-      navigation.goBack();
-      return;
-    }
-
-    addExpense(groupId, expense);
-    if (route.params?.groupId) {
-      if (route.params.groupId !== groupId) {
-        navigation.popTo('GroupDetail', { groupId });
-        return;
-      }
-
-      navigation.goBack();
-      return;
-    }
-
-    navigation.replace("GroupDetail", { groupId });
-  };
-
-  const onDelete = () => {
-    if (!expenseToEdit || !groupId) {
-      return;
-    }
-
-    Alert.alert(
-      "Eliminar gasto",
-      "¿Seguro que querés eliminar este gasto? Esta acción no se puede deshacer.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => {
-            deleteExpense(groupId, expenseToEdit.id);
-            navigation.goBack();
-          },
-        },
-      ],
-    );
-  };
+    errors,
+    isEditing,
+    groupId,
+    setGroupId,
+    groupLabel,
+    groupOptions,
+    groupOpen,
+    setGroupOpen,
+    groupError,
+    setGroupError,
+    paidById,
+    setPaidById,
+    paidByLabel,
+    paidByOptions,
+    paidByOpen,
+    setPaidByOpen,
+    selectedCategory,
+    setSelectedCategory,
+    date,
+    showDatePicker,
+    setShowDatePicker,
+    onDateChange,
+    members,
+    selectedParticipantIds,
+    allParticipantsSelected,
+    toggleParticipant,
+    selectAllParticipants,
+    onSubmit,
+    onDelete,
+  } = useAddExpenseForm();
 
   return (
     <ScreenContainer>
-      <InternalScreenHeader title={isEditing ? "Editar gasto" : "Crear gasto"} />
+      <InternalScreenHeader title={isEditing ? 'Editar gasto' : 'Crear gasto'} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -248,7 +86,7 @@ export function AddExpenseScreen() {
                 lineHeight: 60,
                 includeFontPadding: false,
                 padding: 0,
-                textAlignVertical: "center",
+                textAlignVertical: 'center',
               }}
             >
               $
@@ -267,10 +105,10 @@ export function AddExpenseScreen() {
                     fontSize: 48,
                     lineHeight: 60,
                     height: 60,
-                    fontVariant: ["tabular-nums"],
+                    fontVariant: ['tabular-nums'],
                     padding: 0,
                     includeFontPadding: false,
-                    textAlignVertical: "center",
+                    textAlignVertical: 'center',
                   }}
                   onBlur={field.onBlur}
                   onChangeText={(value) => field.onChange(maskAmountInput(value))}
@@ -332,8 +170,8 @@ export function AddExpenseScreen() {
                   accessibilityState={{ selected }}
                   className={
                     selected
-                      ? "h-12 flex-row items-center gap-3 rounded-full bg-green-400 px-5"
-                      : "h-12 flex-row items-center gap-3 rounded-full bg-neutral200 px-5"
+                      ? 'h-12 flex-row items-center gap-3 rounded-full bg-green-400 px-5'
+                      : 'h-12 flex-row items-center gap-3 rounded-full bg-neutral200 px-5'
                   }
                   onPress={() => setSelectedCategory(value)}
                   testID={`expense-category-${value}`}
@@ -390,8 +228,8 @@ export function AddExpenseScreen() {
               <Text
                 className={
                   allParticipantsSelected
-                    ? "text-base font-semibold text-neutral500"
-                    : "text-base font-semibold text-primary"
+                    ? 'text-base font-semibold text-neutral500'
+                    : 'text-base font-semibold text-primary'
                 }
               >
                 Seleccionar todos
@@ -408,11 +246,11 @@ export function AddExpenseScreen() {
                   key={member.id}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked }}
-                  accessibilityLabel={`${member.name}, ${checked ? "incluido en el gasto" : "excluido del gasto"}`}
+                  accessibilityLabel={`${member.name}, ${checked ? 'incluido en el gasto' : 'excluido del gasto'}`}
                   className={
                     checked
-                      ? "h-24 flex-row items-center gap-4 rounded-lg border border-primary/35 bg-white px-5"
-                      : "h-24 flex-row items-center gap-4 rounded-lg border border-neutral200 bg-white px-5"
+                      ? 'h-24 flex-row items-center gap-4 rounded-lg border border-primary/35 bg-white px-5'
+                      : 'h-24 flex-row items-center gap-4 rounded-lg border border-neutral200 bg-white px-5'
                   }
                   onPress={() => toggleParticipant(member.id)}
                   testID={`expense-participant-${member.id}`}
@@ -427,14 +265,14 @@ export function AddExpenseScreen() {
                   <View className="flex-1">
                     <Text className="text-lg font-bold text-neutral900">{member.name}</Text>
                     <Text className="text-sm text-neutral900">
-                      {checked ? "Incluido en el gasto" : "Excluido del gasto"}
+                      {checked ? 'Incluido en el gasto' : 'Excluido del gasto'}
                     </Text>
                   </View>
                   <View
                     className={
                       checked
-                        ? "h-8 w-8 items-center justify-center rounded-md bg-primary"
-                        : "h-8 w-8 items-center justify-center rounded-md border-2 border-neutral200 bg-white"
+                        ? 'h-8 w-8 items-center justify-center rounded-md bg-primary'
+                        : 'h-8 w-8 items-center justify-center rounded-md border-2 border-neutral200 bg-white'
                     }
                   >
                     {checked ? <Check color={colors.white} size={22} strokeWidth={3} /> : null}
@@ -447,13 +285,13 @@ export function AddExpenseScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={isEditing ? "Guardar cambios" : "Crear gasto"}
+          accessibilityLabel={isEditing ? 'Guardar cambios' : 'Crear gasto'}
           className="mt-2 h-20 items-center justify-center rounded-lg bg-green-400"
           onPress={handleSubmit(onSubmit)}
           testID="create-expense-button"
         >
           <Text className="text-xl font-bold text-neutral900">
-            {isEditing ? "Guardar cambios" : "Crear Gasto"}
+            {isEditing ? 'Guardar cambios' : 'Crear Gasto'}
           </Text>
         </Pressable>
 
@@ -513,7 +351,7 @@ export function AddExpenseScreen() {
 type FieldButtonProps = {
   label: string;
   value: string;
-  icon: "chevron" | "group" | "calendar";
+  icon: 'chevron' | 'group' | 'calendar';
   onPress: () => void;
   disabled?: boolean;
   testID?: string;
@@ -530,20 +368,20 @@ function FieldButton({ label, value, icon, onPress, disabled = false, testID }: 
         disabled={disabled}
         className={
           disabled
-            ? "h-16 flex-row items-center rounded-lg border border-neutral200 bg-neutral200/40 px-5"
-            : "h-16 flex-row items-center rounded-lg border border-primary/35 bg-white px-5"
+            ? 'h-16 flex-row items-center rounded-lg border border-neutral200 bg-neutral200/40 px-5'
+            : 'h-16 flex-row items-center rounded-lg border border-primary/35 bg-white px-5'
         }
         onPress={onPress}
         testID={testID}
       >
         <Text className="flex-1 text-lg text-neutral900">{value}</Text>
-        {icon === "chevron" ? (
+        {icon === 'chevron' ? (
           <ChevronDown color={colors.neutral900} size={24} strokeWidth={2.4} />
         ) : null}
-        {icon === "group" ? (
+        {icon === 'group' ? (
           <Globe2 color={colors.neutral900} size={24} strokeWidth={2.4} />
         ) : null}
-        {icon === "calendar" ? (
+        {icon === 'calendar' ? (
           <CalendarDays color={colors.neutral900} size={24} strokeWidth={2.4} />
         ) : null}
       </Pressable>

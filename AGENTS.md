@@ -1,119 +1,54 @@
-# Cuentas Claras App — Agent Instructions
+# Cuentas Claras App — AI Agent Ruleset
 
-## Architecture
+This is a React Native Expo app for shared expense management. All product behavior lives in `src/features/<domain>/`; shared infrastructure lives in `src/shared/`; navigation and app shell live in `src/app/`.
 
-This project uses **Screaming Architecture**: the source tree must communicate the product domains first, not technical layers first.
+> **Skills Reference**: For detailed patterns, load these skills before changing code:
+>
+> - [`accessibility`](skills/accessibility/SKILL.md) — mobile a11y: roles, labels, focus, screen reader
+> - [`building-native-ui`](skills/building-native-ui/SKILL.md) — Expo Router, React Native UI, platform-aware components
+> - [`composition-patterns`](skills/composition-patterns/SKILL.md) — compound components, render props, context providers
+> - [`design-mobile-apps`](skills/design-mobile-apps/SKILL.md) — mobile-first product and interaction design
+> - [`expo-api-routes`](skills/expo-api-routes/SKILL.md) — Expo API Routes and server-side route patterns
+> - [`expo-cicd-workflows`](skills/expo-cicd-workflows/SKILL.md) — EAS CI/CD workflow design and automation
+> - [`expo-deployment`](skills/expo-deployment/SKILL.md) — EAS builds, submission, release, deployment
+> - [`expo-dev-client`](skills/expo-dev-client/SKILL.md) — Expo Dev Client setup and native development
+> - [`expo-tailwind-setup`](skills/expo-tailwind-setup/SKILL.md) — Expo + NativeWind/Tailwind setup and config
+> - [`frontend-design`](skills/frontend-design/SKILL.md) — production-grade UI design and visual hierarchy
+> - [`native-data-fetching`](skills/native-data-fetching/SKILL.md) — fetch API, error handling, auth tokens, env vars
+> - [`nodejs-backend-patterns`](skills/nodejs-backend-patterns/SKILL.md) — backend API architecture (when backend work is involved)
+> - [`nodejs-best-practices`](skills/nodejs-best-practices/SKILL.md) — Node.js conventions, runtime, maintainability
+> - [`project-architecture`](skills/project-architecture/SKILL.md) — Screaming Architecture, file organization, feature domains, shared infrastructure
+> - [`react-best-practices`](skills/react-best-practices/SKILL.md) — React component design, hooks, re-render optimization
+> - [`react-hook-form`](skills/react-hook-form/SKILL.md) — form state, validation integration, performance
+> - [`react-query`](skills/react-query/SKILL.md) — TanStack Query: useQuery, useMutation, QueryClient, queryKey design
+> - [`seo`](skills/seo/SKILL.md) — SEO guidance if web surfaces are introduced
+> - [`tailwind-css-patterns`](skills/tailwind-css-patterns/SKILL.md) — NativeWind/Tailwind class patterns and conventions
+> - [`typescript-advanced-types`](skills/typescript-advanced-types/SKILL.md) — generics, conditional types, utility types
+> - [`upgrading-expo`](skills/upgrading-expo/SKILL.md) — Expo SDK upgrades and dependency compatibility
+> - [`use-dom`](skills/use-dom/SKILL.md) — Expo DOM components for DOM-backed UI on native
+> - [`zod`](skills/zod/SKILL.md) — Zod schemas, safeParse, z.infer, validation error display
 
-Keep the main structure as:
+---
 
-```text
-src/
-  app/                 # App shell: providers, navigation, root layout, error boundaries
-  features/            # Product domains and screens
-    auth/
-    groups/
-    expenses/
-    profile/
-  shared/              # Cross-feature infrastructure and reusable building blocks
-    api/
-    hooks/
-    store/
-    theme/
-    ui/
-    utils/
-```
+## Auto-invoke Skills
 
-## Hard Rules
-
-- Ask the user before making any code changes. Explain the intended scope first and wait for approval.
-- Ask the user before creating commits. Never commit, amend, or push without explicit approval for that exact action.
-- Put product behavior inside `src/features/<domain>/`.
-- Put app composition only inside `src/app/`.
-- Put reusable, domain-agnostic code inside `src/shared/`.
-- Do not create generic top-level layer folders like `components/`, `screens/`, `services/`, or `utils/` under `src/`.
-- Do not move feature-specific logic into `shared/` just because two files need it once.
-- UI copy, code comments, identifiers, and technical artifacts default to English unless the user explicitly requests otherwise.
-- Use NativeWind `className` for styling. Avoid ad-hoc inline styles except for runtime-only values that cannot be expressed as tokens.
-- Keep design tokens centralized in `src/shared/theme/` and `tailwind.config.js`.
-- Keep navigation types centralized in `src/app/navigation/types.ts`.
-
-## Feature Folder Convention
-
-Use this shape when a feature grows:
-
-```text
-src/features/<domain>/
-  screens/             # Route-level screens for this domain
-  components/          # Domain-specific UI components
-  hooks/               # Domain-specific hooks
-  api/                 # Domain-specific API calls
-  store/               # Domain-specific state, only when needed
-  schemas/             # zod schemas and validation rules
-  types.ts             # Domain types
-```
-
-Only create folders when they are needed. Avoid empty architecture theater.
-
-## Current Bootstrap Scope
-
-The current implementation is an Expo React Native bootstrap shell. Screens are placeholders by design. The next product work should replace placeholders using the mockups in the sibling `pantallas/` directory.
-
-## Available Skills
-
-Use local skills for detailed patterns on demand. Before working on a specialized task, check whether a matching skill exists and read its `SKILL.md` before making decisions or changes.
-
-Skill locations:
-
-```text
-.agents/skills/<skill-name>/SKILL.md
-.claude/skills/<skill-name>/SKILL.md
-```
-
-`AGENTS.md` remains the project authority. If a skill conflicts with the hard rules in this file, follow `AGENTS.md` and ask the user before proceeding.
-
-### Project Skills
-
-| Skill | Use for |
-|-------|---------|
-| `accessibility` | Mobile accessibility patterns, roles, labels, focus, and screen reader behavior. |
-| `building-native-ui` | React Native UI implementation and platform-aware mobile components. |
-| `composition-patterns` | Component composition, container/presentational boundaries, and reusable APIs. |
-| `design-mobile-apps` | Mobile-first product and interaction design guidance. |
-| `expo-api-routes` | Expo API Routes and server-side route patterns. |
-| `expo-cicd-workflows` | Expo CI/CD workflow design and automation. |
-| `expo-deployment` | Expo builds, submission, release, and deployment workflows. |
-| `expo-dev-client` | Expo Dev Client setup and native development workflows. |
-| `expo-tailwind-setup` | Expo + NativeWind/Tailwind setup and configuration. |
-| `frontend-design` | Frontend UX, layout, hierarchy, and visual design patterns. |
-| `native-data-fetching` | Data fetching patterns for React Native apps. |
-| `nodejs-backend-patterns` | Backend API and Node.js architecture patterns when backend work is involved. |
-| `nodejs-best-practices` | Node.js conventions, runtime behavior, and maintainability. |
-| `react-best-practices` | React component design, hooks, effects, and state patterns. |
-| `react-hook-form` | Form state, validation integration, and form performance. |
-| `seo` | SEO-related guidance if web surfaces are introduced. |
-| `tailwind-css-patterns` | Tailwind/NativeWind class patterns and styling conventions. |
-| `typescript-advanced-types` | TypeScript type modeling, inference, generics, and utility types. |
-| `upgrading-expo` | Expo SDK upgrades and compatibility work. |
-| `use-dom` | Expo `use dom` patterns when mixing DOM-backed UI. |
-| `zod` | Zod schemas, validation rules, and typed parsing. |
-
-### Auto-invoke Skills
-
-When performing these actions, read the corresponding skill first:
+When performing these actions, **ALWAYS** read the corresponding skill first:
 
 | Action | Skill |
-|--------|-------|
+|---|---|
+| Creating new files, features, or deciding where code lives | `project-architecture` |
 | Adding or changing accessibility behavior | `accessibility` |
 | Building or modifying mobile UI screens/components | `building-native-ui` |
 | Designing screen layouts or product flows from mockups | `design-mobile-apps` |
 | Creating or refactoring reusable React components | `composition-patterns` |
 | Writing or refactoring React hooks/components | `react-best-practices` |
+| Fetching, caching, or synchronizing remote data | `react-query`, `native-data-fetching` |
+| Writing useQuery, useMutation, or QueryClient setup | `react-query` |
 | Creating forms or form validation flows | `react-hook-form`, `zod` |
 | Creating or changing Zod schemas | `zod` |
 | Modeling complex TypeScript types | `typescript-advanced-types` |
 | Working with NativeWind/Tailwind classes | `tailwind-css-patterns` |
 | Changing NativeWind, Tailwind, Babel, or Metro styling setup | `expo-tailwind-setup` |
-| Fetching, caching, or synchronizing remote data | `native-data-fetching` |
 | Upgrading Expo SDK or Expo-managed dependencies | `upgrading-expo` |
 | Working with Expo Dev Client | `expo-dev-client` |
 | Preparing builds, releases, or submissions | `expo-deployment` |
@@ -122,25 +57,51 @@ When performing these actions, read the corresponding skill first:
 | Introducing backend/API implementation patterns | `nodejs-backend-patterns`, `nodejs-best-practices` |
 | Adding web or DOM-backed Expo surfaces | `use-dom` |
 | Adding web/SEO-facing behavior | `seo` |
+| Creating or improving UI design | `frontend-design` |
+| Fixing a bug | TDD rules below + relevant skill |
+| Implementing a feature | TDD rules below + `project-architecture` + relevant skill |
+| Refactoring code | TDD rules below + `project-architecture` + relevant skill |
 
-## TDD Policy
+---
 
-All feature work must follow TDD:
+## CRITICAL RULES — NON-NEGOTIABLE
 
-1. **Write tests first** — before implementing a screen, component, hook, or store change, write the test cases that define the expected behavior.
-2. **Tests must cover** at minimum: render without crashing, key user interactions, navigation side effects, and store calls.
-3. **Never skip tests** on UI-only work. If it has behavior (navigation, state, user input), it has tests.
+### TDD
 
-## Verification
+- ALWAYS work test-first for behavior changes: write or update the failing test BEFORE implementation.
+- ALWAYS run the full test suite before reporting done — never a subset.
+- NEVER weaken TypeScript, lint, or test configuration to make a test pass.
+- Tests must cover at minimum: render without crashing, key user interactions, navigation side effects, and store/query calls.
+- NEVER skip tests on UI-only work. If it has behavior (navigation, state, user input), it has tests.
 
-Before reporting work as complete — without exception — run the **full** test suite:
+---
+
+## Commands
+
+After code changes, run all three — all must pass before reporting done:
 
 ```bash
-npm test -- --runInBand
-npm run typecheck
-npx expo-doctor
+npm test -- --runInBand     # Full test suite
+npm run typecheck           # TypeScript check
+npx expo-doctor             # Expo compatibility check
 ```
 
-**All 3 commands must pass cleanly.** Running only a subset of tests (e.g. `--testPathPattern`) is not acceptable as a final gate. If any test fails, fix it before declaring done.
+For development:
 
-For Expo Go compatibility, this app currently targets Expo SDK 54.
+```bash
+npx expo start              # Start dev server
+npx expo start --ios        # iOS simulator
+npx expo start --android    # Android emulator
+```
+
+---
+
+## QA Checklist
+
+- [ ] Relevant skill files were read before implementation.
+- [ ] Context7 was queried for live library docs before applying skill rules.
+- [ ] `project-architecture` skill was consulted before creating or moving files.
+- [ ] TDD was followed: failing test written before implementation.
+- [ ] `npm test -- --runInBand` passes (all tests green).
+- [ ] `npm run typecheck` passes with no errors.
+- [ ] `npx expo-doctor` passes with no errors.

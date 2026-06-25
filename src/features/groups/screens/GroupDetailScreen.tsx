@@ -1,12 +1,11 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { RootStackParamList } from '../../../app/navigation/types';
 import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
-import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { BalanceMiniCards } from '../components/BalanceMiniCards';
 import { ExpenseRow } from '../components/ExpenseRow';
 import { GroupActionButtons } from '../components/GroupActionButtons';
@@ -14,21 +13,18 @@ import { GroupDetailHeader } from '../components/GroupDetailHeader';
 import { GroupTotalCard } from '../components/GroupTotalCard';
 import { MemberBalanceBubble } from '../components/MemberBalanceBubble';
 import { useGroupDetail } from '../hooks/useGroupDetail';
-import { useGroupsStore } from '../store/groupsStore';
+import { useGroupDetailActions } from '../hooks/useGroupDetailActions';
 
 type GroupDetailRoute = RouteProp<RootStackParamList, 'GroupDetail'>;
 type GroupDetailNavigation = NativeStackNavigationProp<RootStackParamList>;
 
-// How many expenses the "Gastos Recientes" section shows before the list can be
-// expanded to reveal the full set.
 const RECENT_EXPENSES_LIMIT = 3;
 
 export function GroupDetailScreen() {
   const navigation = useNavigation<GroupDetailNavigation>();
   const route = useRoute<GroupDetailRoute>();
   const { group, memberBalances, recentExpenses, totalExpensesCount } = useGroupDetail(route.params?.groupId);
-  const deleteGroup = useGroupsStore((state) => state.deleteGroup);
-  const deleteGroupExpenses = useExpensesStore((state) => state.deleteGroupExpenses);
+  const { handleOpenSettings, handleOpenBalances } = useGroupDetailActions(group?.id ?? '');
   const [showAllExpenses, setShowAllExpenses] = useState(false);
 
   if (!group) {
@@ -56,40 +52,6 @@ export function GroupDetailScreen() {
     showAllExpenses || !canExpandExpenses
       ? recentExpenses
       : recentExpenses.slice(0, RECENT_EXPENSES_LIMIT);
-
-  const handleConfirmDelete = () => {
-    Alert.alert('Eliminar grupo', '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () => {
-          deleteGroup(group.id);
-          deleteGroupExpenses(group.id);
-          navigation.goBack();
-        },
-      },
-    ]);
-  };
-
-  const handleOpenSettings = () => {
-    Alert.alert('Opciones del grupo', 'Elegí qué querés hacer con este grupo.', [
-      {
-        text: 'Editar grupo',
-        onPress: () => navigation.navigate('NewGroup', { groupId: group.id }),
-      },
-      {
-        text: 'Eliminar grupo',
-        style: 'destructive',
-        onPress: handleConfirmDelete,
-      },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
-  };
-
-  const handleOpenBalances = () => {
-    navigation.navigate('SettleDebts');
-  };
 
   return (
     <ScreenContainer>

@@ -2,9 +2,10 @@ import { useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 
 import { MainTabParamList, RootStackParamList } from "../../../app/navigation/types";
+import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { FloatingCreateMenu } from "../../../shared/ui/FloatingCreateMenu";
@@ -20,7 +21,7 @@ type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 export function GroupsListScreen() {
   const navigation = useNavigation<GroupsListNavigation>();
-  const { groups, netBalance } = useGroupsList();
+  const { groups, netBalance, isLoading, isError } = useGroupsList();
   const [filter, setFilter] = useState<GroupsFilter>("all");
 
   const rootNavigation = navigation.getParent?.<RootNavigation>();
@@ -35,7 +36,17 @@ export function GroupsListScreen() {
   return (
     <ScreenContainer>
       <AppTopBar />
-      {groups.length === 0 ? (
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center p-6" accessibilityRole="progressbar" accessibilityLabel="Cargando grupos">
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text className="mt-4 text-base font-semibold text-neutral500">Cargando grupos...</Text>
+        </View>
+      ) : isError ? (
+        <View className="flex-1 items-center justify-center gap-3 px-7 pb-12 pt-8" accessibilityRole="alert">
+          <Text className="text-center text-3xl font-bold text-neutral900">No pudimos cargar tus grupos</Text>
+          <Text className="text-center text-base leading-6 text-neutral600">Intentá nuevamente en unos minutos.</Text>
+        </View>
+      ) : groups.length === 0 ? (
         <EmptyState
           buttonLabel="Crear un Grupo"
           description="Crea tu primer grupo para empezar a dividir gastos con tus amigos."
@@ -67,7 +78,7 @@ export function GroupsListScreen() {
         </ScrollView>
       )}
 
-      {groups.length > 0 ? (
+      {!isLoading && !isError && groups.length > 0 ? (
         <FloatingCreateMenu
           onCreateGroup={navigateToNewGroup}
           onCreateExpense={() => rootNavigation?.navigate("AddExpense")}

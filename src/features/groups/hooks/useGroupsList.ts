@@ -1,11 +1,13 @@
 import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { useGroupsStore } from '../store/groupsStore';
 import { GroupExpense, GroupListItem } from '../types';
+import { useGroups } from './useGroups';
 
 type UseGroupsListResult = {
   groups: GroupListItem[];
   netBalance: number;
   isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
 };
 
 function roundToCents(value: number) {
@@ -33,19 +35,23 @@ function computeGroupBalance(expenses: GroupExpense[]): number {
 /**
  * Returns the list of groups and the net balance for the groups tab.
  *
- * Each group's balance is derived from its real expenses (not the static stored
- * field), so the net total, the per-group cards and the owed/owe filters all
- * reflect the actual state. Shaped like a TanStack Query hook so swapping the
- * store for a real `useQuery({ queryKey: ['groups'], ... })` call later does not
- * touch the UI.
+ * Groups are fetched from the API via React Query. Balance is derived from
+ * local expenses (not yet fetched from the server). Category, members, and
+ * status are defaulted until the API returns them in the list endpoint.
  */
 export function useGroupsList(): UseGroupsListResult {
-  const storedGroups = useGroupsStore((state) => state.groups);
+  const { data, isLoading, isError, error } = useGroups();
   const expensesByGroup = useExpensesStore((state) => state.expensesByGroup);
 
-  const groups = storedGroups.map((group) => ({
-    ...group,
-    balance: roundToCents(computeGroupBalance(expensesByGroup[group.id] ?? [])),
+  const groups: GroupListItem[] = (data?.data ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description ?? '',
+    category: 'OTHER',
+    status: { type: 'recent' },
+    members: [],
+    extraMembersCount: 0,
+    balance: roundToCents(computeGroupBalance(expensesByGroup[item.id] ?? [])),
   }));
 
   const netBalance = roundToCents(groups.reduce((total, group) => total + group.balance, 0));
@@ -53,6 +59,8 @@ export function useGroupsList(): UseGroupsListResult {
   return {
     groups,
     netBalance,
-    isLoading: false,
+    isLoading,
+    isError,
+    error,
   };
 }

@@ -3,7 +3,32 @@ import { renderHook } from '@testing-library/react-native';
 import { useExpensesStore } from '../../expenses/store/expensesStore';
 import type { ExpenseUserRelation, GroupExpense } from '../../groups/types';
 import { useGroupsStore } from '../../groups/store/groupsStore';
+import { useGroups } from '../../groups/hooks/useGroups';
 import { useHomeData } from '../hooks/useHomeData';
+
+jest.mock('../../groups/hooks/useGroups', () => ({
+  useGroups: jest.fn(),
+}));
+
+const mockedUseGroups = jest.mocked(useGroups);
+
+function mockGroupsQuery(groups: Array<{ id: string; name: string; description?: string | null }>) {
+  mockedUseGroups.mockReturnValue({
+    data: {
+      data: groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        description: group.description ?? null,
+        currency: 'ARS',
+        createdAt: '2024-05-20T00:00:00.000Z',
+        updatedAt: '2024-05-20T00:00:00.000Z',
+      })),
+    },
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as ReturnType<typeof useGroups>);
+}
 
 function makeExpense(
   id: string,
@@ -30,6 +55,8 @@ describe('useHomeData', () => {
   beforeEach(() => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
+    jest.clearAllMocks();
+    mockGroupsQuery([]);
   });
 
   it('starts from an empty state with query-shaped data', () => {
@@ -61,65 +88,77 @@ describe('useHomeData', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('derives the latest two created groups from the groups store', () => {
-    useGroupsStore.getState().createGroup({
-      category: 'EVENT',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['ana@example.com'],
-      name: 'Cumple de Ana',
-      owner: {
-        id: 'owner-1',
-        name: 'Alex',
-        initials: 'AL',
-        avatarUrl: null,
-        email: 'alex@example.com',
-      },
-    });
-
-    useGroupsStore.getState().createGroup({
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['luz@example.com'],
-      name: 'Escapada a Tigre',
-      owner: {
-        id: 'owner-2',
-        name: 'Mora',
-        initials: 'MO',
-        avatarUrl: null,
-        email: 'mora@example.com',
-      },
-    });
+  it('derives active groups from the API-backed groups query', () => {
+    mockGroupsQuery([
+      { id: 'api-group-1', name: 'Cumple de Ana' },
+      { id: 'api-group-2', name: 'Escapada a Tigre' },
+      { id: 'api-group-3', name: 'Departamento' },
+    ]);
 
     const { result } = renderHook(() => useHomeData());
 
-    expect(result.current.activeGroups.map((group) => group.name)).toEqual(['Escapada a Tigre', 'Cumple de Ana']);
-    expect(result.current.activeGroups.map((group) => group.category)).toEqual(['Viajes', 'Eventos']);
+    expect(result.current.activeGroups).toHaveLength(2);
+    expect(result.current.activeGroups.map((group) => group.name)).toEqual(['Cumple de Ana', 'Escapada a Tigre']);
+    expect(result.current.activeGroups).toEqual([
+      expect.objectContaining({
+        id: 'api-group-1',
+        category: 'Otros',
+        coverUrl: 'https://picsum.photos/seed/api-group-1/400/300',
+        members: [],
+        extraMembersCount: 0,
+        activeDebtsLabel: 'Recién creado',
+      }),
+      expect.objectContaining({
+        id: 'api-group-2',
+        category: 'Otros',
+        coverUrl: 'https://picsum.photos/seed/api-group-2/400/300',
+        members: [],
+        extraMembersCount: 0,
+        activeDebtsLabel: 'Recién creado',
+      }),
+    ]);
   });
 
-  it('computes the summary from real group expenses', () => {
-    const group = useGroupsStore.getState().createGroup({
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['friend@example.com'],
-      name: 'Viaje a la costa',
-      owner: {
-        id: 'current-user',
-        name: 'Vos',
-        initials: 'YO',
-        avatarUrl: null,
-        email: 'you@example.com',
-      },
-    });
+  it('returns API-backed groups with zero summaries when there are no local expenses', () => {
+    mockGroupsQuery([{ id: 'api-group-1', name: 'Backend group' }]);
+
+    const { result } = renderHook(() => useHomeData());
+
+    expect(result.current.activeGroups).toHaveLength(1);
+    expect(result.current.summary.owedToUser.amount).toBe(0);
+    expect(result.current.summary.owedByUser.amount).toBe(0);
+    expect(result.current.recentActivity).toHaveLength(0);
+  });
+
+  it('surfaces the groups query loading and error state', () => {
+    const error = new Error('Groups failed');
+    mockedUseGroups.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error,
+    } as ReturnType<typeof useGroups>);
+
+    const { result } = renderHook(() => useHomeData());
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isError).toBe(true);
+    expect(result.current.error).toBe(error);
+  });
+
+  it('computes the summary from local expenses keyed by API group id', () => {
+    const groupId = 'api-group-summary';
+    mockGroupsQuery([{ id: groupId, name: 'Viaje a la costa' }]);
     const otherId = 'invite-0-friend@example.com';
 
     // You paid 60.000 split between both: the other person owes you 30.000.
     useExpensesStore
       .getState()
-      .addExpense(group.id, makeExpense('e-lent', { type: 'lent', amount: 30000 }, ['current-user', otherId]));
+      .addExpense(groupId, makeExpense('e-lent', { type: 'lent', amount: 30000 }, ['current-user', otherId]));
     // The other person paid and you share 15.000: you owe in this group.
     useExpensesStore
       .getState()
-      .addExpense(group.id, makeExpense('e-share', { type: 'share', amount: 15000 }, ['current-user', otherId]));
+      .addExpense(groupId, makeExpense('e-share', { type: 'share', amount: 15000 }, ['current-user', otherId]));
 
     const { result } = renderHook(() => useHomeData());
 
@@ -129,24 +168,13 @@ describe('useHomeData', () => {
     expect(result.current.summary.owedByUser.detail).toBe('1 Grupo');
   });
 
-  it('derives recent activity from real expenses, newest first', () => {
-    const group = useGroupsStore.getState().createGroup({
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['friend@example.com'],
-      name: 'Viaje a la costa',
-      owner: {
-        id: 'current-user',
-        name: 'Vos',
-        initials: 'YO',
-        avatarUrl: null,
-        email: 'you@example.com',
-      },
-    });
+  it('derives recent activity from local expenses keyed by API group id, newest first', () => {
+    const groupId = 'api-group-activity';
+    mockGroupsQuery([{ id: groupId, name: 'Viaje a la costa' }]);
     const otherId = 'invite-0-friend@example.com';
 
     useExpensesStore.getState().addExpense(
-      group.id,
+      groupId,
       makeExpense('older', { type: 'lent', amount: 30000 }, ['current-user', otherId], {
         title: 'Cena',
         totalAmount: 60000,
@@ -154,7 +182,7 @@ describe('useHomeData', () => {
       }),
     );
     useExpensesStore.getState().addExpense(
-      group.id,
+      groupId,
       makeExpense('newer', { type: 'share', amount: 15000 }, ['current-user', otherId], {
         title: 'Tren',
         category: 'TRANSPORT',
@@ -171,7 +199,7 @@ describe('useHomeData', () => {
     expect(result.current.recentActivity).toHaveLength(2);
     expect(first).toMatchObject({
       id: 'newer',
-      groupId: group.id,
+      groupId,
       title: 'Tren',
       context: 'Pagado por friend@example.com en Viaje a la costa',
       amount: -30000,

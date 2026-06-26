@@ -5,7 +5,12 @@ import { Alert } from 'react-native';
 import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { GroupExpense } from '../types';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
+import { useGroups } from '../hooks/useGroups';
 import { useGroupsStore } from '../store/groupsStore';
+
+jest.mock('../hooks/useGroups');
+
+const mockUseGroups = jest.mocked(useGroups);
 
 type NavigationMock = {
   goBack: jest.Mock;
@@ -50,6 +55,10 @@ describe('GroupDetailScreen', () => {
     useExpensesStore.getState().addExpense(groupId, makeExpense('expense-1'));
     useExpensesStore.getState().addExpense(groupId, makeExpense('expense-2'));
     useExpensesStore.getState().addExpense(groupId, makeExpense('expense-3'));
+    mockUseGroups.mockReturnValue({
+      data: { data: [] },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useGroups>);
     jest.mocked(useRoute).mockReturnValue({
       params: { groupId },
     } as ReturnType<typeof useRoute>);
@@ -143,5 +152,23 @@ describe('GroupDetailScreen', () => {
 
     expect(screen.getByText('Este grupo ya no está disponible')).toBeTruthy();
     expect(screen.queryByTestId('group-expense-expense-1')).toBeNull();
+  });
+
+  it('shows a loading state instead of unavailable copy while the group query is loading', () => {
+    useGroupsStore.getState().reset();
+    useExpensesStore.getState().reset();
+    mockUseGroups.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as unknown as ReturnType<typeof useGroups>);
+    jest.mocked(useRoute).mockReturnValue({
+      params: { groupId: 'api-group-loading' },
+    } as ReturnType<typeof useRoute>);
+
+    render(<GroupDetailScreen />);
+
+    expect(screen.getByLabelText('Cargando grupo')).toBeTruthy();
+    expect(screen.getByText('Cargando grupo...')).toBeTruthy();
+    expect(screen.queryByText('Este grupo ya no está disponible')).toBeNull();
   });
 });

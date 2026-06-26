@@ -9,6 +9,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
 import { useExpensesStore } from '../../features/expenses/store/expensesStore';
+import { useGroups } from '../../features/groups/hooks/useGroups';
 import { useGroupsStore } from '../../features/groups/store/groupsStore';
 import type { GroupExpense } from '../../features/groups/types';
 import { useAuthStore } from '../../shared/store/authStore';
@@ -29,6 +30,8 @@ jest.mock('../../features/auth/hooks/useRegister', () => ({
   })),
 }));
 
+jest.mock('../../features/groups/hooks/useGroups');
+
 jest.mock('react-native-toast-message', () => ({
   __esModule: true,
   default: {
@@ -39,6 +42,7 @@ jest.mock('react-native-toast-message', () => ({
 const actualNavigation = jest.requireActual<typeof import('@react-navigation/native')>('@react-navigation/native');
 
 const mainTabLabels = ['Inicio', 'Grupos', 'Perfil'] as const;
+const mockUseGroups = jest.mocked(useGroups);
 
 function createGroup(name: string, invitedEmails: string[]) {
   return useGroupsStore.getState().createGroup({
@@ -68,6 +72,21 @@ describe('navigation shell', () => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
     groupId = createGroup('Viaje a la costa', ['alex@example.com', 'sarah@example.com']).id;
+    mockUseGroups.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: groupId,
+            name: 'Viaje a la costa',
+            description: '2 invitaciones pendientes',
+            currency: 'ARS',
+            createdAt: '2026-06-26T00:00:00.000Z',
+            updatedAt: '2026-06-26T00:00:00.000Z',
+          },
+        ],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useGroups>);
     addExpense(groupId, {
       id: 'nav-expense-1',
       title: 'Cena frente al mar',

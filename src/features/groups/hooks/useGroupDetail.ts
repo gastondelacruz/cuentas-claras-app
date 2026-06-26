@@ -3,6 +3,7 @@ import { GroupDetail, GroupExpense, MemberBalance } from '../types';
 import { groupDetailMock, memberBalancesMock, recentExpensesMock } from '../mocks/groupDetail.mock';
 import { groupsListMock } from '../mocks/groupsList.mock';
 import { useGroupsStore } from '../store/groupsStore';
+import { useGroups } from './useGroups';
 
 const EMPTY_EXPENSES: GroupExpense[] = [];
 const EMPTY_IDS: string[] = [];
@@ -59,6 +60,7 @@ type UseGroupDetailResult = {
  * preserving the selected group identity while merging local expense state.
  */
 export function useGroupDetail(groupId?: string): UseGroupDetailResult {
+  const { data, isLoading } = useGroups();
   const groupFromStore = useGroupsStore((state) => state.groups.find((group) => group.id === groupId));
   const isDeletedGroup = useGroupsStore((state) =>
     groupId ? state.deletedGroupIds.includes(groupId) : false,
@@ -70,18 +72,46 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
     groupId ? state.deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS : EMPTY_IDS,
   );
   const isSeededMockGroup = groupsListMock.some((group) => group.id === groupId);
+  const groupFromApi = data?.data.find((group) => group.id === groupId);
 
-  if (!groupId || isDeletedGroup || (!groupFromStore && !isSeededMockGroup)) {
+  if (!groupId || isDeletedGroup || (!groupFromStore && !isSeededMockGroup && !groupFromApi)) {
     return {
       group: null,
       memberBalances: [],
       recentExpenses: [],
       totalExpensesCount: 0,
-      isLoading: false,
+      isLoading,
     };
   }
 
   const createdTotals = sumExpenses(createdExpenses);
+
+  if (groupFromApi && !groupFromStore && !isSeededMockGroup) {
+    return {
+      group: {
+        id: groupFromApi.id,
+        name: groupFromApi.name,
+        category: 'OTHER',
+        totalExpense: createdTotals.total,
+        totalExpenseChangePercent: 0,
+        owedToYou: createdTotals.owedToYou,
+        youOwe: createdTotals.youOwe,
+      },
+      memberBalances: [
+        {
+          id: 'current-user',
+          name: 'Vos',
+          initials: 'YO',
+          avatarUrl: null,
+          isCurrentUser: true,
+          balance: 0,
+        },
+      ],
+      recentExpenses: createdExpenses,
+      totalExpensesCount: createdExpenses.length,
+      isLoading,
+    };
+  }
 
   if (groupFromStore && !isSeededMockGroup) {
     const memberBalances: MemberBalance[] = [
@@ -116,7 +146,7 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
       memberBalances,
       recentExpenses: createdExpenses,
       totalExpensesCount: createdExpenses.length,
-      isLoading: false,
+      isLoading,
     };
   }
 
@@ -145,6 +175,6 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
     recentExpenses,
     // Honest count: the number of expenses actually available, not a fixed mock total.
     totalExpensesCount: recentExpenses.length,
-    isLoading: false,
+    isLoading,
   };
 }

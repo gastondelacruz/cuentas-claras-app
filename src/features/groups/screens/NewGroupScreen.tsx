@@ -1,6 +1,6 @@
 import { Camera, Contact, UserPlus, Users } from 'lucide-react-native';
 import { Controller } from 'react-hook-form';
-import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { colors } from '../../../shared/theme/colors';
 import { Input } from '../../../shared/ui/Input';
@@ -28,6 +28,7 @@ export function NewGroupScreen() {
     control,
     handleSubmit,
     isEditing,
+    isPending,
     selectedType,
     setSelectedType,
     inviteEmail,
@@ -37,6 +38,7 @@ export function NewGroupScreen() {
     groupImage,
     imageError,
     membersError,
+    submitError,
     currentMember,
     readOnlyMembers,
     totalMembers,
@@ -244,16 +246,27 @@ export function NewGroupScreen() {
           ) : null}
         </View>
 
+        {submitError ? (
+          <Text accessibilityLiveRegion="polite" className="text-center text-sm text-error">
+            {submitError}
+          </Text>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={isEditing ? 'Guardar cambios del grupo' : 'Guardar grupo'}
+          disabled={isPending}
           onPress={handleSubmit(onSubmit)}
           className="mt-8 h-20 items-center justify-center rounded-lg bg-green-400"
           testID="save-group-button"
         >
-          <Text className="text-xl font-bold text-neutral900">
-            {isEditing ? 'Guardar cambios' : 'Guardar Grupo'}
-          </Text>
+          {isPending ? (
+            <ActivityIndicator color="#171717" />
+          ) : (
+            <Text className="text-xl font-bold text-neutral900">
+              {isEditing ? 'Guardar cambios' : 'Guardar Grupo'}
+            </Text>
+          )}
         </Pressable>
       </ScrollView>
     </ScreenContainer>

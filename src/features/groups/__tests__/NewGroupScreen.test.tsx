@@ -2,10 +2,23 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { PermissionStatus } from 'expo-modules-core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 import { useAuthStore } from '../../../shared/store/authStore';
 import { NewGroupScreen } from '../screens/NewGroupScreen';
 import { useGroupsStore } from '../store/groupsStore';
+import { useCreateGroup } from '../hooks/useCreateGroup';
+
+jest.mock('../hooks/useCreateGroup');
+
+const mockMutate = jest.fn();
+const mockUseCreateGroup = jest.mocked(useCreateGroup);
+
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 type NavigationMock = {
   goBack: jest.Mock;
@@ -24,13 +37,23 @@ describe('NewGroupScreen', () => {
       replace: jest.fn(),
     };
     jest.mocked(useNavigation).mockReturnValue(navigationMock as never);
+    mockMutate.mockReset();
+    mockUseCreateGroup.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCreateGroup>);
     jest.clearAllMocks();
+    // Re-apply mock after clearAllMocks since clearAllMocks resets mock implementations
+    mockUseCreateGroup.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCreateGroup>);
   });
 
   it('blocks saving when there are no invited members', async () => {
     const initialGroupsCount = useGroupsStore.getState().groups.length;
 
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Mendoza');
     await act(async () => {
@@ -44,7 +67,7 @@ describe('NewGroupScreen', () => {
   });
 
   it('shows invite validation messages in Spanish', () => {
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     fireEvent.press(screen.getByTestId('invite-member-button'));
     expect(screen.getByText('Ingresá un correo electrónico')).toBeTruthy();
@@ -58,12 +81,12 @@ describe('NewGroupScreen', () => {
   });
 
   it('shows the current member label in Spanish', () => {
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     expect(screen.getByText('Vos')).toBeTruthy();
   });
 
-  it('saves the selected uploaded image when creating a group', async () => {
+  it('calls the create mutation with correct params including the uploaded image path', async () => {
     jest.spyOn(ImagePicker, 'requestMediaLibraryPermissionsAsync').mockResolvedValue({
       granted: true,
       canAskAgain: true,
@@ -90,7 +113,7 @@ describe('NewGroupScreen', () => {
       ],
     });
 
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('pick-group-image-button'));
@@ -105,10 +128,56 @@ describe('NewGroupScreen', () => {
     });
 
     await waitFor(() => {
-      expect(useGroupsStore.getState().groups[0]?.image).toEqual({
-        type: 'uploaded',
-        uri: 'file:///group.jpg',
-      });
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Viaje a Mendoza',
+          type: 'trip',
+          currency: 'ARS',
+          members: [{ displayName: 'friend', email: 'friend@example.com' }],
+        }),
+        expect.any(Object),
+      );
+    });
+  });
+
+  it('navigates to GroupDetail with the server id on create success', async () => {
+    // Simulate mutation calling onSuccess
+    mockMutate.mockImplementationOnce((_input, callbacks) => {
+      callbacks?.onSuccess?.({ id: 'server-id-1', name: 'Viaje a Mendoza' });
+    });
+
+    renderWithQueryClient(<NewGroupScreen />);
+
+    fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Mendoza');
+    fireEvent.changeText(screen.getByTestId('invite-email-input'), 'friend@example.com');
+    fireEvent.press(screen.getByTestId('invite-member-button'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-group-button'));
+    });
+
+    await waitFor(() => {
+      expect(navigationMock.replace).toHaveBeenCalledWith('GroupDetail', { groupId: 'server-id-1' });
+    });
+  });
+
+  it('shows a Spanish error message when creation fails', async () => {
+    mockMutate.mockImplementationOnce((_input, callbacks) => {
+      callbacks?.onError?.();
+    });
+
+    renderWithQueryClient(<NewGroupScreen />);
+
+    fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Mendoza');
+    fireEvent.changeText(screen.getByTestId('invite-email-input'), 'friend@example.com');
+    fireEvent.press(screen.getByTestId('invite-member-button'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-group-button'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('No pudimos crear el grupo. Intentá de nuevo.')).toBeTruthy();
     });
   });
 
@@ -120,7 +189,7 @@ describe('NewGroupScreen', () => {
       status: PermissionStatus.DENIED,
     });
 
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('pick-group-image-button'));
@@ -148,7 +217,7 @@ describe('NewGroupScreen', () => {
       params: { groupId: createdGroup.id },
     } as ReturnType<typeof useRoute>);
 
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     expect(screen.getByText('Editar grupo')).toBeTruthy();
     expect(screen.getByDisplayValue('Viaje a Mendoza')).toBeTruthy();
@@ -187,7 +256,7 @@ describe('NewGroupScreen', () => {
       params: { groupId: createdGroup.id },
     } as ReturnType<typeof useRoute>);
 
-    render(<NewGroupScreen />);
+    renderWithQueryClient(<NewGroupScreen />);
 
     expect(screen.getByText('alex@example.com')).toBeTruthy();
     expect(screen.getByText('sarah@example.com')).toBeTruthy();

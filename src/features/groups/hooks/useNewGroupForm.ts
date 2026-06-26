@@ -4,10 +4,14 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { RootStackParamList } from '../../../app/navigation/types';
 import { useAuthStore } from '../../../shared/store/authStore';
+import { GroupApiType } from '../api/groupsApi';
+import { useCreateGroup } from './useCreateGroup';
 import { groupsListMock } from '../mocks/groupsList.mock';
+
 import {
   inviteEmailSchema,
   inviteMembersRequiredMessage,
@@ -38,6 +42,14 @@ const defaultCurrentMember: GroupMember = {
 
 const defaultGroupImage: GroupImage = { type: 'default', uri: null };
 
+const categoryToApiType: Record<GroupCategory, GroupApiType> = {
+  TRAVEL: 'trip',
+  HOME: 'home',
+  FOOD: 'other',
+  EVENT: 'event',
+  OTHER: 'other',
+};
+
 function getInitialsFromValue(value: string) {
   const tokens = value
     .split(/[^\p{L}\p{N}]+/u)
@@ -57,11 +69,15 @@ export function useNewGroupForm() {
   const route = useRoute<NewGroupRoute>();
   const authUser = useAuthStore((state) => state.user);
 
+  const queryClient = useQueryClient();
+
   const groupToEdit = useGroupsStore((state) =>
     state.groups.find((group) => group.id === route.params?.groupId),
   );
   const createGroup = useGroupsStore((state) => state.createGroup);
   const updateGroup = useGroupsStore((state) => state.updateGroup);
+
+  const createGroupMutation = useCreateGroup();
 
   const isEditing = Boolean(groupToEdit && route.params?.groupId);
 
@@ -72,6 +88,7 @@ export function useNewGroupForm() {
   const [groupImage, setGroupImage] = useState<GroupImage>(groupToEdit?.image ?? defaultGroupImage);
   const [imageError, setImageError] = useState<string | undefined>();
   const [membersError, setMembersError] = useState<string | undefined>();
+  const [submitError, setSubmitError] = useState<string | undefined>();
 
   const currentMember = useMemo<GroupMember>(() => {
     const email = authUser?.email ?? defaultCurrentMember.email;
@@ -170,6 +187,7 @@ export function useNewGroupForm() {
     }
 
     setMembersError(undefined);
+    setSubmitError(undefined);
 
     if (isEditing && groupToEdit) {
       updateGroup({
@@ -184,21 +202,33 @@ export function useNewGroupForm() {
       return;
     }
 
-    const createdGroup = createGroup({
-      name: groupName.trim(),
-      category: selectedType,
-      image: groupImage,
-      invitedEmails,
-      owner: currentMember,
-    });
-
-    navigation.replace('GroupDetail', { groupId: createdGroup.id });
+    createGroupMutation.mutate(
+      {
+        name: groupName.trim(),
+        type: categoryToApiType[selectedType],
+        currency: 'ARS',
+        members: invitedEmails.map((email) => ({
+          displayName: email.split('@')[0] ?? email,
+          email,
+        })),
+      },
+      {
+        onSuccess: (response) => {
+          queryClient.invalidateQueries({ queryKey: ['groups'] });
+          navigation.replace('GroupDetail', { groupId: response.id });
+        },
+        onError: () => {
+          setSubmitError('No pudimos crear el grupo. Intentá de nuevo.');
+        },
+      },
+    );
   }
 
   return {
     control,
     handleSubmit,
     isEditing,
+    isPending: createGroupMutation.isPending,
     selectedType,
     setSelectedType,
     inviteEmail,
@@ -208,6 +238,7 @@ export function useNewGroupForm() {
     groupImage,
     imageError,
     membersError,
+    submitError,
     currentMember,
     readOnlyMembers,
     totalMembers,

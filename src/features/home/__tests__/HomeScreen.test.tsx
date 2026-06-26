@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { useExpensesStore } from '../../expenses/store/expensesStore';
+import { useGroups } from '../../groups/hooks/useGroups';
 import type { GroupExpense } from '../../groups/types';
 import { useGroupsStore } from '../../groups/store/groupsStore';
 import { useAuthStore } from '../../../shared/store/authStore';
@@ -11,24 +12,31 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 
+jest.mock('../../groups/hooks/useGroups', () => ({
+  useGroups: jest.fn(),
+}));
+
 const mockedUseNavigation = jest.mocked(useNavigation);
+const mockedUseGroups = jest.mocked(useGroups);
 const navigate = jest.fn();
 const parentNavigate = jest.fn();
 
-function createGroup(name: string, invitedEmails: string[]) {
-  return useGroupsStore.getState().createGroup({
-    name,
-    category: 'TRAVEL',
-    image: { type: 'default', uri: null },
-    invitedEmails,
-    owner: {
-      id: 'current-user',
-      name: 'Vos',
-      email: 'you@example.com',
-      initials: 'YO',
-      avatarUrl: null,
+function mockGroupsQuery(groups: Array<{ id: string; name: string; description?: string | null }>) {
+  mockedUseGroups.mockReturnValue({
+    data: {
+      data: groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        description: group.description ?? null,
+        currency: 'ARS',
+        createdAt: '2024-05-20T00:00:00.000Z',
+        updatedAt: '2024-05-20T00:00:00.000Z',
+      })),
     },
-  });
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as ReturnType<typeof useGroups>);
 }
 
 function addExpense(groupId: string, expense: GroupExpense) {
@@ -36,8 +44,10 @@ function addExpense(groupId: string, expense: GroupExpense) {
 }
 
 function seedDashboard() {
-  const homeGroup = createGroup('Viaje a Lisboa', ['alex@example.com', 'sarah@example.com', 'james@example.com']);
-  const secondGroup = createGroup('Departamento', ['diego@example.com']);
+  const homeGroup = { id: 'api-group-lisboa', name: 'Viaje a Lisboa' };
+  const secondGroup = { id: 'api-group-departamento', name: 'Departamento' };
+
+  mockGroupsQuery([homeGroup, secondGroup]);
 
   addExpense(homeGroup.id, {
     id: 'expense-home-1',
@@ -72,6 +82,7 @@ describe('HomeScreen', () => {
     useGroupsStore.getState().reset();
     useExpensesStore.getState().reset();
     jest.clearAllMocks();
+    mockGroupsQuery([]);
     mockedUseNavigation.mockReturnValue({
       navigate,
       getParent: () => ({ navigate: parentNavigate }),
@@ -109,8 +120,19 @@ describe('HomeScreen', () => {
     expect(screen.getByText('Viaje a Lisboa')).toBeTruthy();
     expect(screen.getByText('Departamento')).toBeTruthy();
     expect(screen.getAllByText('Recién creado')).toHaveLength(2);
+    expect(screen.getAllByText('Otros')).toHaveLength(2);
     expect(screen.getByLabelText('Ver todos los grupos')).toBeTruthy();
     expect(screen.getByText('Ver lista completa')).toBeTruthy();
+  });
+
+  it('renders API-backed active groups even when there are no local expenses', () => {
+    mockGroupsQuery([{ id: 'api-group-empty-expenses', name: 'Grupo desde API' }]);
+
+    render(<HomeScreen />);
+
+    expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+    expect(screen.getByText('Grupo desde API')).toBeTruthy();
+    expect(screen.getAllByText('+$0,00').length).toBeGreaterThan(0);
   });
 
   it('navigates to the groups list from the extra active groups card', () => {

@@ -1,9 +1,10 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { RootStackParamList } from '../../../app/navigation/types';
+import { colors } from '../../../shared/theme/colors';
 import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { BalanceMiniCards } from '../components/BalanceMiniCards';
@@ -23,9 +24,20 @@ const RECENT_EXPENSES_LIMIT = 3;
 export function GroupDetailScreen() {
   const navigation = useNavigation<GroupDetailNavigation>();
   const route = useRoute<GroupDetailRoute>();
-  const { group, memberBalances, recentExpenses, totalExpensesCount } = useGroupDetail(route.params?.groupId);
+  const { group, memberBalances, recentExpenses, totalExpensesCount, isLoading } = useGroupDetail(route.params?.groupId);
   const { handleOpenSettings, handleOpenBalances } = useGroupDetailActions(group?.id ?? '');
   const [showAllExpenses, setShowAllExpenses] = useState(false);
+
+  if (!group && isLoading) {
+    return (
+      <ScreenContainer>
+        <View className="flex-1 items-center justify-center p-6" accessibilityRole="progressbar" accessibilityLabel="Cargando grupo">
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text className="mt-4 text-base font-semibold text-neutral500">Cargando grupo...</Text>
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   if (!group) {
     return (

@@ -1,11 +1,9 @@
 import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { useGroupsStore } from '../../groups/store/groupsStore';
+import type { GroupListItemDto } from '../../groups/api/groupsApi';
+import { useGroups } from '../../groups/hooks/useGroups';
 import type {
   ExpenseCategory,
-  GroupCategory,
   GroupExpense,
-  GroupStatus,
-  StoredGroup,
 } from '../../groups/types';
 import { useAuthStore } from '../../../shared/store/authStore';
 import type { HomeActivity, HomeActivityCategory, HomeSummary, UseHomeDataResult } from '../types';
@@ -22,43 +20,21 @@ const activityCategoryByExpense: Record<ExpenseCategory, HomeActivityCategory> =
   OTHER: 'other',
 };
 
-const homeCategoryLabels: Record<GroupCategory, string> = {
-  TRAVEL: 'Viajes',
-  HOME: 'Hogar',
-  FOOD: 'Comida',
-  EVENT: 'Eventos',
-  OTHER: 'Otros',
-};
+type HomeSourceGroup = Pick<GroupListItemDto, 'id' | 'name'>;
 
-function getGroupCoverUrl(group: StoredGroup) {
-  if (group.image.type === 'uploaded') {
-    return group.image.uri;
-  }
-
-  return `https://picsum.photos/seed/${group.id}/400/300`;
+function getGroupCoverUrl(groupId: string) {
+  return `https://picsum.photos/seed/${groupId}/400/300`;
 }
 
-function getActiveDebtsLabel(status: GroupStatus) {
-  if (status.type === 'pending') {
-    return `${status.count} ${status.count === 1 ? 'deuda activa' : 'deudas activas'}`;
-  }
-
-  if (status.type === 'recent') {
-    return 'Recién creado';
-  }
-
-  return 'Sin deudas activas';
-}
-
-function mapGroupToHomeGroup(group: StoredGroup) {
+function mapGroupToHomeGroup(group: HomeSourceGroup) {
   return {
     id: group.id,
     name: group.name,
-    category: homeCategoryLabels[group.category],
-    coverUrl: getGroupCoverUrl(group),
-    members: group.members,
-    extraMembersCount: group.extraMembersCount,
-    activeDebtsLabel: getActiveDebtsLabel(group.status),
+    category: 'Otros',
+    coverUrl: getGroupCoverUrl(group.id),
+    members: [],
+    extraMembersCount: 0,
+    activeDebtsLabel: 'Recién creado',
   };
 }
 
@@ -101,7 +77,7 @@ function roundToCents(value: number) {
 }
 
 function buildRecentActivity(
-  groups: StoredGroup[],
+  groups: HomeSourceGroup[],
   expensesByGroup: Record<string, GroupExpense[]>,
   currentUserId: string,
 ): HomeActivity[] {
@@ -151,9 +127,10 @@ function buildSummary(totals: SummaryTotals): HomeSummary {
 }
 
 export function useHomeData(): UseHomeDataResult {
-  const groups = useGroupsStore((state) => state.groups);
+  const { data: groupsResponse, isLoading, isError, error } = useGroups();
   const expensesByGroup = useExpensesStore((state) => state.expensesByGroup);
   const currentUserId = useAuthStore((state) => state.user?.id) ?? 'current-user';
+  const groups = groupsResponse?.data ?? [];
 
   const totals: SummaryTotals = {
     owedToYou: 0,
@@ -179,8 +156,8 @@ export function useHomeData(): UseHomeDataResult {
     summary,
     activeGroups,
     recentActivity,
-    isLoading: false,
-    isError: false,
-    error: null,
+    isLoading,
+    isError,
+    error,
   };
 }

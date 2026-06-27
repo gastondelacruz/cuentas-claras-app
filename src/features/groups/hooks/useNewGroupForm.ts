@@ -4,13 +4,14 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RootStackParamList } from '../../../app/navigation/types';
+import { queryKeys } from '../../../shared/api/queryKeys';
 import { useAuthStore } from '../../../shared/store/authStore';
-import { GroupApiType } from '../api/groupsApi';
+import { GroupApiType, getGroup } from '../api/groupsApi';
 import { useCreateGroup } from './useCreateGroup';
-import { groupsListMock } from '../mocks/groupsList.mock';
+import { useUpdateGroup } from './useGroupDetailActions';
 
 import {
   inviteEmailSchema,
@@ -18,7 +19,6 @@ import {
   NewGroupFormValues,
   newGroupFormSchema,
 } from '../schemas/new-group-schema';
-import { useGroupsStore } from '../store/groupsStore';
 import { GroupCategory, GroupImage } from '../types';
 
 type NewGroupRoute = RouteProp<RootStackParamList, 'NewGroup'>;
@@ -64,28 +64,52 @@ function getInitialsFromValue(value: string) {
     .join('');
 }
 
+const apiTypeToCategoryMap: Record<GroupApiType, GroupCategory> = {
+  trip: 'TRAVEL',
+  home: 'HOME',
+  couple: 'OTHER',
+  friends: 'OTHER',
+  event: 'EVENT',
+  other: 'OTHER',
+};
+
 export function useNewGroupForm() {
   const navigation = useNavigation<NewGroupNavigation>();
   const route = useRoute<NewGroupRoute>();
   const authUser = useAuthStore((state) => state.user);
-
   const queryClient = useQueryClient();
 
-  const groupToEdit = useGroupsStore((state) =>
-    state.groups.find((group) => group.id === route.params?.groupId),
-  );
-  const createGroup = useGroupsStore((state) => state.createGroup);
-  const updateGroup = useGroupsStore((state) => state.updateGroup);
+  const editGroupId = route.params?.groupId;
+
+  // Fetch group data from API when editing — uses same React Query cache as GroupDetailScreen
+  const { data: groupToEdit } = useQuery({
+    queryKey: queryKeys.groups.detail(editGroupId ?? ''),
+    queryFn: () => getGroup(editGroupId!),
+    enabled: Boolean(editGroupId),
+  });
 
   const createGroupMutation = useCreateGroup();
+  const updateGroupMutation = useUpdateGroup();
 
-  const isEditing = Boolean(groupToEdit && route.params?.groupId);
+  const isEditing = Boolean(editGroupId);
 
-  const [selectedType, setSelectedType] = useState<GroupCategory>(groupToEdit?.category ?? 'TRAVEL');
+  const initialCategory: GroupCategory =
+    groupToEdit?.type ? (apiTypeToCategoryMap[groupToEdit.type] ?? 'TRAVEL') : 'TRAVEL';
+
+  // Initial invited emails derived from non-current-user members (excluding owner)
+  const initialInvitedEmails = useMemo(() => {
+    if (!groupToEdit) return [];
+    return groupToEdit.members
+      .filter((m) => !m.isCurrentUser && !m.removedAt && m.email)
+      .map((m) => m.email!)
+      .filter(Boolean);
+  }, [groupToEdit]);
+
+  const [selectedType, setSelectedType] = useState<GroupCategory>(initialCategory);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteError, setInviteError] = useState<string | undefined>();
-  const [invitedEmails, setInvitedEmails] = useState<string[]>(groupToEdit?.invitedEmails ?? []);
-  const [groupImage, setGroupImage] = useState<GroupImage>(groupToEdit?.image ?? defaultGroupImage);
+  const [invitedEmails, setInvitedEmails] = useState<string[]>(initialInvitedEmails);
+  const [groupImage, setGroupImage] = useState<GroupImage>(defaultGroupImage);
   const [imageError, setImageError] = useState<string | undefined>();
   const [membersError, setMembersError] = useState<string | undefined>();
   const [submitError, setSubmitError] = useState<string | undefined>();
@@ -108,20 +132,9 @@ export function useNewGroupForm() {
     defaultValues: { groupName: groupToEdit?.name ?? '' },
   });
 
-  const isSeededGroup = useMemo(
-    () => Boolean(groupToEdit && groupsListMock.some((group) => group.id === groupToEdit.id)),
-    [groupToEdit],
-  );
-
-  const readOnlyMembers = useMemo(
-    () =>
-      isEditing && isSeededGroup
-        ? (groupsListMock.find((group) => group.id === groupToEdit?.id)?.members ?? [])
-        : [],
-    [groupToEdit?.id, isEditing, isSeededGroup],
-  );
-
-  const totalMembers = readOnlyMembers.length + invitedEmails.length + 1;
+  // No read-only members from mocks — all members come from the API
+  const readOnlyMembers: Array<{ id: string; name: string }> = [];
+  const totalMembers = invitedEmails.length + 1;
 
   function handleInvite() {
     const parsedInvite = inviteEmailSchema.safeParse(inviteEmail);
@@ -189,16 +202,22 @@ export function useNewGroupForm() {
     setMembersError(undefined);
     setSubmitError(undefined);
 
-    if (isEditing && groupToEdit) {
-      updateGroup({
-        groupId: groupToEdit.id,
-        name: groupName.trim(),
-        category: selectedType,
-        image: groupImage,
-        invitedEmails,
-        owner: currentMember,
-      });
-      navigation.goBack();
+    if (isEditing && editGroupId) {
+      updateGroupMutation.mutate(
+        {
+          groupId: editGroupId,
+          data: {
+            name: groupName.trim(),
+            type: categoryToApiType[selectedType],
+          },
+        },
+        {
+          onSuccess: () => navigation.goBack(),
+          onError: () => {
+            setSubmitError('No pudimos actualizar el grupo. Intentá de nuevo.');
+          },
+        },
+      );
       return;
     }
 
@@ -228,7 +247,7 @@ export function useNewGroupForm() {
     control,
     handleSubmit,
     isEditing,
-    isPending: createGroupMutation.isPending,
+    isPending: createGroupMutation.isPending || updateGroupMutation.isPending,
     selectedType,
     setSelectedType,
     inviteEmail,

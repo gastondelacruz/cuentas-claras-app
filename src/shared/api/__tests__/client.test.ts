@@ -2,6 +2,7 @@ import MockAdapter from 'axios-mock-adapter';
 
 import { client, resetRefreshStateForTests } from '../client';
 import { useAuthStore } from '../../store/authStore';
+import { onAuthLogout } from '../authEvents';
 
 describe('api client', () => {
   let mock: MockAdapter;
@@ -17,7 +18,7 @@ describe('api client', () => {
   });
 
   it('uses fallback URL and timeout', () => {
-    expect(client.defaults.baseURL).toBe('http://localhost:3000/api');
+    expect(client.defaults.baseURL).toBe('http://localhost:3000/api/v1');
     expect(client.defaults.timeout).toBe(10_000);
   });
 
@@ -70,6 +71,20 @@ describe('api client', () => {
 
     await expect(client.get('/groups')).rejects.toMatchObject({ response: { status: 401 } });
     expect(useAuthStore.getState()).toMatchObject({ user: null, accessToken: null, isAuthenticated: false });
+  });
+
+  it('emits auth:logout when refresh fails', async () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'old-token');
+    const logoutListener = jest.fn();
+    const unsubscribe = onAuthLogout(logoutListener);
+    mock.onGet('/groups').replyOnce(401);
+    mock.onPost('/auth/refresh').reply(401);
+
+    await expect(client.get('/groups')).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(logoutListener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
   });
 
   it('shares one refresh request across concurrent 401 responses', async () => {

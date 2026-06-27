@@ -2,18 +2,23 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
 
 import { RootStackParamList } from '../../../app/navigation/types';
+import { queryKeys } from '../../../shared/api/queryKeys';
 import { useGroupMembers } from '../../groups/hooks/useGroupMembers';
 import { ExpenseCategory } from '../../groups/types';
-import { useGroupsStore } from '../../groups/store/groupsStore';
+  import { useGroups } from '../../groups/hooks/useGroups';
+import {
+  createExpense,
+  deleteExpense,
+  updateExpense,
+} from '../api/expensesApi';
 import { SelectOption } from '../components/SelectModal';
 import { useExpenseToEdit } from './useExpenseToEdit';
-import { useExpensesStore } from '../store/expensesStore';
-import { buildGroupExpense } from '../utils/buildGroupExpense';
 import { formatAmountForInput } from '../utils/formatAmountForInput';
 import {
   NewExpenseFormInput,
@@ -24,15 +29,36 @@ import {
 type AddExpenseNavigation = NativeStackNavigationProp<RootStackParamList, 'AddExpense'>;
 type AddExpenseRoute = RouteProp<RootStackParamList, 'AddExpense'>;
 
+function buildCreatePayload(
+  values: NewExpenseFormValues,
+  options: {
+    groupCurrency: string;
+    paidById: string;
+    participantIds: string[];
+    category: ExpenseCategory;
+    date: Date;
+  },
+) {
+  return {
+    title: values.description,
+    amount: values.amount,
+    currency: options.groupCurrency,
+    paidByMemberId: options.paidById,
+    participantMemberIds: options.participantIds,
+    splitType: 'equal' as const,
+    category: options.category,
+    notes: null,
+    expenseDate: options.date.toISOString(),
+  };
+}
+
 export function useAddExpenseForm() {
   const navigation = useNavigation<AddExpenseNavigation>();
   const route = useRoute<AddExpenseRoute>();
+  const queryClient = useQueryClient();
 
-  const deletedGroupIds = useGroupsStore((state) => state.deletedGroupIds);
-  const groups = useGroupsStore((state) => state.groups);
-  const addExpense = useExpensesStore((state) => state.addExpense);
-  const updateExpense = useExpensesStore((state) => state.updateExpense);
-  const deleteExpense = useExpensesStore((state) => state.deleteExpense);
+  const { data: groupsResponse, isLoading: isGroupsLoading } = useGroups();
+  const groups = groupsResponse?.data ?? [];
 
   const expenseToEdit = useExpenseToEdit(route.params?.groupId, route.params?.expenseId);
   const isEditing = Boolean(expenseToEdit);
@@ -51,11 +77,17 @@ export function useAddExpenseForm() {
     },
   });
 
-  const [groupId, setGroupId] = useState<string | undefined>(
-    route.params?.groupId ?? groups[0]?.id,
-  );
+  // groupId: prefer route params; fall back to first group once loaded
+  const [groupId, setGroupId] = useState<string | undefined>(route.params?.groupId);
   const members = useGroupMembers(groupId);
   const currentUserId = members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id;
+
+  // Set default groupId from first group once the list loads (only if not coming from a route param)
+  useEffect(() => {
+    if (!route.params?.groupId && !groupId && groups.length > 0) {
+      setGroupId(groups[0]?.id);
+    }
+  }, [groups, groupId, route.params?.groupId]);
 
   const [paidById, setPaidById] = useState<string | undefined>(
     expenseToEdit?.paidById ?? currentUserId,
@@ -73,6 +105,7 @@ export function useAddExpenseForm() {
   const [groupOpen, setGroupOpen] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [groupError, setGroupError] = useState<string | undefined>();
+  const [submitError, setSubmitError] = useState<string | undefined>();
 
   const skipMemberSync = useRef(isEditing);
 
@@ -93,7 +126,7 @@ export function useAddExpenseForm() {
 
   const groupOptions = useMemo<SelectOption[]>(
     () =>
-      groups.map((group) => ({ id: group.id, label: group.name, sublabel: group.description })),
+      groups.map((group) => ({ id: group.id, label: group.name, sublabel: group.description ?? undefined })),
     [groups],
   );
 
@@ -103,11 +136,49 @@ export function useAddExpenseForm() {
   );
 
   const paidByLabel =
-    members.find((member) => member.id === paidById)?.name ?? "Seleccioná quién pagó";
+    members.find((member) => member.id === paidById)?.name ?? 'Seleccioná quién pagó';
   const groupLabel =
     groups.find((group) => group.id === groupId)?.name ?? 'Seleccioná un grupo';
   const allParticipantsSelected =
     members.length > 0 && selectedParticipantIds.length === members.length;
+
+  const createExpenseMutation = useMutation({
+    mutationFn: ({ groupId: targetGroupId, input }: { groupId: string; input: ReturnType<typeof buildCreatePayload> }) =>
+      createExpense(targetGroupId, input),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(variables.groupId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(variables.groupId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
+    },
+    onError: () => {
+      setSubmitError('No pudimos registrar el gasto. Intentá de nuevo.');
+    },
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: ({ expenseId, input }: { expenseId: string; input: ReturnType<typeof buildCreatePayload> }) =>
+      updateExpense(expenseId, input),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.detail(variables.expenseId) });
+      if (groupId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(groupId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(groupId) });
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: (_data, expenseId) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.detail(expenseId) });
+      if (groupId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(groupId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(groupId) });
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
+    },
+  });
 
   function toggleParticipant(id: string) {
     setSelectedParticipantIds((current) => {
@@ -130,13 +201,29 @@ export function useAddExpenseForm() {
     }
   }
 
+  function navigateAfterCreate(targetGroupId: string) {
+    if (route.params?.groupId) {
+      if (route.params.groupId !== targetGroupId) {
+        navigation.popTo('GroupDetail', { groupId: targetGroupId });
+        return;
+      }
+      navigation.goBack();
+      return;
+    }
+
+    navigation.replace('GroupDetail', { groupId: targetGroupId });
+  }
+
   function onSubmit(values: NewExpenseFormValues) {
+    setSubmitError(undefined);
+
     if (!groupId) {
       setGroupError('Seleccioná un grupo para el gasto');
       return;
     }
 
-    if (!selectedGroup || deletedGroupIds.includes(groupId)) {
+    // Only reject "group not found" if the groups list has already loaded — avoids false negatives during loading
+    if (!isGroupsLoading && !selectedGroup) {
       setGroupId(undefined);
       setGroupError('El grupo seleccionado ya no está disponible. Elegí otro grupo.');
       return;
@@ -144,36 +231,26 @@ export function useAddExpenseForm() {
 
     setGroupError(undefined);
 
-    const expense = buildGroupExpense({
-      id: expenseToEdit?.id,
-      amount: values.amount,
-      description: values.description,
-      category: selectedCategory,
-      date,
+    const input = buildCreatePayload(values, {
+      groupCurrency: 'ARS',
       paidById: paidById ?? currentUserId ?? '',
       participantIds: selectedParticipantIds,
-      participants: members,
-      currentUserId: currentUserId ?? '',
-      now: new Date(),
+      category: selectedCategory,
+      date,
     });
 
-    if (isEditing) {
-      updateExpense(groupId, expense);
-      navigation.goBack();
+    if (isEditing && expenseToEdit) {
+      updateExpenseMutation.mutate(
+        { expenseId: expenseToEdit.id, input },
+        { onSuccess: () => navigation.goBack() },
+      );
       return;
     }
 
-    addExpense(groupId, expense);
-    if (route.params?.groupId) {
-      if (route.params.groupId !== groupId) {
-        navigation.popTo('GroupDetail', { groupId });
-        return;
-      }
-      navigation.goBack();
-      return;
-    }
-
-    navigation.replace('GroupDetail', { groupId });
+    createExpenseMutation.mutate(
+      { groupId, input },
+      { onSuccess: () => navigateAfterCreate(groupId) },
+    );
   }
 
   function onDelete() {
@@ -188,8 +265,9 @@ export function useAddExpenseForm() {
           text: 'Eliminar',
           style: 'destructive',
           onPress: () => {
-            deleteExpense(groupId, expenseToEdit.id);
-            navigation.goBack();
+            deleteExpenseMutation.mutate(expenseToEdit.id, {
+              onSuccess: () => navigation.goBack(),
+            });
           },
         },
       ],
@@ -203,6 +281,10 @@ export function useAddExpenseForm() {
     errors,
     // state flags
     isEditing,
+    isSubmitting:
+      createExpenseMutation.isPending ||
+      updateExpenseMutation.isPending ||
+      deleteExpenseMutation.isPending,
     // group
     groupId,
     setGroupId,
@@ -212,6 +294,7 @@ export function useAddExpenseForm() {
     setGroupOpen,
     groupError,
     setGroupError,
+    submitError,
     // paid by
     paidById,
     setPaidById,

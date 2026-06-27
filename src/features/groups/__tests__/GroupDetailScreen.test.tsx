@@ -2,20 +2,17 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Alert } from 'react-native';
 
-import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { GroupExpense } from '../types';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
-import { useGroups } from '../hooks/useGroups';
 import { useGroupsStore } from '../store/groupsStore';
+import { useGroupDetail } from '../hooks/useGroupDetail';
+import { useGroupDetailActions } from '../hooks/useGroupDetailActions';
 
-jest.mock('../hooks/useGroups');
+jest.mock('../hooks/useGroupDetail');
+jest.mock('../hooks/useGroupDetailActions');
 
-const mockUseGroups = jest.mocked(useGroups);
-
-type NavigationMock = {
-  goBack: jest.Mock;
-  navigate: jest.Mock;
-};
+const mockUseGroupDetail = jest.mocked(useGroupDetail);
+const mockUseGroupDetailActions = jest.mocked(useGroupDetailActions);
 
 function makeExpense(id: string): GroupExpense {
   return {
@@ -32,13 +29,53 @@ function makeExpense(id: string): GroupExpense {
   };
 }
 
+function buildGroupDetailResult(groupId: string, expenses: GroupExpense[]) {
+  const group = useGroupsStore.getState().groups.find((g) => g.id === groupId);
+  if (!group) {
+    return {
+      group: null,
+      memberBalances: [],
+      recentExpenses: [] as GroupExpense[],
+      totalExpensesCount: 0,
+      isLoading: false,
+    };
+  }
+  const owedToYou = expenses
+    .filter((e) => e.userRelation.type === 'lent')
+    .reduce((s, e) => s + (e.userRelation.type === 'lent' ? e.userRelation.amount : 0), 0);
+  const youOwe = expenses
+    .filter((e) => e.userRelation.type === 'share')
+    .reduce((s, e) => s + (e.userRelation.type === 'share' ? e.userRelation.amount : 0), 0);
+  return {
+    group: {
+      id: group.id,
+      name: group.name,
+      category: group.category,
+      totalExpense: expenses.reduce((s, e) => s + e.totalAmount, 0),
+      totalExpenseChangePercent: 0,
+      owedToYou,
+      youOwe,
+    },
+    memberBalances: [],
+    recentExpenses: expenses,
+    totalExpensesCount: expenses.length,
+    isLoading: false,
+  };
+}
+
+type NavigationMock = {
+  goBack: jest.Mock;
+  navigate: jest.Mock;
+};
+
 describe('GroupDetailScreen', () => {
   let navigationMock: NavigationMock;
   let groupId: string;
+  let localExpenses: GroupExpense[];
 
   beforeEach(() => {
     useGroupsStore.getState().reset();
-    useExpensesStore.getState().reset();
+    localExpenses = [];
     groupId = useGroupsStore.getState().createGroup({
       name: 'Viaje a Bariloche',
       category: 'TRAVEL',
@@ -52,13 +89,8 @@ describe('GroupDetailScreen', () => {
         avatarUrl: null,
       },
     }).id;
-    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-1'));
-    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-2'));
-    useExpensesStore.getState().addExpense(groupId, makeExpense('expense-3'));
-    mockUseGroups.mockReturnValue({
-      data: { data: [] },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useGroups>);
+    // Newest-first order (matching how expenses are displayed): expense-3 is most recent
+    localExpenses = [makeExpense('expense-3'), makeExpense('expense-2'), makeExpense('expense-1')];
     jest.mocked(useRoute).mockReturnValue({
       params: { groupId },
     } as ReturnType<typeof useRoute>);
@@ -67,6 +99,36 @@ describe('GroupDetailScreen', () => {
       navigate: jest.fn(),
     };
     jest.mocked(useNavigation).mockReturnValue(navigationMock as never);
+
+    function openSettings() {
+      Alert.alert('Opciones del grupo', 'Elegí qué querés hacer con este grupo.', [
+        {
+          text: 'Editar grupo',
+          onPress: () => navigationMock.navigate('NewGroup', { groupId }),
+        },
+        {
+          text: 'Eliminar grupo',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Eliminar grupo',
+              '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Eliminar', style: 'destructive' },
+              ],
+            ),
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
+    }
+
+    mockUseGroupDetail.mockImplementation(() => buildGroupDetailResult(groupId, localExpenses));
+    mockUseGroupDetailActions.mockReturnValue({
+      handleOpenSettings: openSettings,
+      handleOpenBalances: () => navigationMock.navigate('SettleDebts', { groupId }),
+      handleConfirmDelete: jest.fn(),
+    } as unknown as ReturnType<typeof useGroupDetailActions>);
   });
 
   it('hides the expand button when there are 3 or fewer expenses', () => {
@@ -76,7 +138,8 @@ describe('GroupDetailScreen', () => {
   });
 
   it('expands the list inline when there are more than 3 expenses', () => {
-    useExpensesStore.getState().addExpense(groupId, makeExpense('new-1'));
+    localExpenses = [makeExpense('new-1'), ...localExpenses];
+    mockUseGroupDetail.mockImplementation(() => buildGroupDetailResult(groupId, localExpenses));
 
     render(<GroupDetailScreen />);
 
@@ -120,7 +183,7 @@ describe('GroupDetailScreen', () => {
 
     fireEvent.press(screen.getByText('Saldar Cuentas'));
 
-    expect(navigationMock.navigate).toHaveBeenCalledWith('SettleDebts');
+    expect(navigationMock.navigate).toHaveBeenCalledWith('SettleDebts', { groupId });
   });
 
   it('opens a destructive confirmation before deleting the group', () => {
@@ -136,8 +199,7 @@ describe('GroupDetailScreen', () => {
       deleteButton?.onPress?.();
     });
 
-    expect(alertSpy).toHaveBeenNthCalledWith(
-      3,
+    expect(alertSpy).toHaveBeenLastCalledWith(
       'Eliminar grupo',
       '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.',
       expect.any(Array),
@@ -146,7 +208,13 @@ describe('GroupDetailScreen', () => {
 
   it('does not reopen a deleted group from the same route id', () => {
     useGroupsStore.getState().deleteGroup(groupId);
-    useExpensesStore.getState().deleteGroupExpenses(groupId);
+    mockUseGroupDetail.mockReturnValue({
+      group: null,
+      memberBalances: [],
+      recentExpenses: [] as GroupExpense[],
+      totalExpensesCount: 0,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useGroupDetail>);
 
     render(<GroupDetailScreen />);
 
@@ -156,11 +224,13 @@ describe('GroupDetailScreen', () => {
 
   it('shows a loading state instead of unavailable copy while the group query is loading', () => {
     useGroupsStore.getState().reset();
-    useExpensesStore.getState().reset();
-    mockUseGroups.mockReturnValue({
-      data: undefined,
+    mockUseGroupDetail.mockReturnValue({
+      group: null,
+      memberBalances: [],
+      recentExpenses: [] as GroupExpense[],
+      totalExpensesCount: 0,
       isLoading: true,
-    } as unknown as ReturnType<typeof useGroups>);
+    } as unknown as ReturnType<typeof useGroupDetail>);
     jest.mocked(useRoute).mockReturnValue({
       params: { groupId: 'api-group-loading' },
     } as ReturnType<typeof useRoute>);

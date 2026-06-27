@@ -47,6 +47,7 @@ export function AddExpenseScreen() {
     setGroupOpen,
     groupError,
     setGroupError,
+    submitError,
     paidById,
     setPaidById,
     paidByLabel,
@@ -282,6 +283,12 @@ export function AddExpenseScreen() {
             })}
           </View>
         </View>
+
+        {submitError ? (
+          <Text accessibilityLiveRegion="polite" selectable className="text-sm text-error">
+            {submitError}
+          </Text>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"

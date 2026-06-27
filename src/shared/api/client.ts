@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from 'axi
 
 import { getRefreshToken } from './tokenStorage';
 import { useAuthStore } from '../store/authStore';
+import { emitAuthLogout } from './authEvents';
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -9,10 +10,10 @@ type RefreshResponse = {
   accessToken: string;
 };
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export const client = axios.create({
-  baseURL: API_URL,
+  baseURL: `${API_URL}/api/v1`,
   timeout: 10_000,
 });
 
@@ -36,6 +37,7 @@ async function runRefresh() {
     return accessToken;
   } catch (error) {
     useAuthStore.getState().clearSession();
+    emitAuthLogout();
     throw error;
   }
 }

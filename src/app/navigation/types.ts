@@ -13,7 +13,7 @@ export type RootStackParamList = {
   GroupDetail: { groupId?: string } | undefined;
   NewGroup: { groupId?: string } | undefined;
   AddExpense: { groupId?: string; expenseId?: string } | undefined;
-  SettleDebts: undefined;
+  SettleDebts: { groupId: string };
 };
 
 export const registeredRouteNames = [

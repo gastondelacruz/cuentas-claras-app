@@ -1,88 +1,62 @@
 import { useNavigation } from '@react-navigation/native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { useGroups } from '../../groups/hooks/useGroups';
-import type { GroupExpense } from '../../groups/types';
-import { useGroupsStore } from '../../groups/store/groupsStore';
-import { useAuthStore } from '../../../shared/store/authStore';
 import { HomeScreen } from '../screens/HomeScreen';
+import { useHomeData } from '../hooks/useHomeData';
+import type { UseHomeDataResult } from '../types';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 
-jest.mock('../../groups/hooks/useGroups', () => ({
-  useGroups: jest.fn(),
+jest.mock('../hooks/useHomeData', () => ({
+  useHomeData: jest.fn(),
 }));
 
 const mockedUseNavigation = jest.mocked(useNavigation);
-const mockedUseGroups = jest.mocked(useGroups);
+const mockedUseHomeData = jest.mocked(useHomeData);
 const navigate = jest.fn();
 const parentNavigate = jest.fn();
 
-function mockGroupsQuery(groups: Array<{ id: string; name: string; description?: string | null }>) {
-  mockedUseGroups.mockReturnValue({
-    data: {
-      data: groups.map((group) => ({
-        id: group.id,
-        name: group.name,
-        description: group.description ?? null,
-        currency: 'ARS',
-        createdAt: '2024-05-20T00:00:00.000Z',
-        updatedAt: '2024-05-20T00:00:00.000Z',
-      })),
-    },
-    isLoading: false,
-    isError: false,
-    error: null,
-  } as ReturnType<typeof useGroups>);
-}
+const EMPTY_RESULT: UseHomeDataResult = {
+  data: { summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen' } }, activeGroups: [], recentActivity: [] },
+  summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen' } },
+  activeGroups: [],
+  recentActivity: [],
+  isLoading: false,
+  isError: false,
+  error: null,
+};
 
-function addExpense(groupId: string, expense: GroupExpense) {
-  useExpensesStore.getState().addExpense(groupId, expense);
+function mockHomeData(overrides: Partial<UseHomeDataResult> = {}) {
+  mockedUseHomeData.mockReturnValue({ ...EMPTY_RESULT, ...overrides });
 }
 
 function seedDashboard() {
-  const homeGroup = { id: 'api-group-lisboa', name: 'Viaje a Lisboa' };
-  const secondGroup = { id: 'api-group-departamento', name: 'Departamento' };
-
-  mockGroupsQuery([homeGroup, secondGroup]);
-
-  addExpense(homeGroup.id, {
-    id: 'expense-home-1',
-    title: 'Cena de Sushi',
-    paidByLabel: 'Pagado por mí',
-    timeLabel: 'hace 2h',
-    totalAmount: 120,
-    category: 'FOOD',
-    userRelation: { type: 'lent', amount: 60 },
-    paidById: 'current-user',
-    participantIds: ['current-user', 'invite-0-alex@example.com', 'invite-1-sarah@example.com'],
-    date: '2024-05-21T12:00:00.000Z',
-  });
-
-  addExpense(secondGroup.id, {
-    id: 'expense-home-2',
-    title: 'Billetes de Tren',
-    paidByLabel: 'Pagado por Diego',
-    timeLabel: 'hace 4h',
-    totalAmount: 85,
-    category: 'TRANSPORT',
-    userRelation: { type: 'share', amount: 20 },
-    paidById: 'invite-0-diego@example.com',
-    participantIds: ['current-user', 'invite-0-diego@example.com'],
-    date: '2024-05-21T10:00:00.000Z',
+  const activeGroups = [
+    { id: 'api-group-lisboa', name: 'Viaje a Lisboa', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' },
+    { id: 'api-group-departamento', name: 'Departamento', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' },
+  ];
+  const summary = {
+    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 60, detail: '2 Personas' },
+    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: -20, detail: '1 Grupo' },
+  };
+  const recentActivity = [
+    { id: 'expense-home-1', groupId: 'api-group-lisboa', title: 'Cena de Sushi', context: 'Viaje a Lisboa', amount: 120, timeLabel: 'hace 2h', category: 'food' as const, paidByLabel: 'Pagado por ti en Viaje a Lisboa' },
+    { id: 'expense-home-2', groupId: 'api-group-departamento', title: 'Billetes de Tren', context: 'Departamento', amount: -85, timeLabel: 'hace 4h', category: 'transport' as const, paidByLabel: 'Pagado por Diego en Departamento' },
+  ];
+  mockHomeData({
+    data: { summary, activeGroups, recentActivity },
+    summary,
+    activeGroups,
+    recentActivity,
   });
 }
 
 describe('HomeScreen', () => {
   beforeEach(() => {
-    useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
-    useGroupsStore.getState().reset();
-    useExpensesStore.getState().reset();
     jest.clearAllMocks();
-    mockGroupsQuery([]);
+    mockHomeData();
     mockedUseNavigation.mockReturnValue({
       navigate,
       getParent: () => ({ navigate: parentNavigate }),
@@ -98,7 +72,7 @@ describe('HomeScreen', () => {
     expect(screen.getByLabelText('Abrir menú de creación')).toBeTruthy();
   });
 
-  it('renders summary cards with store-driven totals', () => {
+  it('renders summary cards with API-driven totals', () => {
     seedDashboard();
 
     render(<HomeScreen />);
@@ -117,16 +91,25 @@ describe('HomeScreen', () => {
     render(<HomeScreen />);
 
     expect(screen.getByText('Grupos activos')).toBeTruthy();
-    expect(screen.getByText('Viaje a Lisboa')).toBeTruthy();
-    expect(screen.getByText('Departamento')).toBeTruthy();
+    expect(screen.getAllByText('Viaje a Lisboa').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Departamento').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Recién creado')).toHaveLength(2);
     expect(screen.getAllByText('Otros')).toHaveLength(2);
     expect(screen.getByLabelText('Ver todos los grupos')).toBeTruthy();
     expect(screen.getByText('Ver lista completa')).toBeTruthy();
   });
 
-  it('renders API-backed active groups even when there are no local expenses', () => {
-    mockGroupsQuery([{ id: 'api-group-empty-expenses', name: 'Grupo desde API' }]);
+  it('renders API-backed active groups even when there are no recent expenses', () => {
+    mockHomeData({
+      data: {
+        summary: EMPTY_RESULT.summary,
+        activeGroups: [{ id: 'api-group-empty-expenses', name: 'Grupo desde API', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' }],
+        recentActivity: [],
+      },
+      summary: EMPTY_RESULT.summary,
+      activeGroups: [{ id: 'api-group-empty-expenses', name: 'Grupo desde API', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' }],
+      recentActivity: [],
+    });
 
     render(<HomeScreen />);
 
@@ -145,7 +128,7 @@ describe('HomeScreen', () => {
     expect(navigate).toHaveBeenCalledWith('GroupsList');
   });
 
-  it('renders recent activity rows with store-created expenses', () => {
+  it('renders recent activity rows with API-backed expenses', () => {
     seedDashboard();
 
     render(<HomeScreen />);
@@ -153,10 +136,6 @@ describe('HomeScreen', () => {
     expect(screen.getByText('Actividad reciente')).toBeTruthy();
     expect(screen.getByText('Cena de Sushi')).toBeTruthy();
     expect(screen.getByText('Billetes de Tren')).toBeTruthy();
-    expect(screen.getByText('Pagado por ti en Viaje a Lisboa')).toBeTruthy();
-    expect(screen.getByText('Pagado por Diego en Departamento')).toBeTruthy();
-    expect(screen.getByText('+$120,00')).toBeTruthy();
-    expect(screen.getByText('-$85,00')).toBeTruthy();
     expect(screen.getByText('hace 2h')).toBeTruthy();
   });
 

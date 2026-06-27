@@ -1,17 +1,42 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 
 import { RootStackParamList } from '../../../app/navigation/types';
-import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { useGroupsStore } from '../store/groupsStore';
+import { queryKeys } from '../../../shared/api/queryKeys';
+import { deleteGroup, updateGroup } from '../api/groupsApi';
+import { GroupDetailDto } from '../schemas/groupSchema';
 
 type GroupDetailNavigation = NativeStackNavigationProp<RootStackParamList>;
 
+export function useUpdateGroup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ groupId, data }: { groupId: string; data: Partial<GroupDetailDto> }) =>
+      updateGroup(groupId, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(variables.groupId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.all() });
+    },
+  });
+}
+
+export function useDeleteGroup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.groups.all() });
+    },
+  });
+}
+
 export function useGroupDetailActions(groupId: string) {
   const navigation = useNavigation<GroupDetailNavigation>();
-  const deleteGroup = useGroupsStore((state) => state.deleteGroup);
-  const deleteGroupExpenses = useExpensesStore((state) => state.deleteGroupExpenses);
+  const deleteGroupMutation = useDeleteGroup();
 
   function handleConfirmDelete() {
     Alert.alert(
@@ -23,9 +48,9 @@ export function useGroupDetailActions(groupId: string) {
           text: 'Eliminar',
           style: 'destructive',
           onPress: () => {
-            deleteGroup(groupId);
-            deleteGroupExpenses(groupId);
-            navigation.goBack();
+            deleteGroupMutation.mutate(groupId, {
+              onSuccess: () => navigation.goBack(),
+            });
           },
         },
       ],
@@ -48,7 +73,7 @@ export function useGroupDetailActions(groupId: string) {
   }
 
   function handleOpenBalances() {
-    navigation.navigate('SettleDebts');
+    navigation.navigate('SettleDebts', { groupId });
   }
 
   return { handleConfirmDelete, handleOpenSettings, handleOpenBalances };

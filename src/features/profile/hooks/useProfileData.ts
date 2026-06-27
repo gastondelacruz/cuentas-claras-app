@@ -1,6 +1,4 @@
-import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { useGroupsStore } from '../../groups/store/groupsStore';
-import type { GroupExpense } from '../../groups/types';
+import { useGroups } from '../../groups/hooks/useGroups';
 import { useAuthStore } from '../../../shared/store/authStore';
 
 type ProfileSummary = {
@@ -22,40 +20,32 @@ type UseProfileDataResult = {
   user: ProfileUser;
 };
 
-const profileFallback = {
-  name: 'Alex Thompson',
-  email: 'alex.thompson@lumifinance.com',
-  status: 'Verificado',
-  avatarUrl:
-    'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&h=240&fit=crop&crop=faces',
-};
+const defaultAvatarUrl =
+  'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&h=240&fit=crop&crop=faces';
 
-function roundToCents(value: number) {
+function roundToCents(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function summarizeExpenses(groups: { id: string }[], expensesByGroup: Record<string, GroupExpense[]>): ProfileSummary {
-  let totalExpenses = 0;
+function summarizeGroups(groups: { expensesCount?: number; totalAmount?: number; currentUserBalance?: number }[]): ProfileSummary {
   let totalExpenseCount = 0;
+  let totalExpenses = 0;
+  let activeDebtGroupsCount = 0;
   let youOwe = 0;
-  const activeDebtGroupIds = new Set<string>();
 
   for (const group of groups) {
-    const expenses = expensesByGroup[group.id] ?? [];
+    totalExpenseCount += group.expensesCount ?? 0;
+    totalExpenses += group.totalAmount ?? 0;
 
-    for (const expense of expenses) {
-      totalExpenses += expense.totalAmount;
-      totalExpenseCount += 1;
-
-      if (expense.userRelation.type === 'share') {
-        youOwe += expense.userRelation.amount;
-        activeDebtGroupIds.add(group.id);
-      }
+    const balance = group.currentUserBalance ?? 0;
+    if (balance < 0) {
+      activeDebtGroupsCount += 1;
+      youOwe += Math.abs(balance);
     }
   }
 
   return {
-    activeDebtGroupsCount: activeDebtGroupIds.size,
+    activeDebtGroupsCount,
     totalExpenseCount,
     totalExpenses: roundToCents(totalExpenses),
     youOwe: roundToCents(youOwe),
@@ -64,14 +54,18 @@ function summarizeExpenses(groups: { id: string }[], expensesByGroup: Record<str
 
 export function useProfileData(): UseProfileDataResult {
   const authUser = useAuthStore((state) => state.user);
-  const groups = useGroupsStore((state) => state.groups);
-  const expensesByGroup = useExpensesStore((state) => state.expensesByGroup);
+  const { data: groupsResponse } = useGroups();
+
+  const groups = groupsResponse?.data ?? [];
+  const summary = summarizeGroups(groups);
 
   return {
     user: {
-      ...profileFallback,
-      email: authUser?.email ?? profileFallback.email,
+      name: authUser?.name ?? authUser?.email ?? 'Usuario',
+      email: authUser?.email ?? '',
+      status: 'Verificado',
+      avatarUrl: defaultAvatarUrl,
     },
-    summary: summarizeExpenses(groups, expensesByGroup),
+    summary,
   };
 }

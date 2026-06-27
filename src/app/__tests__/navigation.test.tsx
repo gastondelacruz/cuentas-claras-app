@@ -4,15 +4,17 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
-import { useExpensesStore } from '../../features/expenses/store/expensesStore';
 import { useGroups } from '../../features/groups/hooks/useGroups';
 import { useGroupsStore } from '../../features/groups/store/groupsStore';
-import type { GroupExpense } from '../../features/groups/types';
 import { useAuthStore } from '../../shared/store/authStore';
+import { emitAuthLogout } from '../../shared/api/authEvents';
+import { useGroupDetail } from '../../features/groups/hooks/useGroupDetail';
+import { useGroupDetailActions } from '../../features/groups/hooks/useGroupDetailActions';
 
 jest.mock('../../features/auth/hooks/useLogin', () => ({
   useLogin: jest.fn(() => ({
@@ -31,6 +33,21 @@ jest.mock('../../features/auth/hooks/useRegister', () => ({
 }));
 
 jest.mock('../../features/groups/hooks/useGroups');
+jest.mock('../../features/groups/hooks/useGroupDetail');
+jest.mock('../../features/groups/hooks/useGroupDetailActions');
+const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
+const mockSummary = { owedToUser: { id: 'a', title: 'Te deben', amount: 0, detail: '' }, owedByUser: { id: 'b', title: 'Debes', amount: 0, detail: '' } };
+
+jest.mock('../../features/home/hooks/useHomeData', () => ({
+  useHomeData: jest.fn(),
+}));
+
+jest.mock('../../features/profile/hooks/useProfileData', () => ({
+  useProfileData: jest.fn(() => ({
+    user: { name: 'Alex Thompson', email: 'alex@example.com', status: 'Verificado', avatarUrl: '' },
+    summary: { activeDebtGroupsCount: 0, totalExpenseCount: 3, totalExpenses: 450, youOwe: 0 },
+  })),
+}));
 
 jest.mock('react-native-toast-message', () => ({
   __esModule: true,
@@ -43,6 +60,12 @@ const actualNavigation = jest.requireActual<typeof import('@react-navigation/nat
 
 const mainTabLabels = ['Inicio', 'Grupos', 'Perfil'] as const;
 const mockUseGroups = jest.mocked(useGroups);
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+}
 
 function createGroup(name: string, invitedEmails: string[]) {
   return useGroupsStore.getState().createGroup({
@@ -60,17 +83,12 @@ function createGroup(name: string, invitedEmails: string[]) {
   });
 }
 
-function addExpense(groupId: string, expense: GroupExpense) {
-  useExpensesStore.getState().addExpense(groupId, expense);
-}
-
 describe('navigation shell', () => {
   let groupId: string;
 
   beforeEach(() => {
     useAuthStore.getState().clearSession();
     useGroupsStore.getState().reset();
-    useExpensesStore.getState().reset();
     groupId = createGroup('Viaje a la costa', ['alex@example.com', 'sarah@example.com']).id;
     mockUseGroups.mockReturnValue({
       data: {
@@ -87,20 +105,45 @@ describe('navigation shell', () => {
       },
       isLoading: false,
     } as unknown as ReturnType<typeof useGroups>);
-    addExpense(groupId, {
-      id: 'nav-expense-1',
-      title: 'Cena frente al mar',
-      paidByLabel: 'Pagado por mí',
-      timeLabel: 'Hoy',
-      totalAmount: 120,
-      category: 'FOOD',
-      userRelation: { type: 'lent', amount: 60 },
-      paidById: '1',
-      participantIds: ['1', 'invite-0-alex@example.com', 'invite-1-sarah@example.com'],
-      date: '2024-05-21T12:00:00.000Z',
-    });
     jest.mocked(useNavigation).mockImplementation(actualNavigation.useNavigation as never);
     jest.mocked(useRoute).mockImplementation(actualNavigation.useRoute as never);
+
+    jest.mocked(useGroupDetail).mockImplementation((id?: string) => {
+      const group = useGroupsStore.getState().groups.find((g) => g.id === id);
+      return {
+        group: group
+          ? {
+              id: group.id,
+              name: group.name,
+              category: group.category,
+              totalExpense: 0,
+              totalExpenseChangePercent: 0,
+              owedToYou: 0,
+              youOwe: 0,
+            }
+          : null,
+        memberBalances: [],
+        recentExpenses: [],
+        totalExpensesCount: 0,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useGroupDetail>;
+    });
+    jest.mocked(useGroupDetailActions).mockReturnValue({
+      handleOpenSettings: jest.fn(),
+      handleOpenBalances: jest.fn(),
+      handleConfirmDelete: jest.fn(),
+    } as unknown as ReturnType<typeof useGroupDetailActions>);
+
+    const { useHomeData } = jest.requireMock('../../features/home/hooks/useHomeData') as { useHomeData: jest.Mock };
+    useHomeData.mockReturnValue({
+      data: { summary: mockSummary, activeGroups: [mockActiveGroup], recentActivity: [] },
+      summary: mockSummary,
+      activeGroups: [mockActiveGroup],
+      recentActivity: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
   });
 
   it('registers all route names expected by the bootstrap spec', () => {
@@ -119,10 +162,13 @@ describe('navigation shell', () => {
 
   it('renders auth stack while unauthenticated', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
+    const testClient = createTestQueryClient();
     const { findAllByText, findByText } = render(
-      <NavigationContainer ref={navigationRef}>
-        <RootNavigator />
-      </NavigationContainer>,
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer ref={navigationRef}>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
     );
 
     expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
@@ -138,10 +184,13 @@ describe('navigation shell', () => {
   it('renders main tabs while authenticated', async () => {
     useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
 
+    const testClient = createTestQueryClient();
     const { findByText, getAllByText, getByLabelText, getByText, queryByText } = render(
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>,
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
     );
 
     expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
@@ -167,10 +216,13 @@ describe('navigation shell', () => {
 
   it('navigates to registered stack screens and switches stacks when auth state changes', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
+    const testClient = createTestQueryClient();
     const { findByText, findAllByText, queryByText } = render(
-      <NavigationContainer ref={navigationRef}>
-        <RootNavigator />
-      </NavigationContainer>,
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer ref={navigationRef}>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
     );
 
     expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
@@ -203,5 +255,28 @@ describe('navigation shell', () => {
 
     expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
     expect(queryByText('Viaje a la costa')).toBeNull();
+  });
+
+  it('resets to the auth stack when auth:logout is emitted', async () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
+
+    const testClient = createTestQueryClient();
+    const { findByText, findAllByText, queryByText } = render(
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
+    );
+
+    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
+    expect(queryByText('Iniciar Sesión')).toBeNull();
+
+    act(() => {
+      emitAuthLogout();
+    });
+
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
+    expect(queryByText('Te deben')).toBeNull();
   });
 });

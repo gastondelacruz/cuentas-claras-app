@@ -12,12 +12,12 @@ describe('api client environment configuration', () => {
   });
 
   it('uses EXPO_PUBLIC_API_URL when it is defined before module load', () => {
-    process.env.EXPO_PUBLIC_API_URL = 'http://test-server/api';
+    process.env.EXPO_PUBLIC_API_URL = 'http://test-server';
 
     jest.isolateModules(() => {
       const { client } = require('../client') as typeof import('../client');
 
-      expect(client.defaults.baseURL).toBe('http://test-server/api');
+      expect(client.defaults.baseURL).toBe('http://test-server/api/v1');
     });
   });
 });

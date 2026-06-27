@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { createId } from '../../../shared/utils/createId';
-import { groupsListMock } from '../mocks/groupsList.mock';
+import { groupsListMock } from '../__fixtures__/groupsList.mock';
 import { inviteMembersRequiredMessage, invitedEmailsSchema } from '../schemas/new-group-schema';
 import { GroupCategory, GroupImage, GroupMemberPreview, StoredGroup } from '../types';
 

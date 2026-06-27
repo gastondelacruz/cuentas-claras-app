@@ -7,17 +7,22 @@ import React from 'react';
 
 import { useAuthStore } from '../../../shared/store/authStore';
 import { NewGroupScreen } from '../screens/NewGroupScreen';
-import { useGroupsStore } from '../store/groupsStore';
 import { useCreateGroup } from '../hooks/useCreateGroup';
+import { useUpdateGroup } from '../hooks/useGroupDetailActions';
+import { queryKeys } from '../../../shared/api/queryKeys';
 
 jest.mock('../hooks/useCreateGroup');
+jest.mock('../hooks/useGroupDetailActions');
 
 const mockMutate = jest.fn();
+const mockUpdateMutate = jest.fn();
 const mockUseCreateGroup = jest.mocked(useCreateGroup);
+const mockUseUpdateGroup = jest.mocked(useUpdateGroup);
+
+let sharedQueryClient: QueryClient;
 
 function renderWithQueryClient(ui: React.ReactElement) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return render(<QueryClientProvider client={sharedQueryClient}>{ui}</QueryClientProvider>);
 }
 
 type NavigationMock = {
@@ -29,7 +34,7 @@ let navigationMock: NavigationMock;
 
 describe('NewGroupScreen', () => {
   beforeEach(() => {
-    useGroupsStore.getState().reset();
+    sharedQueryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
     jest.mocked(useRoute).mockReturnValue({ params: undefined } as ReturnType<typeof useRoute>);
     navigationMock = {
@@ -42,17 +47,23 @@ describe('NewGroupScreen', () => {
       mutate: mockMutate,
       isPending: false,
     } as unknown as ReturnType<typeof useCreateGroup>);
+    mockUseUpdateGroup.mockReturnValue({
+      mutate: mockUpdateMutate,
+      isPending: false,
+    } as unknown as ReturnType<typeof useUpdateGroup>);
     jest.clearAllMocks();
     // Re-apply mock after clearAllMocks since clearAllMocks resets mock implementations
     mockUseCreateGroup.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
     } as unknown as ReturnType<typeof useCreateGroup>);
+    mockUseUpdateGroup.mockReturnValue({
+      mutate: mockUpdateMutate,
+      isPending: false,
+    } as unknown as ReturnType<typeof useUpdateGroup>);
   });
 
   it('blocks saving when there are no invited members', async () => {
-    const initialGroupsCount = useGroupsStore.getState().groups.length;
-
     renderWithQueryClient(<NewGroupScreen />);
 
     fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Mendoza');
@@ -62,8 +73,8 @@ describe('NewGroupScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Agregá al menos un miembro antes de guardar el grupo')).toBeTruthy();
-      expect(useGroupsStore.getState().groups).toHaveLength(initialGroupsCount);
     });
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it('shows invite validation messages in Spanish', () => {
@@ -199,22 +210,21 @@ describe('NewGroupScreen', () => {
   });
 
   it('prefills edit mode and saves the updated group', async () => {
-    const createdGroup = useGroupsStore.getState().createGroup({
+    const editGroupId = 'edit-group-id';
+    // Pre-seed React Query cache so useNewGroupForm gets data synchronously
+    sharedQueryClient.setQueryData(queryKeys.groups.detail(editGroupId), {
+      id: editGroupId,
       name: 'Viaje a Mendoza',
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['friend@example.com'],
-      owner: {
-        id: 'current-user',
-        name: 'Vos',
-        email: 'you@example.com',
-        initials: 'YO',
-        avatarUrl: null,
-      },
+      type: 'trip',
+      currency: 'ARS',
+      members: [
+        { id: 'current-user', displayName: 'Vos', email: 'you@example.com', isCurrentUser: true },
+        { id: 'friend-id', displayName: 'friend@example.com', email: 'friend@example.com', isCurrentUser: false },
+      ],
     });
 
     jest.mocked(useRoute).mockReturnValue({
-      params: { groupId: createdGroup.id },
+      params: { groupId: editGroupId },
     } as ReturnType<typeof useRoute>);
 
     renderWithQueryClient(<NewGroupScreen />);
@@ -223,6 +233,10 @@ describe('NewGroupScreen', () => {
     expect(screen.getByDisplayValue('Viaje a Mendoza')).toBeTruthy();
     expect(screen.getByText('Guardar cambios')).toBeTruthy();
 
+    mockUpdateMutate.mockImplementationOnce((_vars, callbacks) => {
+      callbacks?.onSuccess?.();
+    });
+
     fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Bariloche');
 
     await act(async () => {
@@ -230,30 +244,34 @@ describe('NewGroupScreen', () => {
     });
 
     await waitFor(() => {
-      expect(useGroupsStore.getState().groups.find((group) => group.id === createdGroup.id)?.name).toBe(
-        'Viaje a Bariloche',
+      expect(mockUpdateMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groupId: editGroupId,
+          data: expect.objectContaining({ name: 'Viaje a Bariloche', type: 'trip' }),
+        }),
+        expect.any(Object),
       );
       expect(navigationMock.goBack).toHaveBeenCalled();
     });
   });
 
   it('keeps existing invites visible while adding more in edit mode', async () => {
-    const createdGroup = useGroupsStore.getState().createGroup({
+    const editGroupId = 'edit-group-with-members-id';
+    // Pre-seed cache with two existing non-current members
+    sharedQueryClient.setQueryData(queryKeys.groups.detail(editGroupId), {
+      id: editGroupId,
       name: 'Viaje a Mendoza',
-      category: 'TRAVEL',
-      image: { type: 'default', uri: null },
-      invitedEmails: ['alex@example.com', 'sarah@example.com'],
-      owner: {
-        id: 'current-user',
-        name: 'Vos',
-        email: 'you@example.com',
-        initials: 'YO',
-        avatarUrl: null,
-      },
+      type: 'trip',
+      currency: 'ARS',
+      members: [
+        { id: 'current-user', displayName: 'Vos', email: 'you@example.com', isCurrentUser: true },
+        { id: 'alex-id', displayName: 'alex@example.com', email: 'alex@example.com', isCurrentUser: false },
+        { id: 'sarah-id', displayName: 'sarah@example.com', email: 'sarah@example.com', isCurrentUser: false },
+      ],
     });
 
     jest.mocked(useRoute).mockReturnValue({
-      params: { groupId: createdGroup.id },
+      params: { groupId: editGroupId },
     } as ReturnType<typeof useRoute>);
 
     renderWithQueryClient(<NewGroupScreen />);
@@ -268,15 +286,19 @@ describe('NewGroupScreen', () => {
     expect(screen.getByText('sarah@example.com')).toBeTruthy();
     expect(screen.getByText('friend@example.com')).toBeTruthy();
 
+    mockUpdateMutate.mockImplementationOnce((_vars, callbacks) => {
+      callbacks?.onSuccess?.();
+    });
+
     await act(async () => {
       fireEvent.press(screen.getByTestId('save-group-button'));
     });
 
     await waitFor(() => {
-      expect(useGroupsStore.getState().groups.find((group) => group.id === createdGroup.id)).toMatchObject({
-        invitedEmails: ['alex@example.com', 'sarah@example.com', 'friend@example.com'],
-        extraMembersCount: 1,
-      });
+      expect(mockUpdateMutate).toHaveBeenCalledWith(
+        expect.objectContaining({ groupId: editGroupId }),
+        expect.any(Object),
+      );
       expect(navigationMock.goBack).toHaveBeenCalled();
     });
   });

@@ -25,7 +25,7 @@ export function HomeScreen() {
   const { data, isLoading, isError, error } = useHomeData();
 
   const navigateToRootScreen = (screen: keyof RootStackParamList) => {
-    navigation.getParent?.<RootNavigation>()?.navigate(screen);
+    navigation.getParent?.<RootNavigation>()?.navigate(screen as never);
   };
 
   const navigateToGroupDetail = (groupId: string) => {

@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AddExpenseScreen } from '../../features/expenses/screens/AddExpenseScreen';
 import { SettleDebtsScreen } from '../../features/expenses/screens/SettleDebtsScreen';
 import { GroupDetailScreen } from '../../features/groups/screens/GroupDetailScreen';
 import { NewGroupScreen } from '../../features/groups/screens/NewGroupScreen';
+import { onAuthLogout } from '../../shared/api/authEvents';
 import { useAuthStore } from '../../shared/store/authStore';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
@@ -13,6 +15,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    return onAuthLogout(() => {
+      useAuthStore.getState().clearSession();
+    });
+  }, []);
 
   if (!isAuthenticated) {
     return <AuthStack />;

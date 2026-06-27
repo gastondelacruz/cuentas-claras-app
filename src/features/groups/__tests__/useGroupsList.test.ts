@@ -1,36 +1,26 @@
 import { renderHook } from '@testing-library/react-native';
 
-import { useExpensesStore } from '../../expenses/store/expensesStore';
 import { useGroupsList } from '../hooks/useGroupsList';
 import { useGroups } from '../hooks/useGroups';
-import type { ExpenseUserRelation, GroupExpense } from '../types';
 
 jest.mock('../hooks/useGroups');
 
 const mockUseGroups = jest.mocked(useGroups);
 
-function makeGroup(id: string, name = `Group ${id}`) {
-  return { id, name, description: null, currency: 'ARS', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' };
-}
-
-function makeExpense(id: string, userRelation: ExpenseUserRelation): GroupExpense {
+function makeGroup(id: string, name = `Group ${id}`, currentUserBalance?: number) {
   return {
     id,
-    title: `Gasto ${id}`,
-    paidByLabel: 'Pagado por mí',
-    timeLabel: 'Hoy',
-    totalAmount: 0,
-    category: 'FOOD',
-    userRelation,
-    paidById: 'current-user',
-    participantIds: ['current-user'],
-    date: '2024-05-20T00:00:00.000Z',
+    name,
+    description: null,
+    currency: 'ARS',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    currentUserBalance,
   };
 }
 
 describe('useGroupsList', () => {
   beforeEach(() => {
-    useExpensesStore.getState().reset();
     mockUseGroups.mockReturnValue({
       data: { data: [] },
       isLoading: false,
@@ -92,17 +82,16 @@ describe('useGroupsList', () => {
     });
   });
 
-  it('derives each group balance and the net total from local expenses', () => {
+  it('derives each group balance and the net total from currentUserBalance in the API response', () => {
     mockUseGroups.mockReturnValue({
-      data: { data: [makeGroup('g1', 'Viaje a la costa'), makeGroup('g2', 'Departamento')] },
+      data: {
+        data: [
+          makeGroup('g1', 'Viaje a la costa', 25000),
+          makeGroup('g2', 'Departamento', -12000),
+        ],
+      },
       isLoading: false,
     } as unknown as ReturnType<typeof useGroups>);
-
-    // g1: owed 30.000 and owe 5.000 -> +25.000
-    useExpensesStore.getState().addExpense('g1', makeExpense('a', { type: 'lent', amount: 30000 }));
-    useExpensesStore.getState().addExpense('g1', makeExpense('b', { type: 'share', amount: 5000 }));
-    // g2: owe 12.000 -> -12.000
-    useExpensesStore.getState().addExpense('g2', makeExpense('c', { type: 'share', amount: 12000 }));
 
     const { result } = renderHook(() => useGroupsList());
 

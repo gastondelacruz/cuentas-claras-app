@@ -1,46 +1,111 @@
-import { useExpensesStore } from '../../expenses/store/expensesStore';
-import { GroupDetail, GroupExpense, MemberBalance } from '../types';
-import { groupDetailMock, memberBalancesMock, recentExpensesMock } from '../mocks/groupDetail.mock';
-import { groupsListMock } from '../mocks/groupsList.mock';
-import { useGroupsStore } from '../store/groupsStore';
-import { useGroups } from './useGroups';
+import { useQuery } from '@tanstack/react-query';
+
+import { queryKeys } from '../../../shared/api/queryKeys';
+import { useAuthStore } from '../../../shared/store/authStore';
+import { useGroupExpenses } from '../../expenses/hooks/useGroupExpenses';
+import { ExpenseListItemDto } from '../../expenses/schemas/expenseSchema';
+import { GroupApiType, getGroup, getGroupBalances } from '../api/groupsApi';
+import { ExpenseCategory, GroupDetail, GroupExpense, MemberBalance } from '../types';
+import { getPayableAmount, getReceivableAmount } from '../utils/balanceContract';
+import type { AuthUser } from '../../../shared/store/authStore';
+import type { GroupBalanceItemDto, GroupDetailDto } from '../schemas/groupSchema';
 
 const EMPTY_EXPENSES: GroupExpense[] = [];
-const EMPTY_IDS: string[] = [];
 
-function sumExpenses(expenses: GroupExpense[]) {
-  return expenses.reduce(
-    (totals, expense) => {
-      totals.total += expense.totalAmount;
+const apiTypeToCategory: Record<GroupApiType, GroupDetail['category']> = {
+  trip: 'TRAVEL',
+  home: 'HOME',
+  couple: 'OTHER',
+  friends: 'OTHER',
+  event: 'EVENT',
+  other: 'OTHER',
+};
 
-      if (expense.userRelation.type === 'lent') {
-        totals.owedToYou += expense.userRelation.amount;
-      }
+const validExpenseCategories = new Set<ExpenseCategory>([
+  'FOOD',
+  'TRANSPORT',
+  'UTILITIES',
+  'SHOPPING',
+  'ENTERTAINMENT',
+  'OTHER',
+]);
 
-      if (expense.userRelation.type === 'share') {
-        totals.youOwe += expense.userRelation.amount;
-      }
-
-      return totals;
-    },
-    { total: 0, owedToYou: 0, youOwe: 0 },
-  );
+function toExpenseCategory(category: ExpenseListItemDto['category']): ExpenseCategory {
+  return category && validExpenseCategories.has(category as ExpenseCategory)
+    ? (category as ExpenseCategory)
+    : 'OTHER';
 }
 
-function getInitialsFromValue(value: string) {
-  const tokens = value
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean);
+function toStartOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
 
-  if (tokens.length === 0) {
-    return 'NA';
+function buildTimeLabel(dateValue: string, now = new Date()): string {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
   }
 
-  return tokens
-    .slice(0, 2)
-    .map((token) => token[0]?.toUpperCase() ?? '')
-    .join('');
+  const oneDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((toStartOfDay(now) - toStartOfDay(date)) / oneDay);
+
+  if (diffDays === 0) {
+    return 'Hoy';
+  }
+
+  if (diffDays === 1) {
+    return 'Ayer';
+  }
+
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function mapExpenseListItemToGroupExpense(expense: ExpenseListItemDto): GroupExpense {
+  return {
+    id: expense.id,
+    title: expense.title,
+    paidByLabel: `Pagado por ${expense.paidBy.displayName}`,
+    timeLabel: buildTimeLabel(expense.expenseDate),
+    totalAmount: expense.amount,
+    category: toExpenseCategory(expense.category),
+    userRelation: { type: 'none', amount: 0 },
+    paidById: expense.paidBy.id,
+    participantIds: [],
+    date: expense.expenseDate,
+  };
+}
+
+function getCurrentMemberId(groupDetail: GroupDetailDto, authUser: AuthUser | null): string | undefined {
+  const currentMember = groupDetail.members.find((member) => member.isCurrentUser);
+
+  if (currentMember?.id) {
+    return currentMember.id;
+  }
+
+  const authMatchedMember = groupDetail.members.find(
+    (member) =>
+      (Boolean(member.id) && member.id === authUser?.id) ||
+      (Boolean(member.email) && member.email === authUser?.email),
+  );
+
+  return authMatchedMember?.id;
+}
+
+function isCurrentUserBalance(
+  balance: GroupBalanceItemDto,
+  currentMemberId: string | undefined,
+  authUser: AuthUser | null,
+): boolean {
+  return Boolean(
+    balance.isCurrentUser ||
+      (currentMemberId && balance.memberId === currentMemberId) ||
+      (authUser?.id && balance.memberId === authUser.id),
+  );
 }
 
 type UseGroupDetailResult = {
@@ -51,130 +116,71 @@ type UseGroupDetailResult = {
   isLoading: boolean;
 };
 
-/**
- * Returns the data needed to render the group detail screen.
- *
- * This is intentionally shaped like a TanStack Query hook so that swapping the
- * mock for a real `useQuery({ queryKey: ['group', groupId], ... })` call later
- * does not require touching the UI. For now the hook resolves synchronously,
- * preserving the selected group identity while merging local expense state.
- */
 export function useGroupDetail(groupId?: string): UseGroupDetailResult {
-  const { data, isLoading } = useGroups();
-  const groupFromStore = useGroupsStore((state) => state.groups.find((group) => group.id === groupId));
-  const isDeletedGroup = useGroupsStore((state) =>
-    groupId ? state.deletedGroupIds.includes(groupId) : false,
-  );
-  const createdExpenses = useExpensesStore((state) =>
-    groupId ? state.expensesByGroup[groupId] ?? EMPTY_EXPENSES : EMPTY_EXPENSES,
-  );
-  const deletedExpenseIds = useExpensesStore((state) =>
-    groupId ? state.deletedExpenseIdsByGroup[groupId] ?? EMPTY_IDS : EMPTY_IDS,
-  );
-  const isSeededMockGroup = groupsListMock.some((group) => group.id === groupId);
-  const groupFromApi = data?.data.find((group) => group.id === groupId);
+  const authUser = useAuthStore((state) => state.user);
 
-  if (!groupId || isDeletedGroup || (!groupFromStore && !isSeededMockGroup && !groupFromApi)) {
+  const { data: groupDetail, isLoading: isDetailLoading } = useQuery({
+    queryKey: queryKeys.groups.detail(groupId ?? ''),
+    queryFn: () => getGroup(groupId!),
+    enabled: Boolean(groupId),
+  });
+
+  const { data: balancesData, isLoading: isBalancesLoading } = useQuery({
+    queryKey: queryKeys.groups.balances(groupId ?? ''),
+    queryFn: () => getGroupBalances(groupId!),
+    enabled: Boolean(groupId),
+  });
+
+  const { expenses, isLoading: isExpensesLoading } = useGroupExpenses(groupId);
+
+  const isLoading = isDetailLoading || isBalancesLoading || isExpensesLoading;
+
+  if (!groupId || !groupDetail) {
     return {
       group: null,
       memberBalances: [],
-      recentExpenses: [],
+      recentExpenses: EMPTY_EXPENSES,
       totalExpensesCount: 0,
       isLoading,
     };
   }
 
-  const createdTotals = sumExpenses(createdExpenses);
+  const currentMemberId = getCurrentMemberId(groupDetail, authUser);
+  const rawBalances = balancesData?.balances ?? [];
+  const derivedCurrentUserBalance = rawBalances.find((item) =>
+    isCurrentUserBalance(item, currentMemberId, authUser),
+  )?.balance;
+  const currentUserBalance = groupDetail.currentUserBalance ?? derivedCurrentUserBalance ?? 0;
+  const owedToYou = getReceivableAmount(currentUserBalance);
+  const youOwe = getPayableAmount(currentUserBalance);
+  const totalExpense = groupDetail.totalAmount ?? expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  if (groupFromApi && !groupFromStore && !isSeededMockGroup) {
-    return {
-      group: {
-        id: groupFromApi.id,
-        name: groupFromApi.name,
-        category: 'OTHER',
-        totalExpense: createdTotals.total,
-        totalExpenseChangePercent: 0,
-        owedToYou: createdTotals.owedToYou,
-        youOwe: createdTotals.youOwe,
-      },
-      memberBalances: [
-        {
-          id: 'current-user',
-          name: 'Vos',
-          initials: 'YO',
-          avatarUrl: null,
-          isCurrentUser: true,
-          balance: 0,
-        },
-      ],
-      recentExpenses: createdExpenses,
-      totalExpensesCount: createdExpenses.length,
-      isLoading,
-    };
-  }
+  const group: GroupDetail = {
+    id: groupDetail.id,
+    name: groupDetail.name ?? '',
+    category: apiTypeToCategory[groupDetail.type ?? 'other'] ?? 'OTHER',
+    totalExpense,
+    totalExpenseChangePercent: 0,
+    owedToYou,
+    youOwe,
+  };
 
-  if (groupFromStore && !isSeededMockGroup) {
-    const memberBalances: MemberBalance[] = [
-      {
-        id: 'current-user',
-        name: 'Vos',
-        initials: groupFromStore.members[0]?.initials ?? 'YO',
-        avatarUrl: groupFromStore.members[0]?.avatarUrl ?? null,
-        isCurrentUser: true,
-        balance: 0,
-      },
-      ...groupFromStore.invitedEmails.map((email) => ({
-        id: email,
-        name: email,
-        initials: getInitialsFromValue(email.split('@')[0] ?? email),
-        avatarUrl: null,
-        isCurrentUser: false,
-        balance: 0,
-      })),
-    ];
+  const memberBalances: MemberBalance[] = rawBalances.map((item) => ({
+    id: item.memberId,
+    name: item.displayName,
+    avatarUrl: null,
+    initials: item.displayName.slice(0, 2).toUpperCase(),
+    isCurrentUser: isCurrentUserBalance(item, currentMemberId, authUser),
+    balance: item.balance,
+  }));
 
-    return {
-      group: {
-        id: groupFromStore.id,
-        name: groupFromStore.name,
-        category: groupFromStore.category,
-        totalExpense: createdTotals.total,
-        totalExpenseChangePercent: 0,
-        owedToYou: createdTotals.owedToYou,
-        youOwe: createdTotals.youOwe,
-      },
-      memberBalances,
-      recentExpenses: createdExpenses,
-      totalExpensesCount: createdExpenses.length,
-      isLoading,
-    };
-  }
-
-  // A store entry can override a seeded mock expense when it shares its id
-  // (i.e. the user edited a mock); a tombstone can mark one as deleted. Drop both
-  // overridden and deleted mocks so the list reflects the real available set.
-  const createdIds = new Set(createdExpenses.map((expense) => expense.id));
-  const deletedIds = new Set(deletedExpenseIds);
-  const remainingMockExpenses = recentExpensesMock.filter(
-    (expense) => !createdIds.has(expense.id) && !deletedIds.has(expense.id),
-  );
-  const recentExpenses = [...createdExpenses, ...remainingMockExpenses];
-  const realTotals = sumExpenses(recentExpenses);
+  const recentExpenses = expenses.map(mapExpenseListItemToGroupExpense);
 
   return {
-    group: {
-      ...groupDetailMock,
-      id: groupFromStore?.id ?? groupDetailMock.id,
-      name: groupFromStore?.name ?? groupDetailMock.name,
-      category: groupFromStore?.category ?? groupDetailMock.category,
-      totalExpense: realTotals.total,
-      owedToYou: realTotals.owedToYou,
-      youOwe: realTotals.youOwe,
-    },
-    memberBalances: memberBalancesMock,
+    group,
+    memberBalances,
     recentExpenses,
-    // Honest count: the number of expenses actually available, not a fixed mock total.
-    totalExpensesCount: recentExpenses.length,
+    totalExpensesCount: groupDetail.expensesCount ?? expenses.length,
     isLoading,
   };
 }

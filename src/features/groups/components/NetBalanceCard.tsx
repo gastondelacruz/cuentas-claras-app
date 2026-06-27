@@ -12,12 +12,12 @@ type NetBalanceCardProps = {
 export function NetBalanceCard({ netBalance }: NetBalanceCardProps) {
   const isPositive = netBalance >= 0;
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
-  const amountClassName = isPositive ? 'text-h1 font-bold text-primary' : 'text-h1 font-bold text-debt';
+  const amountClassName = isPositive ? 'text-h1 font-bold text-success' : 'text-h1 font-bold text-debt';
   const pillClassName = isPositive
     ? 'flex-row items-center gap-1 rounded-full bg-primaryBg px-3 py-1'
     : 'flex-row items-center gap-1 rounded-full bg-debtBg px-3 py-1';
-  const pillTextClassName = isPositive ? 'text-sm font-semibold text-primary' : 'text-sm font-semibold text-debt';
-  const pillIconColor = isPositive ? colors.primary : colors.debt;
+  const pillTextClassName = isPositive ? 'text-sm font-semibold text-success' : 'text-sm font-semibold text-debt';
+  const pillIconColor = isPositive ? colors.success : colors.debt;
   const pillLabel = isPositive ? 'Te deben' : 'Debes';
 
   return (

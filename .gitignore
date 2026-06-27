@@ -33,5 +33,3 @@ android/
 *.njsproj
 *.sln
 *.sw?
-
-graphify-out/

@@ -63,9 +63,14 @@ const mockUseGroups = jest.mocked(useGroups);
 
 function createTestQueryClient() {
   return new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity },
+      mutations: { retry: false, gcTime: Infinity },
+    },
   });
 }
+
+let testClient: QueryClient;
 
 function createGroup(name: string, invitedEmails: string[]) {
   return useGroupsStore.getState().createGroup({
@@ -146,6 +151,10 @@ describe('navigation shell', () => {
     });
   });
 
+  afterEach(() => {
+    testClient?.clear();
+  });
+
   it('registers all route names expected by the bootstrap spec', () => {
     expect(registeredRouteNames).toEqual([
       'Onboarding',
@@ -162,7 +171,7 @@ describe('navigation shell', () => {
 
   it('renders auth stack while unauthenticated', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
-    const testClient = createTestQueryClient();
+    testClient = createTestQueryClient();
     const { findAllByText, findByText } = render(
       <QueryClientProvider client={testClient}>
         <NavigationContainer ref={navigationRef}>
@@ -184,7 +193,7 @@ describe('navigation shell', () => {
   it('renders main tabs while authenticated', async () => {
     useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
 
-    const testClient = createTestQueryClient();
+    testClient = createTestQueryClient();
     const { findByText, getAllByText, getByLabelText, getByText, queryByText } = render(
       <QueryClientProvider client={testClient}>
         <NavigationContainer>
@@ -216,7 +225,7 @@ describe('navigation shell', () => {
 
   it('navigates to registered stack screens and switches stacks when auth state changes', async () => {
     const navigationRef = createNavigationContainerRef<RootStackParamList>();
-    const testClient = createTestQueryClient();
+    testClient = createTestQueryClient();
     const { findByText, findAllByText, queryByText } = render(
       <QueryClientProvider client={testClient}>
         <NavigationContainer ref={navigationRef}>
@@ -260,7 +269,7 @@ describe('navigation shell', () => {
   it('resets to the auth stack when auth:logout is emitted', async () => {
     useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
 
-    const testClient = createTestQueryClient();
+    testClient = createTestQueryClient();
     const { findByText, findAllByText, queryByText } = render(
       <QueryClientProvider client={testClient}>
         <NavigationContainer>

@@ -25,7 +25,10 @@ describe('useGroupDetailActions mutations', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     jest.clearAllMocks();
     testClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+      defaultOptions: {
+        queries: { retry: false, gcTime: Infinity },
+        mutations: { gcTime: Infinity },
+      },
     });
     testClient.setQueryData(queryKeys.groups.all(), { data: [] });
     testClient.setQueryData(queryKeys.groups.detail('g1'), { id: 'g1', name: 'Viaje' });

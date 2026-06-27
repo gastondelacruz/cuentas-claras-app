@@ -34,7 +34,9 @@ let navigationMock: NavigationMock;
 
 describe('NewGroupScreen', () => {
   beforeEach(() => {
-    sharedQueryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    sharedQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
+    });
     useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
     jest.mocked(useRoute).mockReturnValue({ params: undefined } as ReturnType<typeof useRoute>);
     navigationMock = {
@@ -61,6 +63,10 @@ describe('NewGroupScreen', () => {
       mutate: mockUpdateMutate,
       isPending: false,
     } as unknown as ReturnType<typeof useUpdateGroup>);
+  });
+
+  afterEach(() => {
+    sharedQueryClient.clear();
   });
 
   it('blocks saving when there are no invited members', async () => {

@@ -97,7 +97,10 @@ describe('AddExpenseScreen', () => {
     mockUseExpenseToEdit.mockReturnValue(undefined);
 
     testClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false, gcTime: Infinity },
+        mutations: { retry: false, gcTime: Infinity },
+      },
     });
     seedGroupDetails(testClient);
 

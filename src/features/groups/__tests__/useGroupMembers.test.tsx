@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { PropsWithChildren } from 'react';
 
 import { getGroup } from '../api/groupsApi';
@@ -10,7 +10,7 @@ jest.mock('../api/groupsApi', () => ({ getGroup: jest.fn() }));
 const mockGetGroup = jest.mocked(getGroup);
 
 function createTestQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
 }
 
 describe('useGroupMembers', () => {
@@ -40,9 +40,8 @@ describe('useGroupMembers', () => {
 
     const { result } = renderHook(() => useGroupMembers('g1'), { wrapper: Wrapper });
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitFor(() => expect(result.current).toHaveLength(2));
 
-    expect(result.current).toHaveLength(2);
     expect(result.current[0]).toMatchObject({ id: 'm1', name: 'Gaston', isCurrentUser: true });
     expect(result.current[1]).toMatchObject({ id: 'm2', name: 'Ana', isCurrentUser: false });
   });
@@ -65,9 +64,8 @@ describe('useGroupMembers', () => {
 
     const { result } = renderHook(() => useGroupMembers('g1'), { wrapper: Wrapper });
 
-    await new Promise((r) => setTimeout(r, 50));
+    await waitFor(() => expect(result.current).toHaveLength(1));
 
-    expect(result.current).toHaveLength(1);
     expect(result.current[0]?.name).toBe('Gaston');
   });
 });

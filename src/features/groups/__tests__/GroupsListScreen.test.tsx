@@ -36,6 +36,9 @@ describe('GroupsListScreen', () => {
     mockUseGroupsList.mockReturnValue({
       groups: [],
       netBalance: 0,
+      owedToYou: 0,
+      youOwe: 0,
+      currency: 'ARS',
       isLoading: false,
       isError: false,
       error: null,
@@ -46,6 +49,9 @@ describe('GroupsListScreen', () => {
     mockUseGroupsList.mockReturnValue({
       groups: [],
       netBalance: 0,
+      owedToYou: 0,
+      youOwe: 0,
+      currency: 'ARS',
       isLoading: true,
       isError: false,
       error: null,
@@ -62,6 +68,9 @@ describe('GroupsListScreen', () => {
     mockUseGroupsList.mockReturnValue({
       groups: [],
       netBalance: 0,
+      owedToYou: 0,
+      youOwe: 0,
+      currency: 'ARS',
       isLoading: false,
       isError: true,
       error: new Error('GET /groups failed'),
@@ -81,6 +90,9 @@ describe('GroupsListScreen', () => {
         createGroup({ id: 'payable', name: 'Cena Palermo', balance: -45, status: { type: 'recent' } }),
       ],
       netBalance: 75,
+      owedToYou: 120,
+      youOwe: 45,
+      currency: 'ARS',
       isLoading: false,
       isError: false,
       error: null,
@@ -89,7 +101,10 @@ describe('GroupsListScreen', () => {
     render(<GroupsListScreen />);
 
     expect(screen.getByText('Balance Neto Total')).toBeTruthy();
-    expect(screen.getByText('Te deben')).toBeTruthy();
+    expect(screen.getAllByText('Te deben').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Debes').length).toBeGreaterThan(0);
+    expect(screen.getByText('$120,00')).toBeTruthy();
+    expect(screen.getByText('$45,00')).toBeTruthy();
 
     const summaryAmount = screen.getByText('$75,00');
     expect(summaryAmount.props.className).toContain('text-success');
@@ -111,6 +126,9 @@ describe('GroupsListScreen', () => {
         createGroup({ id: 'payable', name: 'Cena Palermo', balance: -45 }),
       ],
       netBalance: -45,
+      owedToYou: 120,
+      youOwe: 165,
+      currency: 'ARS',
       isLoading: false,
       isError: false,
       error: null,
@@ -119,7 +137,10 @@ describe('GroupsListScreen', () => {
     render(<GroupsListScreen />);
 
     expect(screen.getByText('Balance Neto Total')).toBeTruthy();
-    expect(screen.getByText('Debes')).toBeTruthy();
+    expect(screen.getAllByText('Debes').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Te deben').length).toBeGreaterThan(0);
+    expect(screen.getByText('$120,00')).toBeTruthy();
+    expect(screen.getByText('$165,00')).toBeTruthy();
 
     const summaryAmount = screen.getByText('$45,00');
     expect(summaryAmount.props.className).toContain('text-debt');

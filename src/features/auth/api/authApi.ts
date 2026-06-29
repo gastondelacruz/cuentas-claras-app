@@ -1,7 +1,7 @@
 import { client } from "../../../shared/api/client";
 import { parseOrThrow } from "../../../shared/api/errors";
 import { clearRefreshToken, getRefreshToken } from "../../../shared/api/tokenStorage";
-import { authMeSummarySchema, AuthMeSummaryDto } from "../schemas/authSummarySchema";
+import { accountSummarySchema, AccountSummaryDto } from "../../account/schemas/accountSummarySchema";
 
 export type AuthResponse = {
   data: {
@@ -43,7 +43,7 @@ export async function logoutUser(): Promise<void> {
   await clearRefreshToken();
 }
 
-export async function getMeSummary(): Promise<AuthMeSummaryDto> {
-  const response = await client.get<{ data: AuthMeSummaryDto }>("/me/summary");
-  return parseOrThrow(authMeSummarySchema, response.data.data);
+export async function getMeSummary(): Promise<AccountSummaryDto> {
+  const response = await client.get<{ data: AccountSummaryDto }>("/me/summary");
+  return parseOrThrow(accountSummarySchema, response.data.data);
 }

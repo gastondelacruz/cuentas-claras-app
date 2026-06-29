@@ -10,14 +10,14 @@ type SummaryCardsProps = {
 };
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
-  const items = [summary.owedToUser, summary.owedByUser];
+  const items = [summary.netBalance, summary.owedToUser, summary.owedByUser];
 
   return (
-    <View className="flex-row gap-3">
+    <View className="gap-3">
       {items.map((item) => (
         <Card key={item.id} variant="summary">
           <Text className="text-sm font-semibold text-neutral500">{item.title}</Text>
-          <AmountText amount={item.amount} variant="summary" />
+          <AmountText amount={item.amount} currency={item.currency} variant="summary" />
           <Chip label={item.detail} tone={item.tone} variant="summary" />
         </Card>
       ))}

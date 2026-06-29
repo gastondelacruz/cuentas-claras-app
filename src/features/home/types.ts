@@ -2,11 +2,13 @@ export type HomeSummaryItem = {
   id: string;
   title: string;
   amount: number;
+  currency: string;
   detail: string;
   tone: 'success' | 'debt';
 };
 
 export type HomeSummary = {
+  netBalance: HomeSummaryItem;
   owedToUser: HomeSummaryItem;
   owedByUser: HomeSummaryItem;
 };

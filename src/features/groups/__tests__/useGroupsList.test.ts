@@ -2,10 +2,13 @@ import { renderHook } from '@testing-library/react-native';
 
 import { useGroupsList } from '../hooks/useGroupsList';
 import { useGroups } from '../hooks/useGroups';
+import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 
 jest.mock('../hooks/useGroups');
+jest.mock('../../account/hooks/useAccountSummary');
 
 const mockUseGroups = jest.mocked(useGroups);
+const mockUseAccountSummary = jest.mocked(useAccountSummary);
 
 function makeGroup(id: string, name = `Group ${id}`, currentUserBalance?: number) {
   return {
@@ -25,6 +28,12 @@ describe('useGroupsList', () => {
       data: { data: [] },
       isLoading: false,
     } as unknown as ReturnType<typeof useGroups>);
+    mockUseAccountSummary.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAccountSummary>);
   });
 
   it('starts empty with a zero net balance when the query returns no groups', () => {
@@ -32,6 +41,31 @@ describe('useGroupsList', () => {
 
     expect(result.current.groups).toEqual([]);
     expect(result.current.netBalance).toBe(0);
+    expect(result.current.owedToYou).toBe(0);
+    expect(result.current.youOwe).toBe(0);
+  });
+
+  it('derives account-wide summary balances from the authenticated account summary query', () => {
+    mockUseAccountSummary.mockReturnValue({
+      data: {
+        totalGroups: 12,
+        totalExpenses: 2,
+        totalsByCurrency: [
+          { currency: 'ARS', totalPaid: 57660, totalOwed: 1200, totalToReceive: 28830 },
+        ],
+        activeSince: '2026-06-27T12:15:29.827Z',
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAccountSummary>);
+
+    const { result } = renderHook(() => useGroupsList());
+
+    expect(result.current.owedToYou).toBe(28830);
+    expect(result.current.youOwe).toBe(1200);
+    expect(result.current.netBalance).toBe(27630);
+    expect(result.current.currency).toBe('ARS');
   });
 
   it('exposes isLoading from the query', () => {
@@ -82,7 +116,7 @@ describe('useGroupsList', () => {
     });
   });
 
-  it('derives each group balance and the net total from currentUserBalance in the API response', () => {
+  it('derives each group balance from currentUserBalance in the API response', () => {
     mockUseGroups.mockReturnValue({
       data: {
         data: [
@@ -98,6 +132,5 @@ describe('useGroupsList', () => {
     const balances = Object.fromEntries(result.current.groups.map((g) => [g.id, g.balance]));
     expect(balances['g1']).toBe(25000);
     expect(balances['g2']).toBe(-12000);
-    expect(result.current.netBalance).toBe(13000);
   });
 });

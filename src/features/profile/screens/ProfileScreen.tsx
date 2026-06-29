@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { LogOut } from "lucide-react-native";
 
 import { colors } from "../../../shared/theme/colors";
@@ -18,6 +18,8 @@ type ProfileUser = {
   name: string;
   status: string;
 };
+
+type SummaryCardTone = "success" | "debt";
 
 function ProfileCard({ profile }: { profile: ProfileUser }) {
   return (
@@ -51,7 +53,7 @@ function SummaryCard({
   value: string;
   detail: string;
   valueClassName: string;
-  detailTone: "success" | "debt";
+  detailTone: SummaryCardTone;
 }) {
   return (
     <Card variant="summary">
@@ -62,10 +64,109 @@ function SummaryCard({
   );
 }
 
+function SummaryStateCard({
+  title,
+  message,
+  isLoading = false,
+}: {
+  title: string;
+  message: string;
+  isLoading?: boolean;
+}) {
+  return (
+    <Card variant="summary">
+      <View
+        accessibilityRole={isLoading ? "progressbar" : "summary"}
+        accessibilityState={isLoading ? { busy: true } : undefined}
+        className="items-center gap-3 py-4"
+      >
+        {isLoading ? <ActivityIndicator color={colors.primary} /> : null}
+        <Text className="text-center text-base font-semibold text-neutral900">{title}</Text>
+        <Text selectable className="text-center text-sm text-neutral700">{message}</Text>
+      </View>
+    </Card>
+  );
+}
+
+function FinancialSummarySection({
+  summary,
+  summaryError,
+  summaryStatus,
+}: Pick<ReturnType<typeof useProfileData>, "summary" | "summaryError" | "summaryStatus">) {
+  if (summaryStatus === "loading") {
+    return (
+      <SummaryStateCard
+        isLoading
+        title="Cargando resumen financiero..."
+        message="Estamos actualizando tus saldos."
+      />
+    );
+  }
+
+  if (summaryStatus === "error") {
+    return (
+      <SummaryStateCard
+        title="No pudimos cargar tu resumen financiero"
+        message={summaryError?.message ?? "Intentalo de nuevo en unos minutos."}
+      />
+    );
+  }
+
+  if (!summary) {
+    return (
+      <SummaryStateCard
+        title="Resumen financiero no disponible"
+        message="Todavía no hay datos suficientes para calcular tus saldos."
+      />
+    );
+  }
+
+  const netBalanceValue = formatAmount(summary.netBalance, summary.currency);
+  const netBalanceTone: SummaryCardTone = summary.netBalance >= 0 ? "success" : "debt";
+  const netBalanceClassName = summary.netBalance >= 0 ? "text-success" : "text-debt";
+
+  return (
+    <>
+      <View className="flex-row gap-3">
+        <SummaryCard
+          title="Gasto Total"
+          value={formatCurrency(summary.totalExpenses, summary.currency)}
+          detail={`${summary.totalExpenseCount} ${summary.totalExpenseCount === 1 ? "gasto" : "gastos"} registrados`}
+          valueClassName="text-neutral900"
+          detailTone="success"
+        />
+        <SummaryCard
+          title="Te deben"
+          value={formatCurrency(summary.owedToYou, summary.currency)}
+          detail={`${summary.activeDebtGroupsCount} ${summary.activeDebtGroupsCount === 1 ? "grupo" : "grupos"}`}
+          valueClassName="text-success"
+          detailTone="success"
+        />
+      </View>
+
+      <View className="flex-row gap-3">
+        <SummaryCard
+          title="Debes"
+          value={formatCurrency(summary.youOwe, summary.currency)}
+          detail={summary.currency}
+          valueClassName="text-debt"
+          detailTone="debt"
+        />
+        <SummaryCard
+          title="Balance Total"
+          value={netBalanceValue}
+          detail={summary.currency}
+          valueClassName={netBalanceClassName}
+          detailTone={netBalanceTone}
+        />
+      </View>
+    </>
+  );
+}
+
 export function ProfileScreen() {
-  const { user, summary } = useProfileData();
+  const { user, summary, summaryError, summaryStatus } = useProfileData();
   const logout = useLogout();
-  const activeDebtsValue = summary.youOwe > 0 ? formatAmount(-summary.youOwe) : formatCurrency(0);
 
   return (
     <ScreenContainer>
@@ -77,22 +178,7 @@ export function ProfileScreen() {
         <View className="gap-8 px-5">
           <ProfileCard profile={user} />
 
-          <View className="flex-row gap-3">
-            <SummaryCard
-              title="Gasto Total"
-              value={formatCurrency(summary.totalExpenses)}
-              detail={`${summary.totalExpenseCount} ${summary.totalExpenseCount === 1 ? "gasto" : "gastos"} registrados`}
-              valueClassName="text-neutral900"
-              detailTone="success"
-            />
-            <SummaryCard
-              title="Deudas Activas"
-              value={activeDebtsValue}
-              detail={`${summary.activeDebtGroupsCount} ${summary.activeDebtGroupsCount === 1 ? "grupo" : "grupos"} pendientes`}
-              valueClassName="text-debt"
-              detailTone="debt"
-            />
-          </View>
+          <FinancialSummarySection summary={summary} summaryError={summaryError} summaryStatus={summaryStatus} />
 
           <Pressable
             accessibilityRole="button"

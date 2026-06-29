@@ -13,4 +13,7 @@ export const queryKeys = {
   auth: {
     me: () => ['auth', 'me'] as const,
   },
+  account: {
+    summary: () => ['account', 'summary'] as const,
+  },
 };

@@ -1,10 +1,11 @@
 import { useQueries } from '@tanstack/react-query';
 
 import { queryKeys } from '../../../shared/api/queryKeys';
+import { selectAccountSummaryTotals } from '../../account/utils/accountSummaryTotals';
+import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 import { getGroupExpenses } from '../../expenses/api/expensesApi';
 import type { ExpenseListItemDto } from '../../expenses/schemas/expenseSchema';
 import type { GroupListItemDto } from '../../groups/api/groupsApi';
-import { getReceivableAmount, getSignedPayableAmount, roundToCents } from '../../groups/utils/balanceContract';
 import { useGroups } from '../../groups/hooks/useGroups';
 import type { HomeActivity, HomeActivityCategory, HomeDashboardData, UseHomeDataResult } from '../types';
 
@@ -38,17 +39,20 @@ function mapGroupToHomeGroup(group: HomeSourceGroup) {
   };
 }
 
-function buildSummaryFromGroups(groups: HomeSourceGroup[]) {
-  const owedToYou = roundToCents(
-    groups.reduce((sum, group) => sum + getReceivableAmount(group.currentUserBalance ?? 0), 0),
-  );
-  const youOwe = roundToCents(
-    groups.reduce((sum, group) => sum + getSignedPayableAmount(group.currentUserBalance ?? 0), 0),
-  );
+function buildSummaryFromAccountSummary(accountSummary: ReturnType<typeof selectAccountSummaryTotals>) {
+  const { currency, totalToReceive, totalOwed, netBalance } = accountSummary;
 
   return {
-    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: owedToYou, detail: 'Resumen', tone: 'success' as const },
-    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: youOwe, detail: 'Resumen', tone: 'debt' as const },
+    netBalance: {
+      id: 'net-balance',
+      title: 'Balance total',
+      amount: netBalance,
+      currency,
+      detail: 'Balance neto',
+      tone: netBalance >= 0 ? 'success' as const : 'debt' as const,
+    },
+    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: totalToReceive, currency, detail: currency, tone: 'success' as const },
+    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: totalOwed > 0 ? -totalOwed : 0, currency, detail: currency, tone: 'debt' as const },
   };
 }
 
@@ -110,6 +114,7 @@ function mapExpenseToHomeActivity(
 
 export function useHomeData(): UseHomeDataResult {
   const { data: groupsResponse, isLoading: isGroupsLoading, isError: isGroupsError, error: groupsError } = useGroups();
+  const { data: accountSummaryResponse, isLoading: isSummaryLoading, isError: isSummaryError, error: summaryError } = useAccountSummary();
 
   const groups = groupsResponse?.data ?? [];
   const groupsWithPossibleExpenses = isGroupsLoading
@@ -122,7 +127,7 @@ export function useHomeData(): UseHomeDataResult {
       enabled: !isGroupsLoading,
     })),
   });
-  const summary = buildSummaryFromGroups(groups);
+  const summary = buildSummaryFromAccountSummary(selectAccountSummaryTotals(accountSummaryResponse));
   const activeGroups = groups.slice(0, 2).map(mapGroupToHomeGroup);
 
   const latestExpensesByGroup = latestExpenseQueries.flatMap((query, index) => {
@@ -141,8 +146,8 @@ export function useHomeData(): UseHomeDataResult {
   const isExpensesLoading = latestExpenseQueries.some((query) => query.isLoading);
   const expenseError = latestExpenseQueries.find((query) => query.isError)?.error as Error | undefined;
 
-  const isLoading = isGroupsLoading || isExpensesLoading;
-  const isError = isGroupsError || Boolean(expenseError);
+  const isLoading = isGroupsLoading || isSummaryLoading || isExpensesLoading;
+  const isError = isGroupsError || isSummaryError || Boolean(expenseError);
   const data: HomeDashboardData | null = isLoading
     ? null
     : { summary, activeGroups, recentActivity };
@@ -154,6 +159,6 @@ export function useHomeData(): UseHomeDataResult {
     recentActivity,
     isLoading,
     isError,
-    error: (groupsError as Error | null) ?? expenseError ?? null,
+    error: (groupsError as Error | null) ?? (summaryError as Error | null) ?? expenseError ?? null,
   };
 }

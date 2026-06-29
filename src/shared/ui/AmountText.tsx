@@ -5,6 +5,7 @@ import { formatAmount } from '../utils/formatAmount';
 
 type AmountTextProps = Omit<ComponentProps<typeof Text>, 'className'> & {
   amount: number;
+  currency?: string;
   variant?: 'default' | 'summary' | 'activity';
 };
 
@@ -23,12 +24,12 @@ const amountTextClassNames = {
   },
 };
 
-export function AmountText({ amount, variant = 'default', ...props }: AmountTextProps) {
+export function AmountText({ amount, currency, variant = 'default', ...props }: AmountTextProps) {
   const tone = amount >= 0 ? 'positive' : 'negative';
 
   return (
     <Text className={amountTextClassNames[variant][tone]} {...props}>
-      {formatAmount(amount)}
+      {formatAmount(amount, currency)}
     </Text>
   );
 }

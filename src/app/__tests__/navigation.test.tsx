@@ -15,6 +15,7 @@ import { useAuthStore } from '../../shared/store/authStore';
 import { emitAuthLogout } from '../../shared/api/authEvents';
 import { useGroupDetail } from '../../features/groups/hooks/useGroupDetail';
 import { useGroupDetailActions } from '../../features/groups/hooks/useGroupDetailActions';
+import { useAccountSummary } from '../../features/account/hooks/useAccountSummary';
 
 jest.mock('../../features/auth/hooks/useLogin', () => ({
   useLogin: jest.fn(() => ({
@@ -33,10 +34,11 @@ jest.mock('../../features/auth/hooks/useRegister', () => ({
 }));
 
 jest.mock('../../features/groups/hooks/useGroups');
+jest.mock('../../features/account/hooks/useAccountSummary');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
 const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
-const mockSummary = { owedToUser: { id: 'a', title: 'Te deben', amount: 0, detail: '', tone: 'success' as const }, owedByUser: { id: 'b', title: 'Debes', amount: 0, detail: '', tone: 'debt' as const } };
+const mockSummary = { netBalance: { id: 'net', title: 'Balance total', amount: 0, currency: 'ARS', detail: 'Balance neto', tone: 'success' as const }, owedToUser: { id: 'a', title: 'Te deben', amount: 0, currency: 'ARS', detail: '', tone: 'success' as const }, owedByUser: { id: 'b', title: 'Debes', amount: 0, currency: 'ARS', detail: '', tone: 'debt' as const } };
 
 jest.mock('../../features/home/hooks/useHomeData', () => ({
   useHomeData: jest.fn(),
@@ -45,7 +47,9 @@ jest.mock('../../features/home/hooks/useHomeData', () => ({
 jest.mock('../../features/profile/hooks/useProfileData', () => ({
   useProfileData: jest.fn(() => ({
     user: { name: 'Alex Thompson', email: 'alex@example.com', status: 'Verificado', avatarUrl: '' },
-    summary: { activeDebtGroupsCount: 0, totalExpenseCount: 3, totalExpenses: 450, youOwe: 0 },
+    summary: { activeDebtGroupsCount: 0, totalExpenseCount: 3, totalExpenses: 450, owedToYou: 0, youOwe: 0, netBalance: 0, currency: 'ARS' },
+    summaryError: null,
+    summaryStatus: 'success',
   })),
 }));
 
@@ -60,6 +64,7 @@ const actualNavigation = jest.requireActual<typeof import('@react-navigation/nat
 
 const mainTabLabels = ['Inicio', 'Grupos', 'Perfil'] as const;
 const mockUseGroups = jest.mocked(useGroups);
+const mockUseAccountSummary = jest.mocked(useAccountSummary);
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -110,6 +115,19 @@ describe('navigation shell', () => {
       },
       isLoading: false,
     } as unknown as ReturnType<typeof useGroups>);
+    mockUseAccountSummary.mockReturnValue({
+      data: {
+        totalGroups: 1,
+        totalExpenses: 0,
+        totalsByCurrency: [
+          { currency: 'ARS', totalPaid: 0, totalOwed: 0, totalToReceive: 0 },
+        ],
+        activeSince: '2026-06-27T12:15:29.827Z',
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAccountSummary>);
     jest.mocked(useNavigation).mockImplementation(actualNavigation.useNavigation as never);
     jest.mocked(useRoute).mockImplementation(actualNavigation.useRoute as never);
 

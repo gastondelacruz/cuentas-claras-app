@@ -19,8 +19,8 @@ const navigate = jest.fn();
 const parentNavigate = jest.fn();
 
 const EMPTY_RESULT: UseHomeDataResult = {
-  data: { summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen', tone: 'debt' } }, activeGroups: [], recentActivity: [] },
-  summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen', tone: 'debt' } },
+  data: { summary: { netBalance: { id: 'net-balance', title: 'Balance total', amount: 0, currency: 'ARS', detail: 'Balance neto', tone: 'success' }, owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, currency: 'ARS', detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, currency: 'ARS', detail: 'Resumen', tone: 'debt' } }, activeGroups: [], recentActivity: [] },
+  summary: { netBalance: { id: 'net-balance', title: 'Balance total', amount: 0, currency: 'ARS', detail: 'Balance neto', tone: 'success' }, owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, currency: 'ARS', detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, currency: 'ARS', detail: 'Resumen', tone: 'debt' } },
   activeGroups: [],
   recentActivity: [],
   isLoading: false,
@@ -38,8 +38,9 @@ function seedDashboard() {
     { id: 'api-group-departamento', name: 'Departamento', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' },
   ];
   const summary = {
-    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 60, detail: '2 Personas', tone: 'success' as const },
-    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: -20, detail: '1 Grupo', tone: 'debt' as const },
+    netBalance: { id: 'net-balance', title: 'Balance total', amount: 40, currency: 'ARS', detail: 'Balance neto', tone: 'success' as const },
+    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 60, currency: 'ARS', detail: '2 Personas', tone: 'success' as const },
+    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: -20, currency: 'ARS', detail: '1 Grupo', tone: 'debt' as const },
   };
   const recentActivity = [
     { id: 'expense-home-1', groupId: 'api-group-lisboa', title: 'Cena de Sushi', context: 'Viaje a Lisboa', amount: 120, timeLabel: 'hace 2h', category: 'food' as const, paidByLabel: 'Pagado por ti en Viaje a Lisboa' },
@@ -78,6 +79,9 @@ describe('HomeScreen', () => {
     render(<HomeScreen />);
 
     expect(screen.getByText('Te deben')).toBeTruthy();
+    expect(screen.getByText('Balance total')).toBeTruthy();
+    expect(screen.getByText('+$40,00')).toBeTruthy();
+    expect(screen.getByText('Balance neto')).toBeTruthy();
     expect(screen.getByText('+$60,00')).toBeTruthy();
     expect(screen.getByText('2 Personas')).toBeTruthy();
     expect(screen.getByText('Debes')).toBeTruthy();

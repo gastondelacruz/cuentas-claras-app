@@ -1,10 +1,14 @@
-import { useGroups } from '../../groups/hooks/useGroups';
+import { selectAccountSummaryTotals } from '../../account/utils/accountSummaryTotals';
+import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 import { useAuthStore } from '../../../shared/store/authStore';
 
 type ProfileSummary = {
   activeDebtGroupsCount: number;
+  currency: string;
+  netBalance: number;
   totalExpenseCount: number;
   totalExpenses: number;
+  owedToYou: number;
   youOwe: number;
 };
 
@@ -17,7 +21,9 @@ type ProfileUser = {
 };
 
 type UseProfileDataResult = {
-  summary: ProfileSummary;
+  summary: ProfileSummary | null;
+  summaryError: Error | null;
+  summaryStatus: 'loading' | 'error' | 'empty' | 'success';
   user: ProfileUser;
 };
 
@@ -28,41 +34,35 @@ function getInitials(name: string): string {
   return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('');
 }
 
-function roundToCents(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function summarizeGroups(groups: { expensesCount?: number; totalAmount?: number; currentUserBalance?: number }[]): ProfileSummary {
-  let totalExpenseCount = 0;
-  let totalExpenses = 0;
-  let activeDebtGroupsCount = 0;
-  let youOwe = 0;
-
-  for (const group of groups) {
-    totalExpenseCount += group.expensesCount ?? 0;
-    totalExpenses += group.totalAmount ?? 0;
-
-    const balance = group.currentUserBalance ?? 0;
-    if (balance < 0) {
-      activeDebtGroupsCount += 1;
-      youOwe += Math.abs(balance);
-    }
-  }
-
-  return {
-    activeDebtGroupsCount,
-    totalExpenseCount,
-    totalExpenses: roundToCents(totalExpenses),
-    youOwe: roundToCents(youOwe),
-  };
-}
-
 export function useProfileData(): UseProfileDataResult {
   const authUser = useAuthStore((state) => state.user);
-  const { data: groupsResponse } = useGroups();
+  const {
+    data: accountSummary,
+    isLoading: isSummaryLoading,
+    isError: isSummaryError,
+    error: summaryError,
+  } = useAccountSummary();
 
-  const groups = groupsResponse?.data ?? [];
-  const summary = summarizeGroups(groups);
+  const selectedTotals = selectAccountSummaryTotals(accountSummary);
+  const summary: ProfileSummary | null = accountSummary
+    ? {
+        activeDebtGroupsCount: accountSummary.totalGroups,
+        totalExpenseCount: accountSummary.totalExpenses,
+        totalExpenses: selectedTotals.totalPaid,
+        owedToYou: selectedTotals.totalToReceive,
+        youOwe: selectedTotals.totalOwed,
+        netBalance: selectedTotals.netBalance,
+        currency: selectedTotals.currency,
+      }
+    : null;
+
+  const summaryStatus = isSummaryLoading
+    ? 'loading'
+    : isSummaryError
+      ? 'error'
+      : summary
+        ? 'success'
+        : 'empty';
 
   return {
     user: {
@@ -73,5 +73,7 @@ export function useProfileData(): UseProfileDataResult {
       initials: getInitials(authUser?.name ?? authUser?.email ?? 'U'),
     },
     summary,
+    summaryError: (summaryError as Error | null) ?? null,
+    summaryStatus,
   };
 }

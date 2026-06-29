@@ -21,7 +21,7 @@ type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 export function GroupsListScreen() {
   const navigation = useNavigation<GroupsListNavigation>();
-  const { groups, netBalance, isLoading, isError } = useGroupsList();
+  const { groups, netBalance, owedToYou, youOwe, currency, isLoading, isError } = useGroupsList();
   const [filter, setFilter] = useState<GroupsFilter>("all");
 
   const rootNavigation = navigation.getParent?.<RootNavigation>();
@@ -58,7 +58,7 @@ export function GroupsListScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerClassName="gap-5 px-5 pb-28 pt-5"
         >
-          <NetBalanceCard netBalance={netBalance} />
+          <NetBalanceCard currency={currency} netBalance={netBalance} owedToYou={owedToYou} youOwe={youOwe} />
 
           <GroupsFilterTabs value={filter} onChange={setFilter} />
 

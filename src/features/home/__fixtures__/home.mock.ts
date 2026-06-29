@@ -4,10 +4,19 @@ import type { HomeDashboardData } from '../types';
 // flows can be tested end to end. Restore real data via the backend endpoints.
 export const homeMockData: HomeDashboardData = {
   summary: {
+    netBalance: {
+      id: 'net-balance',
+      title: 'Balance total',
+      amount: 0,
+      currency: 'ARS',
+      detail: 'Balance neto',
+      tone: 'success',
+    },
     owedToUser: {
       id: 'owed-to-user',
       title: 'Te deben',
       amount: 0,
+      currency: 'ARS',
       detail: '0 Personas',
       tone: 'success',
     },
@@ -15,6 +24,7 @@ export const homeMockData: HomeDashboardData = {
       id: 'owed-by-user',
       title: 'Debes',
       amount: 0,
+      currency: 'ARS',
       detail: '0 Grupos',
       tone: 'debt',
     },

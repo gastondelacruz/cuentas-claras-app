@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { PropsWithChildren } from 'react';
 
 import { useGroups } from '../../groups/hooks/useGroups';
+import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 import { getGroupExpenses } from '../../expenses/api/expensesApi';
 import { useHomeData } from '../hooks/useHomeData';
 
@@ -10,11 +11,16 @@ jest.mock('../../groups/hooks/useGroups', () => ({
   useGroups: jest.fn(),
 }));
 
+jest.mock('../../account/hooks/useAccountSummary', () => ({
+  useAccountSummary: jest.fn(),
+}));
+
 jest.mock('../../expenses/api/expensesApi', () => ({
   getGroupExpenses: jest.fn(),
 }));
 
 const mockedUseGroups = jest.mocked(useGroups);
+const mockedUseAccountSummary = jest.mocked(useAccountSummary);
 const mockedGetGroupExpenses = jest.mocked(getGroupExpenses);
 
 function createTestQueryClient() {
@@ -46,6 +52,41 @@ function mockGroupsQuery(
   } as ReturnType<typeof useGroups>);
 }
 
+function mockAccountSummaryQuery(
+  opts: {
+    totalGroups?: number;
+    totalExpenses?: number;
+    totalPaid?: number;
+    totalOwed?: number;
+    totalToReceive?: number;
+    currency?: string;
+    isLoading?: boolean;
+    isError?: boolean;
+    error?: Error | null;
+  } = {},
+) {
+  mockedUseAccountSummary.mockReturnValue({
+    data: opts.isLoading
+      ? undefined
+      : {
+          totalGroups: opts.totalGroups ?? 12,
+          totalExpenses: opts.totalExpenses ?? 2,
+          totalsByCurrency: [
+            {
+              currency: opts.currency ?? 'ARS',
+              totalPaid: opts.totalPaid ?? 57660,
+              totalOwed: opts.totalOwed ?? 1200,
+              totalToReceive: opts.totalToReceive ?? 28830,
+            },
+          ],
+          activeSince: '2026-06-27T12:15:29.827Z',
+        },
+    isLoading: opts.isLoading ?? false,
+    isError: opts.isError ?? false,
+    error: opts.error ?? null,
+  } as ReturnType<typeof useAccountSummary>);
+}
+
 describe('useHomeData', () => {
   let testClient: QueryClient;
 
@@ -57,6 +98,7 @@ describe('useHomeData', () => {
     jest.clearAllMocks();
     testClient = createTestQueryClient();
     mockGroupsQuery([]);
+    mockAccountSummaryQuery();
     mockedGetGroupExpenses.mockResolvedValue({ expenses: [], nextCursor: null });
   });
 
@@ -78,7 +120,34 @@ describe('useHomeData', () => {
     expect(result.current.data).toBeNull();
   });
 
-  it('maps a positive total balance (sum of groups) to owed-to-user summary', async () => {
+  it('maps account summary balances to home summary cards', async () => {
+    mockAccountSummaryQuery({ totalToReceive: 28830, totalOwed: 1200, currency: 'ARS' });
+
+    const { result } = renderHook(() => useHomeData(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.summary.owedToUser).toEqual(expect.objectContaining({
+      title: 'Te deben',
+      amount: 28830,
+      detail: 'ARS',
+      currency: 'ARS',
+    }));
+    expect(result.current.summary.owedByUser).toEqual(expect.objectContaining({
+      title: 'Debes',
+      amount: -1200,
+      detail: 'ARS',
+      currency: 'ARS',
+    }));
+  });
+
+  it('keeps summary amounts stable when the account summary is absent', async () => {
+    mockedUseAccountSummary.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAccountSummary>);
     mockGroupsQuery([
       { id: 'g1', name: 'Viaje', currentUserBalance: 120 },
       { id: 'g2', name: 'Casa', currentUserBalance: 0 },
@@ -88,12 +157,12 @@ describe('useHomeData', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.summary.owedToUser.amount).toBe(120);
+    expect(result.current.summary.owedToUser.amount).toBe(0);
     expect(result.current.summary.owedByUser.amount).toBe(0);
   });
 
-  it('maps a negative total balance to owed-by-user summary', async () => {
-    mockGroupsQuery([{ id: 'g1', name: 'Viaje', currentUserBalance: -75 }]);
+  it('maps a payable account summary to owed-by-user summary', async () => {
+    mockAccountSummaryQuery({ totalToReceive: 0, totalOwed: 75 });
 
     const { result } = renderHook(() => useHomeData(), { wrapper: Wrapper });
 
@@ -104,10 +173,7 @@ describe('useHomeData', () => {
   });
 
   it('keeps receivable and payable balances separate instead of netting them together', async () => {
-    mockGroupsQuery([
-      { id: 'g1', name: 'Viaje', currentUserBalance: 120 },
-      { id: 'g2', name: 'Casa', currentUserBalance: -75 },
-    ]);
+    mockAccountSummaryQuery({ totalToReceive: 120, totalOwed: 75 });
 
     const { result } = renderHook(() => useHomeData(), { wrapper: Wrapper });
 

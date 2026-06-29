@@ -39,6 +39,23 @@ const mockedUseProfileData = jest.mocked(useProfileData);
 
 const mockMutate = jest.fn();
 
+type ProfileMockOptions = {
+  name?: string;
+  email?: string;
+  status?: string;
+  avatarUrl?: string;
+  initials?: string;
+  activeDebtGroupsCount?: number;
+  totalExpenseCount?: number;
+  totalExpenses?: number;
+  youOwe?: number;
+  owedToYou?: number;
+  netBalance?: number;
+  currency?: string;
+  summaryStatus?: 'loading' | 'error' | 'empty' | 'success';
+  summaryError?: Error | null;
+};
+
 /** Builds a mock useLogout return value */
 function makeLogoutMock({ isPending = false } = {}): ReturnType<typeof useLogout> {
   return {
@@ -72,10 +89,19 @@ function makeProfileMock({
   totalExpenseCount = 3,
   totalExpenses = 10000,
   youOwe = 5000,
-} = {}): ReturnType<typeof useProfileData> {
+  owedToYou = 8000,
+  netBalance = 3000,
+  currency = 'ARS',
+  summaryStatus = 'success',
+  summaryError = null,
+}: ProfileMockOptions = {}): ReturnType<typeof useProfileData> {
   return {
     user: { name, email, status, avatarUrl, initials },
-    summary: { activeDebtGroupsCount, totalExpenseCount, totalExpenses, youOwe },
+    summary: summaryStatus === 'success'
+      ? { activeDebtGroupsCount, totalExpenseCount, totalExpenses, youOwe, owedToYou, netBalance, currency }
+      : null,
+    summaryStatus,
+    summaryError,
   };
 }
 
@@ -143,7 +169,7 @@ describe('ProfileScreen — Bug 2: Cerrar sesión sin efecto', () => {
  *   - profile.name   → rendered as <Text className="text-2xl font-bold ...">
  *   - profile.email  → rendered as <Text className="... text-neutral700"> (selectable)
  *   - profile.status → rendered as <Text className="text-xl text-debt"> inside status badge
- *   - summary cards  → "Gasto Total" and "Deudas Activas" headings always present
+  *   - summary cards  → account summary headings always present
  *   - version string → hardcoded "Versión 2.4.1 (Compilación 829)" at the bottom
  *
  * Validates: Requirements 3.4, 3.5
@@ -178,9 +204,54 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
     expect(screen.getByText('Gasto Total')).toBeTruthy();
   });
 
-  it('renders the "Deudas Activas" summary card heading', () => {
+  it('renders the "Te deben" summary card heading', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Deudas Activas')).toBeTruthy();
+    expect(screen.getByText('Te deben')).toBeTruthy();
+  });
+
+  it('renders account summary balance cards from the authenticated summary', () => {
+    mockedUseProfileData.mockReturnValue(makeProfileMock({ owedToYou: 28830, youOwe: 1200, netBalance: 27630 }));
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('Te deben')).toBeTruthy();
+    expect(screen.getByText('Debes')).toBeTruthy();
+    expect(screen.getByText('Balance Total')).toBeTruthy();
+    expect(screen.getByText('$28.830,00')).toBeTruthy();
+    expect(screen.getByText('$1.200,00')).toBeTruthy();
+    expect(screen.getByText('+$27.630,00')).toBeTruthy();
+  });
+
+  it('renders a loading state for account summary without showing incorrect zero balances', () => {
+    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'loading' }));
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('Cargando resumen financiero...')).toBeTruthy();
+    expect(screen.queryByText('$0,00')).toBeNull();
+    expect(screen.queryByText('+$0,00')).toBeNull();
+  });
+
+  it('renders an error state for account summary without showing incorrect zero balances', () => {
+    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'error', summaryError: new Error('No se pudo cargar') }));
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('No pudimos cargar tu resumen financiero')).toBeTruthy();
+    expect(screen.getByText('No se pudo cargar')).toBeTruthy();
+    expect(screen.queryByText('$0,00')).toBeNull();
+    expect(screen.queryByText('+$0,00')).toBeNull();
+  });
+
+  it('renders an empty state when the account summary is unavailable without inventing zero balances', () => {
+    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'empty' }));
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('Resumen financiero no disponible')).toBeTruthy();
+    expect(screen.getByText('Todavía no hay datos suficientes para calcular tus saldos.')).toBeTruthy();
+    expect(screen.queryByText('$0,00')).toBeNull();
+    expect(screen.queryByText('+$0,00')).toBeNull();
   });
 
   it('renders the app version string', () => {
@@ -258,7 +329,7 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
    * Property 4c — resumen financiero (summary card headings) siempre visible
    *
    * For any combination of summary values, both summary card headings
-   * ("Gasto Total" and "Deudas Activas") are always rendered.
+   * ("Gasto Total" and "Te deben") are always rendered.
    *
    * Validates: Requirements 3.4
    */
@@ -279,10 +350,10 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
           const { unmount } = render(<ProfileScreen />);
 
           const gastoTotal = screen.queryByText('Gasto Total');
-          const deudasActivas = screen.queryByText('Deudas Activas');
+          const teDeben = screen.queryByText('Te deben');
           unmount();
 
-          return gastoTotal !== null && deudasActivas !== null;
+          return gastoTotal !== null && teDeben !== null;
         },
       ),
       { numRuns: 20 },

@@ -1,7 +1,7 @@
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, currency = 'ARS'): string {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
-    currency: 'ARS',
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
@@ -9,8 +9,8 @@ export function formatCurrency(amount: number): string {
     .replace(/\s+/g, '');
 }
 
-export function formatAmount(amount: number): string {
+export function formatAmount(amount: number, currency = 'ARS'): string {
   const sign = amount >= 0 ? '+' : '-';
 
-  return `${sign}${formatCurrency(amount)}`;
+  return `${sign}${formatCurrency(amount, currency)}`;
 }

@@ -1,10 +1,15 @@
 import { GroupListItem } from '../types';
+import { selectAccountSummaryTotals } from '../../account/utils/accountSummaryTotals';
+import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 import { roundToCents } from '../utils/balanceContract';
 import { useGroups } from './useGroups';
 
 type UseGroupsListResult = {
   groups: GroupListItem[];
   netBalance: number;
+  owedToYou: number;
+  youOwe: number;
+  currency: string;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -19,6 +24,12 @@ type UseGroupsListResult = {
  */
 export function useGroupsList(): UseGroupsListResult {
   const { data, isLoading, isError, error } = useGroups();
+  const {
+    data: accountSummary,
+    isLoading: isSummaryLoading,
+    isError: isSummaryError,
+    error: summaryError,
+  } = useAccountSummary();
 
   const groups: GroupListItem[] = (data?.data ?? []).map((item) => ({
     id: item.id,
@@ -31,13 +42,16 @@ export function useGroupsList(): UseGroupsListResult {
     balance: roundToCents(item.currentUserBalance ?? 0),
   }));
 
-  const netBalance = roundToCents(groups.reduce((total, group) => total + group.balance, 0));
+  const selectedTotals = selectAccountSummaryTotals(accountSummary);
 
   return {
     groups,
-    netBalance,
-    isLoading,
-    isError,
-    error,
+    netBalance: selectedTotals.netBalance,
+    owedToYou: selectedTotals.totalToReceive,
+    youOwe: selectedTotals.totalOwed,
+    currency: selectedTotals.currency,
+    isLoading: isLoading || isSummaryLoading,
+    isError: isError || isSummaryError,
+    error: error ?? (summaryError as Error | null),
   };
 }

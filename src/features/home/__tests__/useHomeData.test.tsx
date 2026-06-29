@@ -19,7 +19,7 @@ const mockedGetGroupExpenses = jest.mocked(getGroupExpenses);
 
 function createTestQueryClient() {
   return new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false, gcTime: Infinity } },
   });
 }
 

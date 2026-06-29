@@ -1,9 +1,26 @@
+import { useQueries } from '@tanstack/react-query';
+
+import { queryKeys } from '../../../shared/api/queryKeys';
+import { getGroupExpenses } from '../../expenses/api/expensesApi';
+import type { ExpenseListItemDto } from '../../expenses/schemas/expenseSchema';
 import type { GroupListItemDto } from '../../groups/api/groupsApi';
 import { getReceivableAmount, getSignedPayableAmount, roundToCents } from '../../groups/utils/balanceContract';
 import { useGroups } from '../../groups/hooks/useGroups';
-import type { HomeActivity, HomeDashboardData, UseHomeDataResult } from '../types';
+import type { HomeActivity, HomeActivityCategory, HomeDashboardData, UseHomeDataResult } from '../types';
 
-type HomeSourceGroup = Pick<GroupListItemDto, 'id' | 'name' | 'currentUserBalance'>;
+type HomeSourceGroup = Pick<GroupListItemDto, 'id' | 'name' | 'currentUserBalance' | 'expensesCount'>;
+
+const LATEST_EXPENSES_PER_GROUP = 3;
+const RECENT_ACTIVITY_LIMIT = 5;
+
+const expenseCategoryToHomeCategory: Record<string, HomeActivityCategory> = {
+  FOOD: 'food',
+  TRANSPORT: 'transport',
+  UTILITIES: 'utilities',
+  SHOPPING: 'shopping',
+  ENTERTAINMENT: 'entertainment',
+  OTHER: 'other',
+};
 
 function getGroupCoverUrl(groupId: string) {
   return `https://picsum.photos/seed/${groupId}/400/300`;
@@ -30,8 +47,63 @@ function buildSummaryFromGroups(groups: HomeSourceGroup[]) {
   );
 
   return {
-    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: owedToYou, detail: 'Resumen' },
-    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: youOwe, detail: 'Resumen' },
+    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: owedToYou, detail: 'Resumen', tone: 'success' as const },
+    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: youOwe, detail: 'Resumen', tone: 'debt' as const },
+  };
+}
+
+function getExpenseTimestamp(expense: ExpenseListItemDto): number {
+  const parsedDate = new Date(expense.expenseDate).getTime();
+
+  if (!Number.isNaN(parsedDate)) {
+    return parsedDate;
+  }
+
+  const parsedCreatedAt = expense.createdAt ? new Date(expense.createdAt).getTime() : Number.NaN;
+  return Number.isNaN(parsedCreatedAt) ? 0 : parsedCreatedAt;
+}
+
+function toStartOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function buildTimeLabel(dateValue: string, now = new Date()): string {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const oneDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((toStartOfDay(now) - toStartOfDay(date)) / oneDay);
+
+  if (diffDays === 0) {
+    return 'Hoy';
+  }
+
+  if (diffDays === 1) {
+    return 'Ayer';
+  }
+
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function mapExpenseToHomeActivity(
+  expense: ExpenseListItemDto,
+  group: HomeSourceGroup,
+): HomeActivity {
+  return {
+    id: expense.id,
+    groupId: group.id,
+    title: expense.title,
+    context: group.name,
+    amount: expense.amount,
+    timeLabel: buildTimeLabel(expense.expenseDate),
+    category: expenseCategoryToHomeCategory[expense.category ?? 'OTHER'] ?? 'other',
   };
 }
 
@@ -40,11 +112,38 @@ export function useHomeData(): UseHomeDataResult {
   const { data: groupsResponse, isLoading: isGroupsLoading, isError: isGroupsError, error: groupsError } = useGroups();
 
   const groups = groupsResponse?.data ?? [];
+  const groupsWithPossibleExpenses = isGroupsLoading
+    ? []
+    : groups.filter((group) => group.expensesCount !== 0);
+  const latestExpenseQueries = useQueries({
+    queries: groupsWithPossibleExpenses.map((group) => ({
+      queryKey: queryKeys.expenses.latest(group.id),
+      queryFn: () => getGroupExpenses(group.id, { limit: LATEST_EXPENSES_PER_GROUP }),
+      enabled: !isGroupsLoading,
+    })),
+  });
   const summary = buildSummaryFromGroups(groups);
   const activeGroups = groups.slice(0, 2).map(mapGroupToHomeGroup);
-  const recentActivity: HomeActivity[] = [];
 
-  const data: HomeDashboardData | null = isGroupsLoading
+  const latestExpensesByGroup = latestExpenseQueries.flatMap((query, index) => {
+    const group = groupsWithPossibleExpenses[index];
+
+    if (!group) {
+      return [];
+    }
+
+    return (query.data?.expenses ?? []).map((expense) => ({ expense, group }));
+  });
+  const recentActivity: HomeActivity[] = latestExpensesByGroup
+    .sort((left, right) => getExpenseTimestamp(right.expense) - getExpenseTimestamp(left.expense))
+    .slice(0, RECENT_ACTIVITY_LIMIT)
+    .map(({ expense, group }) => mapExpenseToHomeActivity(expense, group));
+  const isExpensesLoading = latestExpenseQueries.some((query) => query.isLoading);
+  const expenseError = latestExpenseQueries.find((query) => query.isError)?.error as Error | undefined;
+
+  const isLoading = isGroupsLoading || isExpensesLoading;
+  const isError = isGroupsError || Boolean(expenseError);
+  const data: HomeDashboardData | null = isLoading
     ? null
     : { summary, activeGroups, recentActivity };
 
@@ -53,8 +152,8 @@ export function useHomeData(): UseHomeDataResult {
     summary,
     activeGroups,
     recentActivity,
-    isLoading: isGroupsLoading,
-    isError: isGroupsError,
-    error: groupsError as Error | null,
+    isLoading,
+    isError,
+    error: (groupsError as Error | null) ?? expenseError ?? null,
   };
 }

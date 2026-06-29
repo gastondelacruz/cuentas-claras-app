@@ -154,6 +154,35 @@ describe('useGroupDetail', () => {
     expect(result.current.totalExpensesCount).toBe(2);
   });
 
+  it('uses prepopulated detail cache during the creation navigation transition without returning unavailable state', async () => {
+    testClient.setQueryData(['groups', 'new-group-id'], {
+      ...groupDetailResponse,
+      id: 'new-group-id',
+      name: 'Grupo recién creado',
+      expensesCount: 0,
+      totalAmount: 0,
+      currentUserBalance: 0,
+    });
+    mockGetGroupBalances.mockImplementation(() => new Promise(() => {}));
+    mockUseGroupExpenses.mockReturnValue({
+      expenses: [],
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      isLoading: true,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useGroupDetail('new-group-id'), { wrapper: Wrapper });
+
+    expect(result.current.group).toMatchObject({
+      id: 'new-group-id',
+      name: 'Grupo recién creado',
+      totalExpense: 0,
+    });
+    expect(result.current.isLoading).toBe(true);
+  });
+
   it('derives summary totals from expenses and current member balance when group aggregates are missing', async () => {
     mockGetGroup.mockResolvedValueOnce({
       ...groupDetailResponse,

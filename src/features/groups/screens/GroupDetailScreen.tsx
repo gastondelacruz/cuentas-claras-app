@@ -24,11 +24,11 @@ const RECENT_EXPENSES_LIMIT = 3;
 export function GroupDetailScreen() {
   const navigation = useNavigation<GroupDetailNavigation>();
   const route = useRoute<GroupDetailRoute>();
-  const { group, memberBalances, recentExpenses, totalExpensesCount, isLoading } = useGroupDetail(route.params?.groupId);
+  const { group, memberBalances, recentExpenses, totalExpensesCount, isLoading, isFetching } = useGroupDetail(route.params?.groupId);
   const { handleOpenSettings, handleOpenBalances } = useGroupDetailActions(group?.id ?? '');
   const [showAllExpenses, setShowAllExpenses] = useState(false);
 
-  if (!group && isLoading) {
+  if (!group && (isLoading || isFetching)) {
     return (
       <ScreenContainer>
         <View className="flex-1 items-center justify-center p-6" accessibilityRole="progressbar" accessibilityLabel="Cargando grupo">

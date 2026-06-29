@@ -3,6 +3,7 @@ export type HomeSummaryItem = {
   title: string;
   amount: number;
   detail: string;
+  tone: 'success' | 'debt';
 };
 
 export type HomeSummary = {

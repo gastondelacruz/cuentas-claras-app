@@ -19,8 +19,8 @@ const navigate = jest.fn();
 const parentNavigate = jest.fn();
 
 const EMPTY_RESULT: UseHomeDataResult = {
-  data: { summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen' } }, activeGroups: [], recentActivity: [] },
-  summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen' } },
+  data: { summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen', tone: 'debt' } }, activeGroups: [], recentActivity: [] },
+  summary: { owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 0, detail: 'Resumen', tone: 'success' }, owedByUser: { id: 'owed-by-user', title: 'Debes', amount: 0, detail: 'Resumen', tone: 'debt' } },
   activeGroups: [],
   recentActivity: [],
   isLoading: false,
@@ -38,8 +38,8 @@ function seedDashboard() {
     { id: 'api-group-departamento', name: 'Departamento', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' },
   ];
   const summary = {
-    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 60, detail: '2 Personas' },
-    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: -20, detail: '1 Grupo' },
+    owedToUser: { id: 'owed-to-user', title: 'Te deben', amount: 60, detail: '2 Personas', tone: 'success' as const },
+    owedByUser: { id: 'owed-by-user', title: 'Debes', amount: -20, detail: '1 Grupo', tone: 'debt' as const },
   };
   const recentActivity = [
     { id: 'expense-home-1', groupId: 'api-group-lisboa', title: 'Cena de Sushi', context: 'Viaje a Lisboa', amount: 120, timeLabel: 'hace 2h', category: 'food' as const, paidByLabel: 'Pagado por ti en Viaje a Lisboa' },
@@ -144,5 +144,125 @@ describe('HomeScreen', () => {
 
     expect(screen.getByText('Aún no tienes movimientos')).toBeTruthy();
     expect(screen.getByLabelText('Crear un Grupo')).toBeTruthy();
+  });
+
+  /**
+   * PRESERVATION PROPERTY TESTS — Bug 1: Estados vacío/carga/error de HomeScreen sin cambios
+   *
+   * Property 2: Preservation
+   * Validates: Requirements 3.1, 3.2, 3.3
+   *
+   * EXPECTED OUTCOME: These tests PASS on unfixed code — they capture the existing baseline
+   * behavior to protect against regressions after the Bug 1 fix is applied.
+   *
+   * For any isLoading === true → HomeLoadingView is rendered.
+   * For any isError === true  → HomeErrorView is rendered.
+   * For any groups.length === 0 (no data) → HomeEmptyView is rendered.
+   */
+  describe('Property 2: Preservation — home states not affected by Bug 1 fix', () => {
+    /**
+     * For ANY truthy isLoading state, HomeLoadingView must render.
+     * Covers the invariant: isLoading: true → loading indicator visible.
+     *
+     * Validates: Requirement 3.2
+     */
+    it.each([
+      [{ isLoading: true, isError: false, error: null }],
+      [{ isLoading: true, isError: false, error: new Error('network') }],
+    ])('renders HomeLoadingView for any isLoading=true state (%j)', (overrides) => {
+      mockHomeData({ ...overrides, data: null });
+
+      render(<HomeScreen />);
+
+      // HomeLoadingView renders this text and accessibilityLabel
+      expect(screen.getByLabelText('Cargando inicio')).toBeTruthy();
+      expect(screen.getByText('Cargando inicio...')).toBeTruthy();
+
+      // Neither error nor empty views should appear
+      expect(screen.queryByText('No pudimos cargar el inicio')).toBeNull();
+      expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+    });
+
+    /**
+     * For ANY truthy isError state (with isLoading false), HomeErrorView must render.
+     * Covers the invariant: isError: true → error view visible.
+     *
+     * Validates: Requirement 3.3
+     */
+    it.each([
+      [{ isError: true, error: new Error('Server error') }, 'Server error'],
+      [{ isError: true, error: new Error('Red no disponible') }, 'Red no disponible'],
+      [{ isError: true, error: null }, 'Intentalo de nuevo en unos minutos.'],
+    ])(
+      'renders HomeErrorView for any isError=true state with message "%s"',
+      (overrides, expectedMessage) => {
+        mockHomeData({ ...overrides, isLoading: false, data: null });
+
+        render(<HomeScreen />);
+
+        // HomeErrorView renders this text
+        expect(screen.getByText('No pudimos cargar el inicio')).toBeTruthy();
+        expect(screen.getByText(expectedMessage)).toBeTruthy();
+
+        // Neither loading nor empty views should appear
+        expect(screen.queryByLabelText('Cargando inicio')).toBeNull();
+        expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+      },
+    );
+
+    /**
+     * For ANY state where groups.length === 0 (and no recentActivity), HomeEmptyView must render.
+     * Covers the invariant: no active groups AND no recent activity → empty state visible.
+     * This is the baseline that the Bug 1 fix must NOT break.
+     *
+     * Validates: Requirement 3.1
+     */
+    it.each([
+      // No data at all
+      [null],
+      // Data present but activeGroups and recentActivity both empty
+      [
+        {
+          summary: EMPTY_RESULT.summary,
+          activeGroups: [],
+          recentActivity: [],
+        },
+      ],
+    ])('renders HomeEmptyView for any empty data state (%j)', (dataOverride) => {
+      mockHomeData({
+        isLoading: false,
+        isError: false,
+        error: null,
+        data: dataOverride as typeof EMPTY_RESULT['data'],
+        activeGroups: dataOverride?.activeGroups ?? [],
+        recentActivity: dataOverride?.recentActivity ?? [],
+        summary: dataOverride?.summary ?? EMPTY_RESULT.summary,
+      });
+
+      render(<HomeScreen />);
+
+      // HomeEmptyView renders this title and button
+      expect(screen.getByText('Aún no tienes movimientos')).toBeTruthy();
+      expect(screen.getByLabelText('Crear un Grupo')).toBeTruthy();
+
+      // Neither loading nor error views should appear
+      expect(screen.queryByLabelText('Cargando inicio')).toBeNull();
+      expect(screen.queryByText('No pudimos cargar el inicio')).toBeNull();
+    });
+
+    /**
+     * Priority ordering check: isLoading takes precedence over isError.
+     * For any state where both are true, loading view wins.
+     *
+     * Validates: Requirements 3.2, 3.3 (state priority is preserved)
+     */
+    it('renders HomeLoadingView (not HomeErrorView) when isLoading=true even if isError=true', () => {
+      mockHomeData({ isLoading: true, isError: true, error: new Error('race condition'), data: null });
+
+      render(<HomeScreen />);
+
+      expect(screen.getByLabelText('Cargando inicio')).toBeTruthy();
+      expect(screen.queryByText('No pudimos cargar el inicio')).toBeNull();
+    });
   });
 });

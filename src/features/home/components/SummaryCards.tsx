@@ -18,7 +18,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
         <Card key={item.id} variant="summary">
           <Text className="text-sm font-semibold text-neutral500">{item.title}</Text>
           <AmountText amount={item.amount} variant="summary" />
-          <Chip label={item.detail} tone={item.amount >= 0 ? 'success' : 'debt'} variant="summary" />
+          <Chip label={item.detail} tone={item.tone} variant="summary" />
         </Card>
       ))}
     </View>

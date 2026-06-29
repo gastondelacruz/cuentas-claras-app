@@ -114,18 +114,19 @@ type UseGroupDetailResult = {
   recentExpenses: GroupExpense[];
   totalExpensesCount: number;
   isLoading: boolean;
+  isFetching: boolean;
 };
 
 export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   const authUser = useAuthStore((state) => state.user);
 
-  const { data: groupDetail, isLoading: isDetailLoading } = useQuery({
+  const { data: groupDetail, isLoading: isDetailLoading, isFetching: isDetailFetching } = useQuery({
     queryKey: queryKeys.groups.detail(groupId ?? ''),
     queryFn: () => getGroup(groupId!),
     enabled: Boolean(groupId),
   });
 
-  const { data: balancesData, isLoading: isBalancesLoading } = useQuery({
+  const { data: balancesData, isLoading: isBalancesLoading, isFetching: isBalancesFetching } = useQuery({
     queryKey: queryKeys.groups.balances(groupId ?? ''),
     queryFn: () => getGroupBalances(groupId!),
     enabled: Boolean(groupId),
@@ -134,6 +135,7 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
   const { expenses, isLoading: isExpensesLoading } = useGroupExpenses(groupId);
 
   const isLoading = isDetailLoading || isBalancesLoading || isExpensesLoading;
+  const isFetching = isDetailFetching || isBalancesFetching || isExpensesLoading;
 
   if (!groupId || !groupDetail) {
     return {
@@ -142,6 +144,7 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
       recentExpenses: EMPTY_EXPENSES,
       totalExpensesCount: 0,
       isLoading,
+      isFetching,
     };
   }
 
@@ -182,5 +185,6 @@ export function useGroupDetail(groupId?: string): UseGroupDetailResult {
     recentExpenses,
     totalExpensesCount: groupDetail.expensesCount ?? expenses.length,
     isLoading,
+    isFetching,
   };
 }

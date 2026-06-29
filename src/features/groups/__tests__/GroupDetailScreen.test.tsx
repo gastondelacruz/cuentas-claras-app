@@ -38,6 +38,7 @@ function buildGroupDetailResult(groupId: string, expenses: GroupExpense[]) {
       recentExpenses: [] as GroupExpense[],
       totalExpensesCount: 0,
       isLoading: false,
+      isFetching: false,
     };
   }
   const owedToYou = expenses
@@ -60,6 +61,7 @@ function buildGroupDetailResult(groupId: string, expenses: GroupExpense[]) {
     recentExpenses: expenses,
     totalExpensesCount: expenses.length,
     isLoading: false,
+    isFetching: false,
   };
 }
 
@@ -214,6 +216,7 @@ describe('GroupDetailScreen', () => {
       recentExpenses: [] as GroupExpense[],
       totalExpensesCount: 0,
       isLoading: false,
+      isFetching: false,
     } as unknown as ReturnType<typeof useGroupDetail>);
 
     render(<GroupDetailScreen />);
@@ -230,6 +233,7 @@ describe('GroupDetailScreen', () => {
       recentExpenses: [] as GroupExpense[],
       totalExpensesCount: 0,
       isLoading: true,
+      isFetching: false,
     } as unknown as ReturnType<typeof useGroupDetail>);
     jest.mocked(useRoute).mockReturnValue({
       params: { groupId: 'api-group-loading' },
@@ -240,5 +244,45 @@ describe('GroupDetailScreen', () => {
     expect(screen.getByLabelText('Cargando grupo')).toBeTruthy();
     expect(screen.getByText('Cargando grupo...')).toBeTruthy();
     expect(screen.queryByText('Este grupo ya no está disponible')).toBeNull();
+  });
+
+  it('shows spinner instead of error screen when group is null but isFetching is true (background refetch)', () => {
+    mockUseGroupDetail.mockReturnValue({
+      group: null,
+      memberBalances: [],
+      recentExpenses: [] as GroupExpense[],
+      totalExpensesCount: 0,
+      isLoading: false,
+      isFetching: true,
+    } as unknown as ReturnType<typeof useGroupDetail>);
+
+    render(<GroupDetailScreen />);
+
+    expect(screen.getByLabelText('Cargando grupo')).toBeTruthy();
+    expect(screen.queryByText('Este grupo ya no está disponible')).toBeNull();
+  });
+
+  it('shows error screen when group is null and both isLoading and isFetching are false (genuinely missing)', () => {
+    mockUseGroupDetail.mockReturnValue({
+      group: null,
+      memberBalances: [],
+      recentExpenses: [] as GroupExpense[],
+      totalExpensesCount: 0,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useGroupDetail>);
+
+    render(<GroupDetailScreen />);
+
+    expect(screen.getByText('Este grupo ya no está disponible')).toBeTruthy();
+    expect(screen.queryByLabelText('Cargando grupo')).toBeNull();
+  });
+
+  it('renders group detail correctly when group data is available and all fetches are settled', () => {
+    render(<GroupDetailScreen />);
+
+    expect(screen.queryByText('Este grupo ya no está disponible')).toBeNull();
+    expect(screen.queryByLabelText('Cargando grupo')).toBeNull();
+    expect(screen.getByText('Gastos Recientes')).toBeTruthy();
   });
 });

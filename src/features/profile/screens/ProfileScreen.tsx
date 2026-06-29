@@ -1,17 +1,20 @@
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
-import { LogOut, Pencil } from "lucide-react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { LogOut } from "lucide-react-native";
 
 import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { Avatar } from "../../../shared/ui/Avatar";
 import { Card } from "../../../shared/ui/Card";
 import { Chip } from "../../../shared/ui/Chip";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { formatAmount, formatCurrency } from "../../../shared/utils/formatAmount";
+import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 
 type ProfileUser = {
   avatarUrl: string;
   email: string;
+  initials: string;
   name: string;
   status: string;
 };
@@ -19,21 +22,8 @@ type ProfileUser = {
 function ProfileCard({ profile }: { profile: ProfileUser }) {
   return (
     <View className="items-center rounded-lg bg-white px-5 py-8 shadow-sm">
-      <View className="relative mb-5">
-        <View className="h-32 w-32 items-center justify-center rounded-full bg-neutral200 p-2">
-          <Image
-            accessibilityLabel={profile.name}
-            className="h-full w-full rounded-full"
-            source={{ uri: profile.avatarUrl }}
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Editar foto de perfil"
-          className="absolute bottom-0 right-0 h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-primary"
-        >
-          <Pencil color={colors.white} size={22} strokeWidth={2.6} />
-        </Pressable>
+      <View className="mb-5">
+        <Avatar name={profile.name} initials={profile.initials} />
       </View>
 
       <Text className="text-2xl font-bold text-neutral900">{profile.name}</Text>
@@ -74,6 +64,7 @@ function SummaryCard({
 
 export function ProfileScreen() {
   const { user, summary } = useProfileData();
+  const logout = useLogout();
   const activeDebtsValue = summary.youOwe > 0 ? formatAmount(-summary.youOwe) : formatCurrency(0);
 
   return (
@@ -106,6 +97,9 @@ export function ProfileScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
+            accessibilityState={{ busy: logout.isPending, disabled: logout.isPending }}
+            disabled={logout.isPending}
+            onPress={() => logout.mutate()}
             className="flex-row items-center justify-center gap-3 py-6"
           >
             <LogOut color={colors.debt} size={24} strokeWidth={2.2} />

@@ -9,7 +9,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RootStackParamList } from '../../../app/navigation/types';
 import { queryKeys } from '../../../shared/api/queryKeys';
 import { useAuthStore } from '../../../shared/store/authStore';
-import { GroupApiType, getGroup } from '../api/groupsApi';
+import { getGroup } from '../api/groupsApi';
+import type { CreateGroupResponse, GroupApiType } from '../api/groupsApi';
+import type { GroupDetailDto } from '../schemas/groupSchema';
 import { useCreateGroup } from './useCreateGroup';
 import { useUpdateGroup } from './useGroupDetailActions';
 
@@ -72,6 +74,44 @@ const apiTypeToCategoryMap: Record<GroupApiType, GroupCategory> = {
   event: 'EVENT',
   other: 'OTHER',
 };
+
+function toIsoString(value: CreateGroupResponse['createdAt'] | undefined): string {
+  if (value instanceof Date) return value.toISOString();
+  return value ?? new Date().toISOString();
+}
+
+function mapCreateResponseToGroupDetail(
+  response: CreateGroupResponse,
+  fallback: { name: string; type: GroupApiType; currency: string; members: GroupMember[] },
+): GroupDetailDto {
+  const members = response.members?.map((member) => ({
+    id: member.id,
+    displayName: member.name ?? member.email ?? 'Member',
+    email: member.email,
+    isCurrentUser: member.id === fallback.members[0]?.id || member.email === fallback.members[0]?.email,
+  })) ?? fallback.members.map((member, index) => ({
+    id: member.id,
+    displayName: member.name,
+    email: member.email,
+    isCurrentUser: index === 0,
+  }));
+
+  return {
+    id: response.id,
+    name: response.name ?? fallback.name,
+    type: response.type ?? fallback.type,
+    currency: response.currency ?? fallback.currency,
+    description: response.description ?? null,
+    members,
+    membersCount: response.membersCount ?? members.length,
+    expensesCount: response.expensesCount ?? 0,
+    totalAmount: response.totalAmount ?? 0,
+    currentUserBalance: response.currentUserBalance ?? 0,
+    createdAt: toIsoString(response.createdAt),
+    updatedAt: toIsoString(response.updatedAt),
+    archivedAt: response.archivedAt ? toIsoString(response.archivedAt) : null,
+  };
+}
 
 export function useNewGroupForm() {
   const navigation = useNavigation<NewGroupNavigation>();
@@ -233,7 +273,24 @@ export function useNewGroupForm() {
       },
       {
         onSuccess: (response) => {
-          queryClient.invalidateQueries({ queryKey: ['groups'] });
+          const groupDetail = mapCreateResponseToGroupDetail(response, {
+            name: groupName.trim(),
+            type: categoryToApiType[selectedType],
+            currency: 'ARS',
+            members: [
+              currentMember,
+              ...invitedEmails.map((email) => ({
+                id: email,
+                name: email.split('@')[0] ?? email,
+                email,
+                initials: getInitialsFromValue(email.split('@')[0] ?? email),
+                avatarUrl: null,
+              })),
+            ],
+          });
+
+          queryClient.setQueryData(queryKeys.groups.detail(response.id), groupDetail);
+          queryClient.invalidateQueries({ queryKey: queryKeys.groups.all(), exact: true });
           navigation.replace('GroupDetail', { groupId: response.id });
         },
         onError: () => {

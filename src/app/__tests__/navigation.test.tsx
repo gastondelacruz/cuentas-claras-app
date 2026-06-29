@@ -36,7 +36,7 @@ jest.mock('../../features/groups/hooks/useGroups');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
 const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
-const mockSummary = { owedToUser: { id: 'a', title: 'Te deben', amount: 0, detail: '' }, owedByUser: { id: 'b', title: 'Debes', amount: 0, detail: '' } };
+const mockSummary = { owedToUser: { id: 'a', title: 'Te deben', amount: 0, detail: '', tone: 'success' as const }, owedByUser: { id: 'b', title: 'Debes', amount: 0, detail: '', tone: 'debt' as const } };
 
 jest.mock('../../features/home/hooks/useHomeData', () => ({
   useHomeData: jest.fn(),

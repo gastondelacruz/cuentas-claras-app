@@ -178,6 +178,62 @@ describe('NewGroupScreen', () => {
     });
   });
 
+  it('prepopulates the group detail cache before navigating after create success', async () => {
+    const setQueryDataSpy = jest.spyOn(sharedQueryClient, 'setQueryData');
+    const invalidateQueriesSpy = jest.spyOn(sharedQueryClient, 'invalidateQueries');
+
+    mockMutate.mockImplementationOnce((_input, callbacks) => {
+      callbacks?.onSuccess?.({
+        id: 'server-id-2',
+        name: 'Viaje a Mendoza',
+        type: 'trip',
+        currency: 'ARS',
+        members: [{ id: 'friend-id', name: 'friend', email: 'friend@example.com' }],
+        expensesCount: 0,
+        totalAmount: 0,
+        currentUserBalance: 0,
+        createdAt: '2024-05-20T00:00:00.000Z',
+        updatedAt: '2024-05-20T00:00:00.000Z',
+      });
+    });
+
+    renderWithQueryClient(<NewGroupScreen />);
+
+    fireEvent.changeText(screen.getByTestId('new-group-name-input'), 'Viaje a Mendoza');
+    fireEvent.changeText(screen.getByTestId('invite-email-input'), 'friend@example.com');
+    fireEvent.press(screen.getByTestId('invite-member-button'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('save-group-button'));
+    });
+
+    await waitFor(() => {
+      expect(sharedQueryClient.getQueryData(queryKeys.groups.detail('server-id-2'))).toEqual(
+        expect.objectContaining({
+          id: 'server-id-2',
+          name: 'Viaje a Mendoza',
+          type: 'trip',
+          currency: 'ARS',
+          expensesCount: 0,
+          totalAmount: 0,
+          currentUserBalance: 0,
+          members: expect.arrayContaining([
+            expect.objectContaining({ id: 'friend-id', displayName: 'friend', email: 'friend@example.com' }),
+          ]),
+        }),
+      );
+      expect(navigationMock.replace).toHaveBeenCalledWith('GroupDetail', { groupId: 'server-id-2' });
+    });
+
+    expect(setQueryDataSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      invalidateQueriesSpy.mock.invocationCallOrder[0],
+    );
+    expect(setQueryDataSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      navigationMock.replace.mock.invocationCallOrder[0],
+    );
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groups.all(), exact: true });
+  });
+
   it('shows a Spanish error message when creation fails', async () => {
     mockMutate.mockImplementationOnce((_input, callbacks) => {
       callbacks?.onError?.();

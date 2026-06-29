@@ -7,6 +7,7 @@ export const queryKeys = {
   },
   expenses: {
     list: (groupId: string) => ['expenses', { groupId }] as const,
+    latest: (groupId: string) => ['expenses', { groupId }, 'latest'] as const,
     detail: (expenseId: string) => ['expenses', expenseId] as const,
   },
   auth: {

@@ -49,4 +49,21 @@ describe('useAccountSummary', () => {
     expect(mockedGetAccountSummary).toHaveBeenCalledTimes(1);
     expect(testClient.getQueryData(['account', 'summary'])).toEqual(expect.objectContaining({ totalGroups: 12 }));
   });
+
+  it('does not crash when activeSince is null', async () => {
+    mockedGetAccountSummary.mockResolvedValue({
+      totalGroups: 12,
+      totalExpenses: 2,
+      totalsByCurrency: [
+        { currency: 'ARS', totalPaid: 57660, totalOwed: 1200, totalToReceive: 28830 },
+      ],
+      activeSince: null,
+    });
+
+    const { result } = renderHook(() => useAccountSummary(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data?.activeSince).toBeNull();
+  });
 });

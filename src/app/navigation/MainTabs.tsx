@@ -3,10 +3,12 @@ import {
   CircleDollarSign,
   Home,
   User,
+  WalletCards,
 } from "lucide-react-native";
 
 import { GroupsListScreen } from "../../features/groups/screens/GroupsListScreen";
 import { HomeScreen } from "../../features/home/screens/HomeScreen";
+import { PersonalTransactionsScreen } from "../../features/personal-expenses/screens/PersonalTransactionsScreen";
 import { ProfileScreen } from "../../features/profile/screens/ProfileScreen";
 import { colors } from "../../shared/theme/colors";
 import { MainTabParamList } from "./types";
@@ -37,6 +39,14 @@ export function MainTabs() {
         options={{
           tabBarLabel: "Grupos",
           tabBarIcon: ({ color }) => <CircleDollarSign color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="PersonalExpenses"
+        component={PersonalTransactionsScreen}
+        options={{
+          tabBarLabel: "Gastos",
+          tabBarIcon: ({ color }) => <WalletCards color={color} />,
         }}
       />
       <Tab.Screen

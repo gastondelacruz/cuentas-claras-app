@@ -1,0 +1,2070 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/HealthResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/RegisterResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/RegisterResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/RefreshResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Logged out successfully."
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/groups": {
+      "post": {
+        "operationId": "GroupsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateGroupResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      },
+      "get": {
+        "operationId": "GroupsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/CreateGroupResponseDto"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      }
+    },
+    "/api/v1/groups/{groupId}": {
+      "get": {
+        "operationId": "GroupsController_getById",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateGroupResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      },
+      "patch": {
+        "operationId": "GroupsController_update",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateGroupResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      },
+      "delete": {
+        "operationId": "GroupsController_archive",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateGroupResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      }
+    },
+    "/api/v1/groups/{groupId}/balances": {
+      "get": {
+        "operationId": "GroupsController_getBalances",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupBalancesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      }
+    },
+    "/api/v1/groups/{groupId}/settlements": {
+      "get": {
+        "operationId": "GroupsController_getSettlements",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/GroupSettlementsResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      },
+      "post": {
+        "operationId": "GroupsController_recordSettlementPayment",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSettlementPaymentRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/RecordSettlementPaymentResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      }
+    },
+    "/api/v1/groups/{groupId}/expenses": {
+      "get": {
+        "operationId": "ExpensesController_list",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ListExpensesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["expenses"]
+      },
+      "post": {
+        "operationId": "ExpensesController_create",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateExpenseResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["expenses"]
+      }
+    },
+    "/api/v1/expenses/{expenseId}": {
+      "get": {
+        "operationId": "ExpenseDetailController_getById",
+        "parameters": [
+          {
+            "name": "expenseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateExpenseResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["expenses"]
+      },
+      "patch": {
+        "operationId": "ExpenseDetailController_update",
+        "parameters": [
+          {
+            "name": "expenseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpenseRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreateExpenseResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["expenses"]
+      },
+      "delete": {
+        "operationId": "ExpenseDetailController_delete",
+        "parameters": [
+          {
+            "name": "expenseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DeleteExpenseResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["expenses"]
+      }
+    },
+    "/api/v1/me/summary": {
+      "get": {
+        "operationId": "MeController_getSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/MeSummaryResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
+    },
+    "/api/v1/me/accounts": {
+      "get": {
+        "operationId": "MeController_listAccounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ListAccountsResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
+    },
+    "/api/v1/me/personal-transactions": {
+      "get": {
+        "operationId": "MeController_listPersonalTransactions",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "description": "Time range to filter transactions. Use \"period\" together with \"from\" and \"to\" for a custom date range.",
+            "schema": {
+              "default": "week",
+              "example": "week",
+              "type": "string",
+              "enum": ["day", "week", "month", "year", "period"]
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by transaction type.",
+            "schema": {
+              "example": "expense",
+              "type": "string",
+              "enum": ["expense", "income"]
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Start of the custom date range (ISO 8601). Required when range=\"period\".",
+            "schema": {
+              "example": "2026-06-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "End of the custom date range (ISO 8601). Required when range=\"period\".",
+            "schema": {
+              "example": "2026-06-30T23:59:59.999Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque pagination cursor, taken from a previous nextCursor.",
+            "schema": {
+              "example": "eyJpZCI6MTAwfQ==",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of transactions to return per page.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ListPersonalTransactionsResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      },
+      "post": {
+        "operationId": "MeController_createPersonalTransaction",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonalTransactionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreatePersonalTransactionResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
+    }
+  },
+  "info": {
+    "title": "Cuentas Claras API",
+    "description": "Shared expenses REST API",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "ApiResponseEnvelopeDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Successful response payload."
+          }
+        },
+        "required": ["data"]
+      },
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "uptime": {
+            "type": "number",
+            "example": 12.34
+          }
+        },
+        "required": ["status", "uptime"]
+      },
+      "RegisterUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "email": {
+            "type": "string",
+            "example": "ada@example.com"
+          }
+        },
+        "required": ["id", "name", "email"]
+      },
+      "RegisterResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "refresh-token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/RegisterUserResponseDto"
+          }
+        },
+        "required": ["accessToken", "refreshToken", "user"]
+      },
+      "RegisterRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password", "name"]
+      },
+      "LoginRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "RefreshResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": ["accessToken", "refreshToken"]
+      },
+      "RefreshRequestDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "The refresh token issued at login or previous refresh"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "LogoutRequestDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "CreateGroupMemberDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "email": {
+            "type": "string",
+            "example": "ada@example.com"
+          },
+          "isCurrentUser": {
+            "type": "boolean",
+            "example": true
+          },
+          "removedAt": {
+            "type": "object",
+            "example": null,
+            "nullable": true
+          }
+        },
+        "required": ["displayName"]
+      },
+      "CreateGroupResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "name": {
+            "type": "string",
+            "example": "Trip to Bariloche"
+          },
+          "description": {
+            "type": "object",
+            "example": "Shared travel expenses",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": ["trip", "home", "couple", "friends", "event", "other"],
+            "example": "couple"
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateGroupMemberDto"
+            }
+          },
+          "membersCount": {
+            "type": "number",
+            "example": 2
+          },
+          "expensesCount": {
+            "type": "number",
+            "example": 3
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 25000
+          },
+          "currentUserBalance": {
+            "type": "number",
+            "example": -12500
+          },
+          "expenses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "createdAt": {
+            "type": "object",
+            "example": "2026-06-29T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "object",
+            "example": "2026-06-29T10:30:00.000Z"
+          },
+          "archivedAt": {
+            "type": "object",
+            "example": null,
+            "nullable": true
+          }
+        },
+        "required": ["id"]
+      },
+      "CreateGroupRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": ["trip", "home", "couple", "friends", "event", "other"]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateGroupMemberDto"
+            }
+          }
+        },
+        "required": ["name", "type", "currency"]
+      },
+      "GroupBalanceDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "balance": {
+            "type": "number",
+            "example": 12500
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          }
+        },
+        "required": ["memberId", "displayName", "balance", "currency"]
+      },
+      "GroupBalancesResponseDto": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupBalanceDto"
+            }
+          }
+        },
+        "required": ["balances"]
+      },
+      "SettlementItemDto": {
+        "type": "object",
+        "properties": {
+          "fromMemberId": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "fromMemberName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          },
+          "toMemberId": {
+            "type": "string",
+            "example": "660e8400-e29b-41d4-a716-446655440000"
+          },
+          "toMemberName": {
+            "type": "string",
+            "example": "Grace Hopper"
+          },
+          "amount": {
+            "type": "number",
+            "example": 12500
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          }
+        },
+        "required": [
+          "fromMemberId",
+          "fromMemberName",
+          "toMemberId",
+          "toMemberName",
+          "amount",
+          "currency"
+        ]
+      },
+      "GroupSettlementsResponseDto": {
+        "type": "object",
+        "properties": {
+          "settlements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettlementItemDto"
+            }
+          }
+        },
+        "required": ["settlements"]
+      },
+      "SettlementPaymentMemberDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          }
+        },
+        "required": ["id", "displayName"]
+      },
+      "SettlementPaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "770e8400-e29b-41d4-a716-446655440000"
+          },
+          "groupId": {
+            "type": "string",
+            "example": "880e8400-e29b-41d4-a716-446655440000"
+          },
+          "fromMember": {
+            "$ref": "#/components/schemas/SettlementPaymentMemberDto"
+          },
+          "toMember": {
+            "$ref": "#/components/schemas/SettlementPaymentMemberDto"
+          },
+          "amount": {
+            "type": "number",
+            "example": 12500
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-06-29T00:00:00.000Z"
+          },
+          "notes": {
+            "type": "object",
+            "example": "Bank transfer",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "fromMember",
+          "toMember",
+          "amount",
+          "currency",
+          "paidAt",
+          "notes",
+          "createdAt"
+        ]
+      },
+      "RecordSettlementPaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupBalanceDto"
+            }
+          },
+          "payment": {
+            "$ref": "#/components/schemas/SettlementPaymentDto"
+          }
+        },
+        "required": ["balances", "payment"]
+      },
+      "RecordSettlementPaymentRequestDto": {
+        "type": "object",
+        "properties": {
+          "fromMemberId": {
+            "type": "string"
+          },
+          "toMemberId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidAt": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "fromMemberId",
+          "toMemberId",
+          "amount",
+          "currency",
+          "paidAt"
+        ]
+      },
+      "UpdateGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": ["trip", "home", "couple", "friends", "event", "other"]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateGroupMemberDto"
+            }
+          }
+        }
+      },
+      "ExpensePaidByResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Ada Lovelace"
+          }
+        },
+        "required": ["id", "displayName"]
+      },
+      "ExpenseListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "770e8400-e29b-41d4-a716-446655440000"
+          },
+          "groupId": {
+            "type": "string",
+            "example": "880e8400-e29b-41d4-a716-446655440000"
+          },
+          "title": {
+            "type": "string",
+            "example": "Dinner"
+          },
+          "amount": {
+            "type": "number",
+            "example": 25000
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "paidBy": {
+            "$ref": "#/components/schemas/ExpensePaidByResponseDto"
+          },
+          "participantsCount": {
+            "type": "number",
+            "example": 2
+          },
+          "category": {
+            "type": "object",
+            "example": "food",
+            "nullable": true
+          },
+          "expenseDate": {
+            "type": "string",
+            "example": "2026-06-29T00:00:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "title",
+          "amount",
+          "currency",
+          "paidBy",
+          "participantsCount",
+          "category",
+          "expenseDate",
+          "createdAt"
+        ]
+      },
+      "ListExpensesResponseDto": {
+        "type": "object",
+        "properties": {
+          "expenses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseListItemResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "object",
+            "example": "eyJpZCI6MTAwfQ==",
+            "nullable": true
+          }
+        },
+        "required": ["expenses", "nextCursor"]
+      },
+      "ExpenseParticipantResponseDto": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "example": "660e8400-e29b-41d4-a716-446655440000"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Grace Hopper"
+          },
+          "owedAmount": {
+            "type": "number",
+            "example": 12500
+          },
+          "paidAmount": {
+            "type": "number",
+            "example": 25000
+          },
+          "netAmount": {
+            "type": "number",
+            "example": 12500
+          }
+        },
+        "required": [
+          "memberId",
+          "displayName",
+          "owedAmount",
+          "paidAmount",
+          "netAmount"
+        ]
+      },
+      "CreateExpenseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "770e8400-e29b-41d4-a716-446655440000"
+          },
+          "groupId": {
+            "type": "string",
+            "example": "880e8400-e29b-41d4-a716-446655440000"
+          },
+          "title": {
+            "type": "string",
+            "example": "Dinner"
+          },
+          "amount": {
+            "type": "number",
+            "example": 25000
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "paidBy": {
+            "$ref": "#/components/schemas/ExpensePaidByResponseDto"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseParticipantResponseDto"
+            }
+          },
+          "splitType": {
+            "type": "string",
+            "example": "equal"
+          },
+          "category": {
+            "type": "object",
+            "example": "food",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Birthday dinner",
+            "nullable": true
+          },
+          "expenseDate": {
+            "type": "string",
+            "example": "2026-06-29T00:00:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "title",
+          "amount",
+          "currency",
+          "paidBy",
+          "participants",
+          "splitType",
+          "category",
+          "notes",
+          "expenseDate",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateExpenseRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidByMemberId": {
+            "type": "string"
+          },
+          "participantMemberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "splitType": {
+            "type": "string",
+            "enum": ["equal"]
+          },
+          "category": {
+            "type": "object",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "nullable": true
+          },
+          "expenseDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "amount",
+          "currency",
+          "paidByMemberId",
+          "participantMemberIds",
+          "splitType",
+          "expenseDate"
+        ]
+      },
+      "UpdateExpenseRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidByMemberId": {
+            "type": "string"
+          },
+          "participantMemberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "splitType": {
+            "type": "string",
+            "enum": ["equal"]
+          },
+          "category": {
+            "type": "object",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "nullable": true
+          },
+          "expenseDate": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteExpenseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "770e8400-e29b-41d4-a716-446655440000"
+          },
+          "deletedAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": ["id", "deletedAt"]
+      },
+      "MeSummaryCurrencyTotalsResponseDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "totalPaid": {
+            "type": "number",
+            "example": 120000
+          },
+          "totalOwed": {
+            "type": "number",
+            "example": 25000
+          },
+          "totalToReceive": {
+            "type": "number",
+            "example": 40000
+          }
+        },
+        "required": ["currency", "totalPaid", "totalOwed", "totalToReceive"]
+      },
+      "MeSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalGroups": {
+            "type": "number",
+            "example": 3
+          },
+          "totalExpenses": {
+            "type": "number",
+            "example": 12
+          },
+          "totalsByCurrency": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeSummaryCurrencyTotalsResponseDto"
+            }
+          },
+          "activeSince": {
+            "type": "object",
+            "example": "2026-06-01T00:00:00.000Z",
+            "nullable": true
+          }
+        },
+        "required": [
+          "totalGroups",
+          "totalExpenses",
+          "totalsByCurrency",
+          "activeSince"
+        ]
+      },
+      "AccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "00000000-0000-0000-0000-000000000002"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cuenta principal"
+          },
+          "kind": {
+            "type": "string",
+            "example": "bank"
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": ["id", "name", "kind", "currency", "isDefault"]
+      },
+      "ListAccountsResponseDto": {
+        "type": "object",
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountResponseDto"
+            }
+          }
+        },
+        "required": ["accounts"]
+      },
+      "PersonalTransactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "type": {
+            "type": "string",
+            "example": "expense"
+          },
+          "amount": {
+            "type": "number",
+            "example": 15000
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "category": {
+            "type": "string",
+            "example": "Salud"
+          },
+          "accountId": {
+            "type": "string",
+            "example": "acc-123"
+          },
+          "accountName": {
+            "type": "string",
+            "example": "Pesos"
+          },
+          "occurredAt": {
+            "type": "string",
+            "example": "2026-06-29T00:00:00.000Z"
+          },
+          "note": {
+            "type": "object",
+            "example": "Farmacia",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "amount",
+          "currency",
+          "category",
+          "accountId",
+          "accountName",
+          "occurredAt",
+          "note",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ListPersonalTransactionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalTransactionResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "object",
+            "example": "eyJpZCI6MTAwfQ==",
+            "nullable": true
+          },
+          "total": {
+            "type": "number",
+            "example": 876371
+          },
+          "incomeTotal": {
+            "type": "number",
+            "example": 500000
+          },
+          "expenseTotal": {
+            "type": "number",
+            "example": 376371
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          }
+        },
+        "required": [
+          "transactions",
+          "nextCursor",
+          "total",
+          "incomeTotal",
+          "expenseTotal",
+          "currency"
+        ]
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreatePersonalTransactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "type": {
+            "type": "string",
+            "example": "expense"
+          },
+          "amount": {
+            "type": "number",
+            "example": 15000
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "category": {
+            "type": "string",
+            "example": "Salud"
+          },
+          "accountId": {
+            "type": "string",
+            "example": "acc-123"
+          },
+          "accountName": {
+            "type": "string",
+            "example": "Pesos"
+          },
+          "occurredAt": {
+            "type": "string",
+            "example": "2026-06-29T00:00:00.000Z"
+          },
+          "note": {
+            "type": "object",
+            "example": "Farmacia",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-06-29T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "amount",
+          "currency",
+          "category",
+          "accountId",
+          "accountName",
+          "occurredAt",
+          "note",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreatePersonalTransactionRequestDto": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Account to record the transaction in. Defaults to the user's default account when omitted.",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "type": {
+            "type": "string",
+            "description": "Transaction type.",
+            "enum": ["expense", "income"],
+            "example": "expense"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount. Must be a positive number.",
+            "example": 1500
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code.",
+            "example": "ARS"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category name. Allowed values depend on the transaction type.",
+            "example": "Alimentación"
+          },
+          "occurredAt": {
+            "type": "string",
+            "description": "Date and time the transaction occurred (ISO 8601).",
+            "example": "2026-06-29T12:00:00.000Z"
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional free-text note, up to 200 characters.",
+            "example": "Farmacia",
+            "maxLength": 200
+          }
+        },
+        "required": ["type", "amount", "currency", "category", "occurredAt"]
+      }
+    }
+  }
+}

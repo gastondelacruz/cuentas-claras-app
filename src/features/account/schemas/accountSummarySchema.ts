@@ -11,7 +11,7 @@ export const accountSummarySchema = z.object({
   totalGroups: z.number(),
   totalExpenses: z.number(),
   totalsByCurrency: z.array(accountSummaryCurrencyTotalsSchema).default([]),
-  activeSince: z.string(),
+  activeSince: z.string().nullable(),
 });
 
 export type AccountSummaryCurrencyTotalsDto = z.infer<typeof accountSummaryCurrencyTotalsSchema>;

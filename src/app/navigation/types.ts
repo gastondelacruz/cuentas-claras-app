@@ -3,6 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type MainTabParamList = {
   Home: undefined;
   GroupsList: undefined;
+  PersonalExpenses: undefined;
   Profile: undefined;
 };
 
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   GroupDetail: { groupId?: string } | undefined;
   NewGroup: { groupId?: string } | undefined;
   AddExpense: { groupId?: string; expenseId?: string } | undefined;
+  AddPersonalTransaction: { type?: 'expense' | 'income' } | undefined;
   SettleDebts: { groupId: string };
 };
 
@@ -21,9 +23,11 @@ export const registeredRouteNames = [
   'Auth',
   'Home',
   'GroupsList',
+  'PersonalExpenses',
   'GroupDetail',
   'NewGroup',
   'AddExpense',
+  'AddPersonalTransaction',
   'SettleDebts',
   'Profile',
 ] as const;

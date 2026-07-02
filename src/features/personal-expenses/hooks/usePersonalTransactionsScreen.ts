@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 
 import type { MainTabParamList, RootStackParamList } from '../../../app/navigation/types';
+import { getPersonalCategoryVisual } from '../constants/personalTransactionCategoryVisuals';
 import type { PersonalTransactionSummaryResponseDto } from '../schemas/personalTransactionSchema';
 import { computeDateRange } from '../utils/computeDateRange';
 import { usePersonalTransactions } from './usePersonalTransactions';
@@ -16,11 +17,6 @@ import type {
 
 type PersonalTransactionsNavigation = BottomTabNavigationProp<MainTabParamList, 'PersonalExpenses'>;
 type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
-
-const CHART_COLORS: Record<PersonalTransactionType, string[]> = {
-  expense: ['#1b4332', '#116c4a', '#86d7ad', '#c1ecd4'],
-  income: ['#116c4a', '#ffba27', '#a1f4c8', '#c1ecd4'],
-};
 
 const DONUT_CIRCUMFERENCE = 251.3;
 
@@ -36,10 +32,12 @@ function buildChartSegments(
 
   return breakdown
     .filter((item) => item.type === type && item.amount > 0 && item.percentage > 0)
-    .map((item, index) => {
+    .map((item) => {
       const length = DONUT_CIRCUMFERENCE * Math.min(item.percentage, 100) / 100;
+      // Each slice uses the same color the category shows on the add-transaction
+      // screen, so the chart legend and the category grid always match.
       const segment = {
-        color: CHART_COLORS[type][index % CHART_COLORS[type].length],
+        color: getPersonalCategoryVisual(type, item.category).color,
         dasharray: `${formatDashValue(length)} ${formatDashValue(DONUT_CIRCUMFERENCE - length)}`,
         ...(offset > 0 ? { dashoffset: `-${formatDashValue(offset)}` } : {}),
       };
@@ -48,13 +46,52 @@ function buildChartSegments(
     });
 }
 
+const MONTHS_ES_SHORT = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+] as const;
+
+function startOfDayIso(date: Date) {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+  ).toISOString();
+}
+
+function endOfDayIso(date: Date) {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
+  ).toISOString();
+}
+
+function formatPeriodLabel(from: Date, to: Date) {
+  const label = (d: Date) => `${d.getUTCDate()} ${MONTHS_ES_SHORT[d.getUTCMonth()]}`;
+  return `${label(from)} – ${label(to)} ${to.getUTCFullYear()}`;
+}
+
+type PeriodRange = { from: Date; to: Date };
+
 export function usePersonalTransactionsScreen() {
   const navigation = useNavigation<PersonalTransactionsNavigation>();
   const rootNavigation = navigation.getParent?.<RootNavigation>();
   const [type, setType] = useState<PersonalTransactionType>('expense');
   const [range, setRange] = useState<PersonalTransactionRange>('week');
+  const [periodRange, setPeriodRange] = useState<PeriodRange | null>(null);
+  const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
-  const { from, to, rangeLabel } = useMemo(() => computeDateRange(range), [range]);
+  const isPeriod = range === 'period';
+
+  // Bug 7 fix: only send from/to to the backend for the custom "period" range.
+  // For day/week/month/year the backend computes the window itself; sending our
+  // own date-only bounds narrowed the window to nothing (e.g. "day" showed empty).
+  const from = isPeriod && periodRange ? startOfDayIso(periodRange.from) : undefined;
+  const to = isPeriod && periodRange ? endOfDayIso(periodRange.to) : undefined;
+
+  const rangeLabel = useMemo(() => {
+    if (isPeriod && periodRange) {
+      return formatPeriodLabel(periodRange.from, periodRange.to);
+    }
+    return computeDateRange(range).rangeLabel;
+  }, [isPeriod, periodRange, range]);
 
   const transactionQuery = usePersonalTransactions({
     type,
@@ -67,6 +104,27 @@ export function usePersonalTransactionsScreen() {
     from,
     to,
   });
+
+  function selectRange(nextRange: PersonalTransactionRange) {
+    if (nextRange === 'period') {
+      // The period range only becomes active once the user confirms dates.
+      setIsPeriodModalOpen(true);
+      return;
+    }
+    setRange(nextRange);
+  }
+
+  function applyPeriod(nextFrom: Date, nextTo: Date) {
+    const [orderedFrom, orderedTo] =
+      nextFrom.getTime() <= nextTo.getTime() ? [nextFrom, nextTo] : [nextTo, nextFrom];
+    setPeriodRange({ from: orderedFrom, to: orderedTo });
+    setRange('period');
+    setIsPeriodModalOpen(false);
+  }
+
+  function closePeriodModal() {
+    setIsPeriodModalOpen(false);
+  }
 
   function navigateToAddTransaction() {
     rootNavigation?.navigate('AddPersonalTransaction', { type });
@@ -100,8 +158,12 @@ export function usePersonalTransactionsScreen() {
     type,
     setType,
     range,
-    setRange,
+    selectRange,
     rangeLabel,
+    periodRange,
+    isPeriodModalOpen,
+    applyPeriod,
+    closePeriodModal,
     navigateToAddTransaction,
     chartSegments,
     displayTransactions,

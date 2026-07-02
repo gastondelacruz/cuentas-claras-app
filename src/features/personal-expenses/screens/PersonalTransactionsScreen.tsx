@@ -6,24 +6,18 @@ import {
   View,
 } from "react-native";
 import {
-  Car,
   ChevronLeft,
   ChevronRight,
-  Gift,
-  LineChart,
-  MoreHorizontal,
   Plus,
-  ShoppingBag,
-  Search,
-  Settings,
-  Utensils,
   WalletCards,
 } from "lucide-react-native";
 import Svg, { Circle } from "react-native-svg";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
+import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
+import { PeriodSelectionModal } from "../components/PeriodSelectionModal";
+import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsScreen";
 import type {
   PersonalTransactionChartSegment,
@@ -92,19 +86,6 @@ function formatDate(value: string) {
     .replace(".", "");
 }
 
-function getCategoryIcon(category: string, type: PersonalTransactionType) {
-  if (type === "income") {
-    if (category === "Salario") return WalletCards;
-    if (category === "Regalos") return Gift;
-    return LineChart;
-  }
-
-  if (category === "Comida") return Utensils;
-  if (category === "Transporte") return Car;
-  if (category === "Compras") return ShoppingBag;
-  return MoreHorizontal;
-}
-
 function DonutChart({
   segments,
   totalLabel,
@@ -170,8 +151,12 @@ export function PersonalTransactionsScreen() {
     type,
     setType,
     range,
-    setRange,
+    selectRange,
     rangeLabel,
+    periodRange,
+    isPeriodModalOpen,
+    applyPeriod,
+    closePeriodModal,
     chartSegments,
     displayCurrency,
     displaySummaryCurrency,
@@ -189,68 +174,7 @@ export function PersonalTransactionsScreen() {
 
   return (
     <ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
-      {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: STITCH_SURFACE }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-              backgroundColor: STITCH_SURFACE,
-              paddingHorizontal: 20,
-              paddingVertical: 12,
-              height: 64,
-              borderBottomWidth: 1,
-              borderBottomColor: STITCH_SURFACE_VARIANT,
-          }}
-        >
-          {/* Logo mark */}
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              backgroundColor: "rgba(1, 45, 29, 0.1)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <WalletCards color={STITCH_PRIMARY} size={24} strokeWidth={2.2} />
-          </View>
-
-          {/* App name */}
-          <Text
-            style={{
-              flex: 1,
-              marginLeft: 16,
-              fontSize: 20,
-              fontWeight: "700",
-              color: DARK,
-            }}
-          >
-            Cuentas Claras
-          </Text>
-
-          {/* Search action */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Buscar"
-            hitSlop={8}
-            style={{ padding: 6 }}
-          >
-            <Search color={GRAY} size={24} strokeWidth={2} />
-          </Pressable>
-
-          {/* Settings action */}
-          <Pressable
-            accessibilityRole="button"
-             accessibilityLabel="Ajustes"
-            hitSlop={8}
-            style={{ padding: 6, marginLeft: 4 }}
-          >
-            <Settings color={GRAY} size={24} strokeWidth={2} />
-          </Pressable>
-        </View>
-      </SafeAreaView>
+      <AppTopBar />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -364,7 +288,7 @@ export function PersonalTransactionsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Filtro ${filter.label}`}
                 accessibilityState={{ selected }}
-                onPress={() => setRange(filter.value)}
+                onPress={() => selectRange(filter.value)}
                 testID={filter.testID}
                 style={{
                   paddingVertical: 8,
@@ -474,7 +398,8 @@ export function PersonalTransactionsScreen() {
                 </Text>
               </View>
             ) : displayTransactions.map((transaction) => {
-              const Icon = getCategoryIcon(transaction.category, transaction.type);
+              const categoryVisual = getPersonalCategoryVisual(transaction.type, transaction.category);
+              const Icon = categoryVisual.Icon;
               const isIncome = transaction.type === "income";
               return (
                 <View
@@ -494,13 +419,13 @@ export function PersonalTransactionsScreen() {
                       style={{
                         width: 40,
                         height: 40,
-                        borderRadius: isIncome ? 8 : 20,
-                        backgroundColor: isIncome ? "rgba(17, 108, 74, 0.1)" : "rgba(1, 45, 29, 0.1)",
+                        borderRadius: 20,
+                        backgroundColor: categoryVisual.color,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Icon color={isIncome ? STITCH_SECONDARY : STITCH_PRIMARY} size={22} strokeWidth={2} />
+                      <Icon color="#ffffff" size={22} strokeWidth={2} />
                     </View>
                     <View>
                       <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: "600", color: DARK }}>
@@ -545,6 +470,13 @@ export function PersonalTransactionsScreen() {
       >
         <Plus color={STITCH_PRIMARY_FIXED_DIM} size={28} strokeWidth={2.6} />
       </Pressable>
+
+      <PeriodSelectionModal
+        initialRange={periodRange}
+        onApply={applyPeriod}
+        onClose={closePeriodModal}
+        visible={isPeriodModalOpen}
+      />
     </ScreenContainer>
   );
 }

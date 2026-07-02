@@ -185,6 +185,19 @@ describe('PersonalTransactionsScreen', () => {
     );
   });
 
+  it('queries the backend day range without custom from/to dates', () => {
+    render(<PersonalTransactionsScreen />);
+
+    fireEvent.press(screen.getByTestId('personal-range-day'));
+
+    expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
+      expect.objectContaining({ range: 'day', from: undefined, to: undefined }),
+    );
+    expect(mockUsePersonalTransactionsSummary).toHaveBeenLastCalledWith(
+      expect.objectContaining({ range: 'day', from: undefined, to: undefined }),
+    );
+  });
+
   it('navigates to the add personal transaction screen from the FAB', () => {
     const rootNavigate = jest.fn();
     mockUseNavigation.mockReturnValue({ getParent: () => ({ navigate: rootNavigate }) } as never);
@@ -200,6 +213,14 @@ describe('PersonalTransactionsScreen', () => {
     render(<PersonalTransactionsScreen />);
 
     expect(screen.getByTestId('personal-transactions-card')).toBeTruthy();
+  });
+
+  it('reuses the shared app top bar instead of rendering custom header actions', () => {
+    render(<PersonalTransactionsScreen />);
+
+    expect(screen.getByText('Cuentas Claras')).toBeTruthy();
+    expect(screen.queryByLabelText('Buscar')).toBeNull();
+    expect(screen.queryByLabelText('Ajustes')).toBeNull();
   });
 
   it('renders the total section outside the card, not as a child of it', () => {
@@ -340,6 +361,56 @@ describe('PersonalTransactionsScreen', () => {
 
     expect(mockUsePersonalTransactionsSummary).toHaveBeenLastCalledWith(
       expect.objectContaining({ range: 'month' }),
+    );
+  });
+
+  it('opens the period selector modal and applies a custom period range', () => {
+    render(<PersonalTransactionsScreen />);
+
+    fireEvent.press(screen.getByTestId('personal-range-period'));
+
+    expect(screen.getByTestId('period-selection-modal')).toBeTruthy();
+    expect(screen.getByText('Seleccionar Período')).toBeTruthy();
+    expect(screen.getByTestId('period-from-field')).toBeTruthy();
+    expect(screen.getByTestId('period-to-field')).toBeTruthy();
+    expect(screen.getByTestId('period-calendar-grid')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('period-apply-button'));
+
+    expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        range: 'period',
+        from: '2026-06-01T00:00:00.000Z',
+        to: '2026-06-29T23:59:59.999Z',
+      }),
+    );
+    expect(mockUsePersonalTransactionsSummary).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        range: 'period',
+        from: '2026-06-01T00:00:00.000Z',
+        to: '2026-06-29T23:59:59.999Z',
+      }),
+    );
+  });
+
+  it('applies picker-selected period dates in chronological order', () => {
+    render(<PersonalTransactionsScreen />);
+
+    fireEvent.press(screen.getByTestId('personal-range-period'));
+
+    fireEvent.press(screen.getByTestId('period-day-2026-06-10'));
+
+    fireEvent.press(screen.getByTestId('period-from-field'));
+    fireEvent.press(screen.getByTestId('period-day-2026-06-20'));
+
+    fireEvent.press(screen.getByTestId('period-apply-button'));
+
+    expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        range: 'period',
+        from: '2026-06-10T00:00:00.000Z',
+        to: '2026-06-20T23:59:59.999Z',
+      }),
     );
   });
 });

@@ -111,7 +111,9 @@ describe('AddPersonalTransactionScreen', () => {
     expect(screen.getByText('Salario')).toBeTruthy();
     expect(screen.getByText('Regalos')).toBeTruthy();
     expect(screen.getByText('Intereses')).toBeTruthy();
-    expect(screen.getByText('Otros')).toBeTruthy();
+    // Bug 3: the "Otros" category must not exist on the income form.
+    expect(screen.queryByText('Otros')).toBeNull();
+    expect(screen.queryByTestId('personal-category-Otros')).toBeNull();
     expect(screen.getByText('Añadir Ingreso')).toBeTruthy();
     expect(screen.getByTestId('personal-form-tab-income').props.accessibilityState).toMatchObject({ selected: true });
   });

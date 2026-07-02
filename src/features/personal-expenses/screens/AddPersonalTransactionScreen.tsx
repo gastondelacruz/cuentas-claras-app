@@ -1,56 +1,17 @@
-import {
-  Banknote,
-  BookOpen,
-  Building2,
-  Calculator,
-  CalendarDays,
-  Check,
-  Coffee,
-  Gift,
-  Heart,
-  MoreHorizontal,
-  Plus,
-  ShoppingBasket,
-  TrendingUp,
-  Tv,
-} from 'lucide-react-native';
+import { Calculator, CalendarDays, Check } from 'lucide-react-native';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import type { LucideIcon } from 'lucide-react-native';
 
 import { colors } from '../../../shared/theme/colors';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { PERSONAL_CATEGORY_CONFIGS } from '../constants/personalTransactionCategoryVisuals';
 import { useAddPersonalTransactionForm } from '../hooks/useAddPersonalTransactionForm';
 import type { PersonalTransactionType } from '../types';
 
 const FORM_TABS: Array<{ value: PersonalTransactionType; label: string }> = [
   { value: 'expense', label: 'GASTOS' },
   { value: 'income', label: 'INGRESOS' },
-];
-
-/** Category display configuration shared by the grid */
-type CategoryConfig = {
-  name: string;
-  color: string;
-  Icon: LucideIcon;
-};
-
-const EXPENSE_CATEGORY_CONFIGS: CategoryConfig[] = [
-  { name: 'Salud', color: '#ef4444', Icon: Heart },
-  { name: 'Ocio', color: '#22c55e', Icon: Tv },
-  { name: 'Departament', color: '#3b82f6', Icon: Building2 },
-  { name: 'Café', color: '#f59e0b', Icon: Coffee },
-  { name: 'Educación', color: '#ec4899', Icon: BookOpen },
-  { name: 'Regalos', color: '#22c55e', Icon: Gift },
-  { name: 'Alimentación', color: '#3b82f6', Icon: ShoppingBasket },
-].filter((config) => config.name !== 'Más');
-
-const INCOME_CATEGORY_CONFIGS: CategoryConfig[] = [
-  { name: 'Salario', color: '#22c55e', Icon: Banknote },
-  { name: 'Regalos', color: '#f59e0b', Icon: Gift },
-  { name: 'Intereses', color: '#3b82f6', Icon: TrendingUp },
-  { name: 'Otros', color: '#9ca3af', Icon: MoreHorizontal },
 ];
 
 const PRIMARY = colors.primary;  // #0E7A3A
@@ -82,8 +43,7 @@ export function AddPersonalTransactionScreen() {
     isSubmitting,
   } = useAddPersonalTransactionForm();
 
-  const categoryConfigs =
-    type === 'income' ? INCOME_CATEGORY_CONFIGS : EXPENSE_CATEGORY_CONFIGS;
+  const categoryConfigs = PERSONAL_CATEGORY_CONFIGS[type];
 
   return (
     <ScreenContainer>

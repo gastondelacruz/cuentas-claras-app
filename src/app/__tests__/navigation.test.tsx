@@ -17,6 +17,7 @@ import { useGroupDetail } from '../../features/groups/hooks/useGroupDetail';
 import { useGroupDetailActions } from '../../features/groups/hooks/useGroupDetailActions';
 import { useAccountSummary } from '../../features/account/hooks/useAccountSummary';
 import { usePersonalTransactions } from '../../features/personal-expenses/hooks/usePersonalTransactions';
+import { usePersonalTransactionsSummary } from '../../features/personal-expenses/hooks/usePersonalTransactionsSummary';
 
 jest.mock('../../features/auth/hooks/useLogin', () => ({
   useLogin: jest.fn(() => ({
@@ -37,6 +38,7 @@ jest.mock('../../features/auth/hooks/useRegister', () => ({
 jest.mock('../../features/groups/hooks/useGroups');
 jest.mock('../../features/account/hooks/useAccountSummary');
 jest.mock('../../features/personal-expenses/hooks/usePersonalTransactions');
+jest.mock('../../features/personal-expenses/hooks/usePersonalTransactionsSummary');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
 const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
@@ -68,6 +70,7 @@ const mainTabLabels = ['Inicio', 'Grupos', 'Gastos', 'Perfil'] as const;
 const mockUseGroups = jest.mocked(useGroups);
 const mockUseAccountSummary = jest.mocked(useAccountSummary);
 const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
+const mockUsePersonalTransactionsSummary = jest.mocked(usePersonalTransactionsSummary);
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -137,6 +140,20 @@ describe('navigation shell', () => {
       incomeTotal: 876371,
       expenseTotal: 0,
       currency: 'ARS',
+      hasFetchedTransactions: true,
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+    mockUsePersonalTransactionsSummary.mockReturnValue({
+      summary: {
+        total: 876371,
+        incomeTotal: 876371,
+        expenseTotal: 0,
+        currency: 'ARS',
+        breakdown: [{ category: 'Salario', type: 'income', amount: 876371, percentage: 100 }],
+      },
+      hasFetchedSummary: true,
       isLoading: false,
       isError: false,
       error: null,
@@ -252,7 +269,7 @@ describe('navigation shell', () => {
     expect(await findByText('Crear nuevo gasto')).toBeOnTheScreen();
 
     fireEvent.press(getByText('Gastos'));
-    expect(await findByText('Total •')).toBeOnTheScreen();
+    expect(await findByText('Gastos Recientes')).toBeOnTheScreen();
 
     fireEvent.press(getByText('Perfil'));
     expect(await findByText('Alex Thompson')).toBeOnTheScreen();

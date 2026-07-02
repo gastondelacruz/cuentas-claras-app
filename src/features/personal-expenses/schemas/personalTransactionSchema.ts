@@ -26,6 +26,24 @@ export const personalTransactionListResponseSchema = z.object({
   currency: z.string(),
 });
 
+// Swagger (PersonalTransactionsSummaryBreakdownResponseDto.type) defines this field as a plain
+// string, not a closed enum. Using the enum here made the whole summary parse fail (blanking the
+// top Total) whenever the backend returned a category type outside 'expense' | 'income'.
+export const personalTransactionSummaryBreakdownSchema = z.object({
+  category: z.string(),
+  type: z.string(),
+  amount: z.number(),
+  percentage: z.number(),
+});
+
+export const personalTransactionSummaryResponseSchema = z.object({
+  total: z.number(),
+  currency: z.string(),
+  incomeTotal: z.number(),
+  expenseTotal: z.number(),
+  breakdown: z.array(personalTransactionSummaryBreakdownSchema),
+});
+
 export const createPersonalTransactionSchema = z.object({
   type: personalTransactionTypeSchema,
   amount: z.number().positive(),
@@ -38,4 +56,5 @@ export const createPersonalTransactionSchema = z.object({
 
 export type PersonalTransactionDto = z.infer<typeof personalTransactionSchema>;
 export type PersonalTransactionListResponseDto = z.infer<typeof personalTransactionListResponseSchema>;
+export type PersonalTransactionSummaryResponseDto = z.infer<typeof personalTransactionSummaryResponseSchema>;
 export type CreatePersonalTransactionInput = z.infer<typeof createPersonalTransactionSchema>;

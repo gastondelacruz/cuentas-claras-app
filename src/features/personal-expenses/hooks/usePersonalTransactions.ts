@@ -22,6 +22,7 @@ export function usePersonalTransactions(filters: PersonalTransactionListFilters)
     incomeTotal: query.data?.incomeTotal ?? 0,
     expenseTotal: query.data?.expenseTotal ?? 0,
     currency: query.data?.currency ?? 'ARS',
+    hasFetchedTransactions: query.data !== undefined,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

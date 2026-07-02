@@ -18,6 +18,8 @@ export const queryKeys = {
   },
   personalTransactions: {
     all: () => ['personal-transactions'] as const,
+    summary: (filters: { range: string; from?: string; to?: string }) =>
+      ['personal-transactions', 'summary', filters] as const,
     list: (filters: { type: string; range: string; from?: string; to?: string }) =>
       ['personal-transactions', filters] as const,
   },

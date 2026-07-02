@@ -16,6 +16,7 @@ import { emitAuthLogout } from '../../shared/api/authEvents';
 import { useGroupDetail } from '../../features/groups/hooks/useGroupDetail';
 import { useGroupDetailActions } from '../../features/groups/hooks/useGroupDetailActions';
 import { useAccountSummary } from '../../features/account/hooks/useAccountSummary';
+import { usePersonalTransactions } from '../../features/personal-expenses/hooks/usePersonalTransactions';
 
 jest.mock('../../features/auth/hooks/useLogin', () => ({
   useLogin: jest.fn(() => ({
@@ -35,6 +36,7 @@ jest.mock('../../features/auth/hooks/useRegister', () => ({
 
 jest.mock('../../features/groups/hooks/useGroups');
 jest.mock('../../features/account/hooks/useAccountSummary');
+jest.mock('../../features/personal-expenses/hooks/usePersonalTransactions');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
 const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
@@ -62,9 +64,10 @@ jest.mock('react-native-toast-message', () => ({
 
 const actualNavigation = jest.requireActual<typeof import('@react-navigation/native')>('@react-navigation/native');
 
-const mainTabLabels = ['Inicio', 'Grupos', 'Perfil'] as const;
+const mainTabLabels = ['Inicio', 'Grupos', 'Gastos', 'Perfil'] as const;
 const mockUseGroups = jest.mocked(useGroups);
 const mockUseAccountSummary = jest.mocked(useAccountSummary);
+const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -128,6 +131,16 @@ describe('navigation shell', () => {
       isError: false,
       error: null,
     } as ReturnType<typeof useAccountSummary>);
+    mockUsePersonalTransactions.mockReturnValue({
+      transactions: [],
+      total: 876371,
+      incomeTotal: 876371,
+      expenseTotal: 0,
+      currency: 'ARS',
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
     jest.mocked(useNavigation).mockImplementation(actualNavigation.useNavigation as never);
     jest.mocked(useRoute).mockImplementation(actualNavigation.useRoute as never);
 
@@ -179,9 +192,11 @@ describe('navigation shell', () => {
       'Auth',
       'Home',
       'GroupsList',
+      'PersonalExpenses',
       'GroupDetail',
       'NewGroup',
       'AddExpense',
+      'AddPersonalTransaction',
       'SettleDebts',
       'Profile',
     ]);
@@ -235,6 +250,9 @@ describe('navigation shell', () => {
 
     fireEvent.press(getByLabelText('Abrir menú de creación'));
     expect(await findByText('Crear nuevo gasto')).toBeOnTheScreen();
+
+    fireEvent.press(getByText('Gastos'));
+    expect(await findByText('Total •')).toBeOnTheScreen();
 
     fireEvent.press(getByText('Perfil'));
     expect(await findByText('Alex Thompson')).toBeOnTheScreen();

@@ -2,6 +2,13 @@
 
 This is a React Native Expo app for shared expense management. All product behavior lives in `src/features/<domain>/`; shared infrastructure lives in `src/shared/`; navigation and app shell live in `src/app/`.
 
+## API Contract Source of Truth
+
+- `swagger-spec.json` is the source of truth for backend endpoints, request bodies, response envelopes, and DTO shapes.
+- Before adding or changing API client code, schemas, mocks, or tests, inspect `swagger-spec.json` and align frontend expectations with its OpenAPI definitions.
+- Backend responses use a single `data` envelope: `{ "data": <payload> }`.
+- If implementation code and `swagger-spec.json` disagree, treat the Swagger spec as authoritative and update the frontend or tests accordingly.
+
 > **Skills Reference**: For detailed patterns, load these skills before changing code:
 >
 > - [`accessibility`](skills/accessibility/SKILL.md) — mobile a11y: roles, labels, focus, screen reader

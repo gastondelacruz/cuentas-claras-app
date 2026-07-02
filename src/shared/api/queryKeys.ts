@@ -16,4 +16,9 @@ export const queryKeys = {
   account: {
     summary: () => ['account', 'summary'] as const,
   },
+  personalTransactions: {
+    all: () => ['personal-transactions'] as const,
+    list: (filters: { type: string; range: string; from?: string; to?: string }) =>
+      ['personal-transactions', filters] as const,
+  },
 };

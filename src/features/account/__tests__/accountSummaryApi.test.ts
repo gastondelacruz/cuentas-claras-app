@@ -34,4 +34,20 @@ describe('accountSummaryApi.getAccountSummary', () => {
 
     await expect(getAccountSummary()).rejects.toThrow('API response does not match contract');
   });
+
+  it('parses activeSince: null successfully (MeSummaryResponseDto contract)', async () => {
+    const data = {
+      totalGroups: 12,
+      totalExpenses: 2,
+      totalsByCurrency: [
+        { currency: 'ARS', totalPaid: 57660, totalOwed: 1200, totalToReceive: 28830 },
+      ],
+      activeSince: null,
+    };
+    mockGet.mockResolvedValueOnce({ data: { data } });
+
+    const result = await getAccountSummary();
+
+    expect(result.activeSince).toBeNull();
+  });
 });

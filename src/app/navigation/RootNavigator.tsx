@@ -5,6 +5,7 @@ import { AddExpenseScreen } from '../../features/expenses/screens/AddExpenseScre
 import { SettleDebtsScreen } from '../../features/expenses/screens/SettleDebtsScreen';
 import { GroupDetailScreen } from '../../features/groups/screens/GroupDetailScreen';
 import { NewGroupScreen } from '../../features/groups/screens/NewGroupScreen';
+import { AddPersonalTransactionScreen } from '../../features/personal-expenses/screens/AddPersonalTransactionScreen';
 import { onAuthLogout } from '../../shared/api/authEvents';
 import { useAuthStore } from '../../shared/store/authStore';
 import { AuthStack } from './AuthStack';
@@ -32,6 +33,7 @@ export function RootNavigator() {
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="NewGroup" component={NewGroupScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AddPersonalTransaction" component={AddPersonalTransactionScreen} options={{ headerShown: false }} />
       <Stack.Screen name="SettleDebts" component={SettleDebtsScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );

@@ -1,4 +1,7 @@
-import { createPersonalTransactionSchema } from '../personalTransactionSchema';
+import {
+  createPersonalTransactionSchema,
+  personalTransactionSummaryResponseSchema,
+} from '../personalTransactionSchema';
 
 describe('createPersonalTransactionSchema', () => {
   it('parses a payload without accountId (backend defaults to the user default account)', () => {
@@ -84,5 +87,26 @@ describe('createPersonalTransactionSchema', () => {
     const result = createPersonalTransactionSchema.parse(payload);
 
     expect(result.note).toBeUndefined();
+  });
+});
+
+describe('personalTransactionSummaryResponseSchema', () => {
+  it('parses a breakdown row with an unexpected type string without throwing and keeps the top total (Swagger defines breakdown.type as string, not a closed enum)', () => {
+    const payload = {
+      total: 123629,
+      currency: 'ARS',
+      incomeTotal: 500000,
+      expenseTotal: 376371,
+      breakdown: [
+        { category: 'Reembolsos', type: 'refund', amount: 15000, percentage: 12 },
+        { category: 'Salario', type: 'income', amount: 500000, percentage: 88 },
+      ],
+    };
+
+    const result = personalTransactionSummaryResponseSchema.parse(payload);
+
+    expect(result.total).toBe(123629);
+    expect(result.breakdown[0].type).toBe('refund');
+    expect(result.breakdown[1].type).toBe('income');
   });
 });

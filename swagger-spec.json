@@ -984,6 +984,74 @@
         ],
         "tags": ["me"]
       }
+    },
+    "/api/v1/me/personal-transactions/summary": {
+      "get": {
+        "operationId": "MeController_getPersonalTransactionsSummary",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "description": "Time range to summarize transactions. Use \"period\" together with \"from\" and \"to\" for a custom date range.",
+            "schema": {
+              "default": "week",
+              "example": "week",
+              "type": "string",
+              "enum": ["day", "week", "month", "year", "period"]
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Start of the custom summary date range (ISO 8601). Required when range=\"period\".",
+            "schema": {
+              "example": "2026-06-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "End of the custom summary date range (ISO 8601). Required when range=\"period\".",
+            "schema": {
+              "example": "2026-06-30T23:59:59.999Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PersonalTransactionsSummaryResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
     }
   },
   "info": {
@@ -1958,6 +2026,62 @@
       "Object": {
         "type": "object",
         "properties": {}
+      },
+      "PersonalTransactionsSummaryBreakdownResponseDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "example": "Food"
+          },
+          "type": {
+            "type": "string",
+            "example": "expense"
+          },
+          "amount": {
+            "type": "number",
+            "example": 15000
+          },
+          "percentage": {
+            "type": "number",
+            "example": 75
+          }
+        },
+        "required": ["category", "type", "amount", "percentage"]
+      },
+      "PersonalTransactionsSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 123629
+          },
+          "incomeTotal": {
+            "type": "number",
+            "example": 500000
+          },
+          "expenseTotal": {
+            "type": "number",
+            "example": 376371
+          },
+          "currency": {
+            "type": "string",
+            "example": "ARS"
+          },
+          "breakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalTransactionsSummaryBreakdownResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "incomeTotal",
+          "expenseTotal",
+          "currency",
+          "breakdown"
+        ]
       },
       "CreatePersonalTransactionResponseDto": {
         "type": "object",

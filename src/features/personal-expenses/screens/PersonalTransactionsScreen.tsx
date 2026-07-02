@@ -6,20 +6,27 @@ import {
   View,
 } from "react-native";
 import {
+  Car,
   ChevronLeft,
   ChevronRight,
+  Gift,
+  LineChart,
+  MoreHorizontal,
   Plus,
+  ShoppingBag,
   Search,
   Settings,
-  TrendingUp,
+  Utensils,
   WalletCards,
 } from "lucide-react-native";
+import Svg, { Circle } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsScreen";
 import type {
+  PersonalTransactionChartSegment,
   PersonalTransactionRange,
   PersonalTransactionType,
 } from "../types";
@@ -45,8 +52,18 @@ const RANGE_FILTERS: Array<{
 ];
 
 const PRIMARY = colors.primary; // #0E7A3A
-const GRAY = colors.neutral500; // #6B7280
-const DARK = colors.neutral900; // #111827
+const STITCH_PRIMARY = "#012d1d";
+const STITCH_PRIMARY_CONTAINER = "#1b4332";
+const STITCH_SECONDARY = "#116c4a";
+const STITCH_PRIMARY_FIXED_DIM = "#a5d0b9";
+const STITCH_BACKGROUND = "#f8f9fa";
+const STITCH_SURFACE = "#ffffff";
+const STITCH_SURFACE_VARIANT = "#e1e3e4";
+const STITCH_ON_BACKGROUND = "#191c1d";
+const STITCH_ON_SURFACE_VARIANT = "#414844";
+const STITCH_ERROR = "#ba1a1a";
+const GRAY = STITCH_ON_SURFACE_VARIANT;
+const DARK = STITCH_ON_BACKGROUND;
 
 function formatTotal(value: number, currency: string) {
   const formatted = new Intl.NumberFormat("es-AR", {
@@ -55,14 +72,97 @@ function formatTotal(value: number, currency: string) {
   return currency === "ARS" ? `${formatted} $` : `${formatted} ${currency}`;
 }
 
-function getEmptyMessage(
+function formatSignedAmount(
+  value: number,
+  currency: string,
   type: PersonalTransactionType,
-  range: PersonalTransactionRange,
 ) {
-  const periodLabel = range === "week" ? "esta semana" : "en este período";
-  return type === "income"
-    ? `No hubo ingresos ${periodLabel}`
-    : `No hubo gastos ${periodLabel}`;
+  return `${type === "income" ? "+" : "-"} ${formatTotal(value, currency)}`;
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .format(date)
+    .replace(".", "");
+}
+
+function getCategoryIcon(category: string, type: PersonalTransactionType) {
+  if (type === "income") {
+    if (category === "Salario") return WalletCards;
+    if (category === "Regalos") return Gift;
+    return LineChart;
+  }
+
+  if (category === "Comida") return Utensils;
+  if (category === "Transporte") return Car;
+  if (category === "Compras") return ShoppingBag;
+  return MoreHorizontal;
+}
+
+function DonutChart({
+  segments,
+  totalLabel,
+}: {
+  segments: PersonalTransactionChartSegment[];
+  totalLabel: string;
+}) {
+  return (
+    <View
+      testID="personal-transactions-donut-chart"
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Gráfico de distribución. Total ${totalLabel}`}
+      style={{
+        minHeight: 300,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 256,
+          height: 256,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Svg width={256} height={256} viewBox="0 0 100 100" style={{ transform: [{ rotate: "-90deg" }] }}>
+          {segments.map((segment, index) => (
+            <Circle
+              key={`${segment.color}-${index}`}
+              cx="50"
+              cy="50"
+              r="40"
+              fill="transparent"
+              stroke={segment.color}
+              strokeWidth="12"
+              strokeDasharray={segment.dasharray}
+              strokeDashoffset={segment.dashoffset}
+            />
+          ))}
+        </Svg>
+        <View
+          style={{
+            position: "absolute",
+            inset: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ fontSize: 12, fontWeight: "600", color: GRAY }}>Total</Text>
+          <Text selectable style={{ fontSize: 20, fontWeight: "600", color: STITCH_PRIMARY }}>
+            {totalLabel}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
 }
 
 export function PersonalTransactionsScreen() {
@@ -72,48 +172,57 @@ export function PersonalTransactionsScreen() {
     range,
     setRange,
     rangeLabel,
-    total,
-    currency,
-    transactions,
+    chartSegments,
+    displayCurrency,
+    displaySummaryCurrency,
+    displaySummaryTotal,
+    displayTotal,
+    displayTransactions,
     isLoading,
     isError,
     navigateToAddTransaction,
   } = usePersonalTransactionsScreen();
 
+  const totalLabel = formatTotal(displaySummaryTotal, displaySummaryCurrency);
+  const chartTotalLabel = formatTotal(displayTotal, displayCurrency);
+  const showFinancialSummary = !isLoading && !isError;
+
   return (
-    <ScreenContainer style={{ backgroundColor: "#f9f9fc" }}>
+    <ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#f9f9fc" }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: STITCH_SURFACE }}>
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#ffffff",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            height: 56,
+              backgroundColor: STITCH_SURFACE,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              height: 64,
+              borderBottomWidth: 1,
+              borderBottomColor: STITCH_SURFACE_VARIANT,
           }}
         >
           {/* Logo mark */}
           <View
             style={{
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               borderRadius: 8,
-              backgroundColor: colors.primaryBg,
+              backgroundColor: "rgba(1, 45, 29, 0.1)",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <WalletCards color={PRIMARY} size={18} strokeWidth={2.4} />
+            <WalletCards color={STITCH_PRIMARY} size={24} strokeWidth={2.2} />
           </View>
 
           {/* App name */}
           <Text
             style={{
               flex: 1,
-              marginLeft: 10,
-              fontSize: 17,
+              marginLeft: 16,
+              fontSize: 20,
               fontWeight: "700",
               color: DARK,
             }}
@@ -128,71 +237,76 @@ export function PersonalTransactionsScreen() {
             hitSlop={8}
             style={{ padding: 6 }}
           >
-            <Search color={GRAY} size={20} strokeWidth={2} />
+            <Search color={GRAY} size={24} strokeWidth={2} />
           </Pressable>
 
           {/* Settings action */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Configuración"
+             accessibilityLabel="Ajustes"
             hitSlop={8}
             style={{ padding: 6, marginLeft: 4 }}
           >
-            <Settings color={GRAY} size={20} strokeWidth={2} />
+            <Settings color={GRAY} size={24} strokeWidth={2} />
           </Pressable>
         </View>
       </SafeAreaView>
 
-      {/* ── Total section ───────────────────────────────────────────────────── */}
-      <View
-        testID="personal-transactions-total"
-        style={{
-          alignItems: "center",
-          paddingTop: 24,
-          paddingBottom: 20,
-          gap: 4,
-        }}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 112 }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <TrendingUp color={GRAY} size={14} strokeWidth={1.8} />
-          <Text style={{ fontSize: 12, color: GRAY }}>Total •</Text>
-        </View>
-        <Text
-          selectable
+
+      {/* ── Total section ───────────────────────────────────────────────────── */}
+      {showFinancialSummary ? (
+        <View
+          testID="personal-transactions-total"
           style={{
-            fontSize: 32,
-            fontWeight: "700",
-            color: DARK,
-            fontVariant: ["tabular-nums"],
+            alignItems: "center",
+            paddingTop: 16,
+            paddingBottom: 24,
+            gap: 4,
           }}
         >
-          {formatTotal(total, currency)}
-        </Text>
-      </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <WalletCards color={GRAY} size={16} strokeWidth={1.8} />
+            <Text style={{ fontSize: 14, color: GRAY }}>Total</Text>
+            <Text style={{ fontSize: 16, color: GRAY }}>⌄</Text>
+          </View>
+          <Text
+            selectable
+            style={{
+              fontSize: 28,
+              fontWeight: "700",
+              color: STITCH_PRIMARY,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {totalLabel}
+          </Text>
+        </View>
+      ) : null}
 
       {/* ── Card: tabs, filters, date nav and content ─────────────────────────── */}
       <View
         testID="personal-transactions-card"
         style={{
-          flex: 1,
-          backgroundColor: "#ffffff",
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.04)",
+          backgroundColor: STITCH_SURFACE,
+          borderRadius: 12,
+          marginHorizontal: 20,
+          padding: 16,
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
         }}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 112 }}
-        >
+        <View>
           {/* ── Tabs: GASTOS | INGRESOS ───────────────────────────────────────── */}
           <View
           accessibilityRole="tablist"
           style={{
             flexDirection: "row",
             borderBottomWidth: 1,
-            borderBottomColor: "#E5E7EB",
-            marginHorizontal: 16,
+             borderBottomColor: STITCH_SURFACE_VARIANT,
+             marginBottom: 24,
           }}
         >
           {TRANSACTION_TABS.map((tab) => {
@@ -214,7 +328,7 @@ export function PersonalTransactionsScreen() {
                   alignItems: "center",
                   paddingVertical: 12,
                   borderBottomWidth: selected ? 2 : 0,
-                  borderBottomColor: selected ? PRIMARY : "transparent",
+                   borderBottomColor: selected ? STITCH_PRIMARY : "transparent",
                   marginBottom: -1,
                 }}
               >
@@ -223,7 +337,7 @@ export function PersonalTransactionsScreen() {
                     fontSize: 13,
                     fontWeight: "600",
                     letterSpacing: 0.5,
-                    color: selected ? PRIMARY : GRAY,
+                     color: selected ? STITCH_PRIMARY : GRAY,
                   }}
                 >
                   {tab.label}
@@ -234,14 +348,12 @@ export function PersonalTransactionsScreen() {
         </View>
 
         {/* ── Range filters ───────────────────────────────────────────────────── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
+        <View
+          style={{
             flexDirection: "row",
-            paddingHorizontal: 16,
-            paddingTop: 12,
-            gap: 4,
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 24,
           }}
         >
           {RANGE_FILTERS.map((filter) => {
@@ -256,15 +368,16 @@ export function PersonalTransactionsScreen() {
                 testID={filter.testID}
                 style={{
                   paddingVertical: 8,
-                  paddingHorizontal: 12,
+                   paddingHorizontal: 0,
                   borderBottomWidth: selected ? 2 : 0,
-                  borderBottomColor: selected ? DARK : "transparent",
+                   borderBottomColor: selected ? STITCH_PRIMARY : "transparent",
                 }}
               >
                 <Text
                   style={{
                     fontSize: 14,
-                    color: selected ? DARK : GRAY,
+                     color: selected ? STITCH_PRIMARY : GRAY,
+                     fontWeight: selected ? "600" : "400",
                   }}
                 >
                   {filter.label}
@@ -272,7 +385,7 @@ export function PersonalTransactionsScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
 
         {/* ── Date navigation row ─────────────────────────────────────────────── */}
         <View
@@ -280,17 +393,17 @@ export function PersonalTransactionsScreen() {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 12,
-            gap: 16,
+            marginBottom: 32,
+            position: "relative",
           }}
         >
-          <ChevronLeft color={GRAY} size={18} strokeWidth={2} />
-          <Text style={{ fontSize: 14, color: DARK }}>{rangeLabel}</Text>
-          <ChevronRight color={GRAY} size={18} strokeWidth={2} />
+          <ChevronLeft color={GRAY} size={24} strokeWidth={2} style={{ position: "absolute", left: 0 }} />
+          <Text style={{ fontSize: 14, color: GRAY, textDecorationLine: "underline" }}>{rangeLabel}</Text>
+          <ChevronRight color={GRAY} opacity={0.3} size={24} strokeWidth={2} style={{ position: "absolute", right: 0 }} />
         </View>
 
         {/* ── Content area ────────────────────────────────────────────────────── */}
-        <View style={{ paddingHorizontal: 16 }}>
+        <View>
           {isLoading ? (
             <View
               style={{
@@ -331,60 +444,84 @@ export function PersonalTransactionsScreen() {
                 Intentá nuevamente en unos minutos.
               </Text>
             </View>
-          ) : transactions.length === 0 ? (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                paddingVertical: 64,
-                gap: 16,
-              }}
-            >
-              {/* Decorative circular element */}
+          ) : (
+            <DonutChart segments={chartSegments} totalLabel={chartTotalLabel} />
+          )}
+        </View>
+        </View>
+      </View>
+
+      {showFinancialSummary ? (
+        <View style={{ paddingHorizontal: 20, paddingTop: 32, paddingBottom: 112, gap: 16 }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: "600", color: DARK, paddingHorizontal: 8 }}>
+            {type === "income" ? "Ingresos Recientes" : "Gastos Recientes"}
+          </Text>
+          <View style={{ gap: 8 }}>
+            {displayTransactions.length === 0 ? (
               <View
+                accessibilityRole="text"
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  borderWidth: 2,
-                  borderColor: "#E5E7EB",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: 0.4,
+                  backgroundColor: STITCH_SURFACE,
+                  borderRadius: 12,
+                  padding: 16,
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
                 }}
               >
-                <TrendingUp color={GRAY} size={32} strokeWidth={1.5} />
+                <Text style={{ fontSize: 14, lineHeight: 20, color: GRAY, textAlign: "center" }}>
+                  {type === "income"
+                    ? "No hay ingresos para este período."
+                    : "No hay gastos para este período."}
+                </Text>
               </View>
-              <Text style={{ fontSize: 14, color: GRAY, textAlign: "center" }}>
-                {getEmptyMessage(type, range)}
-              </Text>
-            </View>
-          ) : (
-            <View style={{ gap: 12 }}>
-              {transactions.map((transaction) => (
+            ) : displayTransactions.map((transaction) => {
+              const Icon = getCategoryIcon(transaction.category, transaction.type);
+              const isIncome = transaction.type === "income";
+              return (
                 <View
                   key={transaction.id}
                   style={{
-                    backgroundColor: "#ffffff",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: STITCH_SURFACE,
                     borderRadius: 12,
                     padding: 16,
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
                   }}
                 >
-                  <Text
-                    style={{ fontSize: 16, fontWeight: "700", color: DARK }}
-                  >
-                    {transaction.category}
-                  </Text>
-                  <Text selectable style={{ fontSize: 14, color: GRAY }}>
-                    {formatTotal(transaction.amount, transaction.currency)}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: isIncome ? 8 : 20,
+                        backgroundColor: isIncome ? "rgba(17, 108, 74, 0.1)" : "rgba(1, 45, 29, 0.1)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Icon color={isIncome ? STITCH_SECONDARY : STITCH_PRIMARY} size={22} strokeWidth={2} />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: "600", color: DARK }}>
+                        {transaction.category}
+                      </Text>
+                      <Text selectable style={{ fontSize: 12, lineHeight: 16, fontWeight: "600", letterSpacing: 0.6, color: GRAY }}>
+                        {formatDate(transaction.occurredAt)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text selectable style={{ fontSize: 16, lineHeight: 24, fontWeight: "700", color: isIncome ? STITCH_SECONDARY : STITCH_ERROR, fontVariant: ["tabular-nums"] }}>
+                    {formatSignedAmount(transaction.amount, transaction.currency, transaction.type)}
                   </Text>
                 </View>
-              ))}
-            </View>
-          )}
+              );
+            })}
+          </View>
         </View>
-        </ScrollView>
-      </View>
+      ) : null}
+
+      </ScrollView>
 
       {/* ── FAB ─────────────────────────────────────────────────────────────── */}
 
@@ -395,18 +532,18 @@ export function PersonalTransactionsScreen() {
         testID="add-personal-transaction-fab"
         style={{
           position: "absolute",
-          bottom: 24,
-          right: 16,
+          bottom: 80,
+          right: 20,
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: PRIMARY,
+          backgroundColor: STITCH_PRIMARY_CONTAINER,
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
         }}
       >
-        <Plus color={colors.white} size={24} strokeWidth={2.6} />
+        <Plus color={STITCH_PRIMARY_FIXED_DIM} size={28} strokeWidth={2.6} />
       </Pressable>
     </ScreenContainer>
   );

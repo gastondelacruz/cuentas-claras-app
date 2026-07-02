@@ -57,6 +57,8 @@ describe('usePersonalTransactions', () => {
 
     expect(mockGetPersonalTransactions).toHaveBeenCalledWith({ ...filters, limit: 20 });
     expect(testClient.getQueryState(queryKeys.personalTransactions.list(filters))).toBeTruthy();
+    expect(result.current.transactions).toEqual([]);
+    expect(result.current.hasFetchedTransactions).toBe(true);
     expect(result.current.total).toBe(876371);
   });
 

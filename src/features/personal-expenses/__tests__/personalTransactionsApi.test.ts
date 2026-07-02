@@ -2,6 +2,7 @@ import { client } from '../../../shared/api/client';
 import {
   createPersonalTransaction,
   getPersonalTransactions,
+  getPersonalTransactionsSummary,
 } from '../api/personalTransactionsApi';
 
 jest.mock('../../../shared/api/client', () => ({
@@ -173,6 +174,102 @@ describe('personalTransactionsApi.getPersonalTransactions', () => {
     });
 
     await expect(getPersonalTransactions({ type: 'expense', range: 'week' })).rejects.toThrow(
+      'API response does not match contract',
+    );
+  });
+});
+
+describe('personalTransactionsApi.getPersonalTransactionsSummary', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('calls GET /me/personal-transactions/summary with range params and returns the parsed envelope payload', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: {
+        data: {
+          total: 123629,
+          currency: 'ARS',
+          incomeTotal: 500000,
+          expenseTotal: 376371,
+          breakdown: [
+            {
+              category: 'Salario',
+              type: 'income',
+              amount: 500000,
+              percentage: 100,
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await getPersonalTransactionsSummary({
+      range: 'period',
+      from: '2026-06-01T00:00:00.000Z',
+      to: '2026-06-30T23:59:59.999Z',
+    });
+
+    expect(mockGet).toHaveBeenCalledWith('/me/personal-transactions/summary', {
+      params: {
+        range: 'period',
+        from: '2026-06-01T00:00:00.000Z',
+        to: '2026-06-30T23:59:59.999Z',
+      },
+    });
+    expect(result.total).toBe(123629);
+    expect(result.breakdown[0]).toEqual({
+      category: 'Salario',
+      type: 'income',
+      amount: 500000,
+      percentage: 100,
+    });
+  });
+
+  it('does not blank the top Total when a breakdown row has an unexpected type string (Swagger defines type as string, not a closed enum)', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: {
+        data: {
+          total: 123629,
+          currency: 'ARS',
+          incomeTotal: 500000,
+          expenseTotal: 376371,
+          breakdown: [
+            { category: 'Reembolsos', type: 'refund', amount: 15000, percentage: 12 },
+            { category: 'Salario', type: 'income', amount: 500000, percentage: 88 },
+          ],
+        },
+      },
+    });
+
+    const result = await getPersonalTransactionsSummary({ range: 'week' });
+
+    expect(result.total).toBe(123629);
+    expect(result.breakdown).toHaveLength(2);
+  });
+
+  it('throws when summary breakdown uses the old fixture shape instead of Swagger amount/percentage', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: {
+        data: {
+          total: 876371,
+          currency: 'ARS',
+          incomeTotal: 876371,
+          expenseTotal: 0,
+          breakdown: [{ type: 'income', category: 'Salario', total: 876371, currency: 'ARS' }],
+        },
+      },
+    });
+
+    await expect(getPersonalTransactionsSummary({ range: 'week' })).rejects.toThrow(
+      'API response does not match contract',
+    );
+  });
+
+  it('throws when the summary response does not match the contract', async () => {
+    mockGet.mockResolvedValueOnce({ data: { data: { total: 876371 } } });
+
+    await expect(getPersonalTransactionsSummary({ range: 'week' })).rejects.toThrow(
       'API response does not match contract',
     );
   });

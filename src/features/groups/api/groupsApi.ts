@@ -18,8 +18,11 @@ export { GROUP_TYPES };
 
 export type CreateGroupMemberDto = {
   id?: string;
+  displayName?: string;
+  isCurrentUser?: boolean;
   name?: string;
   email?: string;
+  removedAt?: string | null;
 };
 
 export type CreateGroupResponseDto = {

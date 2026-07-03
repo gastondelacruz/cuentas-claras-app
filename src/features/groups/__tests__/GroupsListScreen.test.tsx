@@ -32,10 +32,13 @@ function createGroup(overrides: Partial<GroupListItem>): GroupListItem {
 }
 
 describe('GroupsListScreen', () => {
+  let rootNavigateMock: jest.Mock;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    rootNavigateMock = jest.fn();
     mockUseNavigation.mockReturnValue({
-      getParent: () => ({ navigate: jest.fn() }),
+      getParent: () => ({ navigate: rootNavigateMock }),
     } as never);
     mockIsEnhancedInitialLoadingEnabled.mockReturnValue(false);
     mockUseGroupsList.mockReturnValue({
@@ -66,7 +69,7 @@ describe('GroupsListScreen', () => {
 
     expect(screen.getByLabelText('Cargando grupos')).toBeTruthy();
     expect(screen.getByText('Cargando grupos...')).toBeTruthy();
-    expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+    expect(screen.queryByText(/¡Bienvenido! Empecemos/)).toBeNull();
   });
 
   it('renders stable skeleton placeholders instead of the centered spinner when enhanced loading is enabled', () => {
@@ -106,7 +109,35 @@ describe('GroupsListScreen', () => {
 
     expect(screen.getByText('No pudimos cargar tus grupos')).toBeTruthy();
     expect(screen.getByText('Intentá nuevamente en unos minutos.')).toBeTruthy();
-    expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+    expect(screen.queryByText(/¡Bienvenido! Empecemos/)).toBeNull();
+  });
+
+  it('renders the Stitch empty groups card and navigates to group creation', () => {
+    render(<GroupsListScreen />);
+
+    expect(screen.getByText('Cuentas Claras')).toBeTruthy();
+    expect(screen.getByTestId('empty-state-card')).toBeTruthy();
+    const illustration = screen.getByLabelText('Ilustración de persona usando el celular con dinero y monedas');
+    expect(illustration).toBeTruthy();
+    expect(illustration.props.source).toEqual(expect.objectContaining({
+      testUri: expect.stringContaining('empty-groups-illustration.png'),
+    }));
+
+    const title = screen.getByText('¡Bienvenido! Empecemos\na ahorrar juntos');
+    const description = screen.getByText('Crea tu primer grupo para empezar\na dividir gastos con tus amigos.');
+    expect(title).toBeTruthy();
+    expect(description).toBeTruthy();
+    expect(screen.queryByText(/\\a/)).toBeNull();
+    expect(screen.queryByText(/Empecemosa ahorrar/)).toBeNull();
+
+    const createButton = screen.getByLabelText('Crear un Grupo');
+    expect(createButton.props.accessibilityRole).toBe('button');
+    expect(createButton.props.className).toContain('h-12');
+    expect(createButton.props.className).toContain('rounded-full');
+
+    fireEvent.press(createButton);
+
+    expect(rootNavigateMock).toHaveBeenCalledWith('NewGroup');
   });
 
   it('renders positive balances as money owed to the current user and filters receivable groups', () => {

@@ -86,9 +86,13 @@ function mapCreateResponseToGroupDetail(
 ): GroupDetailDto {
   const members = response.members?.map((member) => ({
     id: member.id,
-    displayName: member.name ?? member.email ?? 'Member',
+    displayName: member.displayName ?? member.name ?? member.email ?? 'Member',
     email: member.email,
-    isCurrentUser: member.id === fallback.members[0]?.id || member.email === fallback.members[0]?.email,
+    isCurrentUser:
+      member.isCurrentUser ??
+      (member.id === fallback.members[0]?.id ||
+        member.email === fallback.members[0]?.email),
+    removedAt: member.removedAt,
   })) ?? fallback.members.map((member, index) => ({
     id: member.id,
     displayName: member.name,

@@ -1,6 +1,6 @@
 import { Image, Pressable, Text, View } from 'react-native';
 
-const emptyIllustration = require('../../../assets/empty.png');
+const emptyGroupsIllustration = require('../../../assets/empty-groups-illustration.png');
 
 type EmptyStateProps = {
   buttonLabel: string;
@@ -11,14 +11,13 @@ type EmptyStateProps = {
 
 function EmptyStateIllustration() {
   return (
-    <View className="relative mb-6 h-56 w-56 items-center justify-center">
-      <View className="absolute h-56 w-56 rounded-full bg-primary/10" />
+    <View className="mb-5 h-36 w-36 items-center justify-center">
       <Image
         accessibilityIgnoresInvertColors
-        accessibilityLabel="Ilustración de billetera vacía"
-        className="h-56 w-56"
+        accessibilityLabel="Ilustración de persona usando el celular con dinero y monedas"
+        className="h-36 w-36"
         resizeMode="contain"
-        source={emptyIllustration}
+        source={emptyGroupsIllustration}
       />
     </View>
   );
@@ -26,23 +25,27 @@ function EmptyStateIllustration() {
 
 export function EmptyState({ buttonLabel, description, onPress, title }: EmptyStateProps) {
   return (
-    <View className="flex-1 justify-center px-7 pb-12 pt-8">
-      <View className="items-center">
-        <EmptyStateIllustration />
-        <View className="items-center gap-4">
-          <Text className="max-w-xs text-center text-4xl font-bold leading-tight text-neutral900">{title}</Text>
-          <Text className="max-w-xs text-center text-xl leading-8 text-neutral700">{description}</Text>
-        </View>
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={buttonLabel}
-        className="mt-10 h-20 w-full items-center justify-center rounded-2xl bg-primary shadow-sm"
-        onPress={onPress}
+    <View className="flex-1 items-center justify-center px-5 pb-12 pt-8">
+      <View
+        className="w-full items-center rounded-lg bg-white px-5 pb-6 pt-5"
+        style={{ boxShadow: '0 16px 28px rgba(17, 24, 39, 0.16)' }}
+        testID="empty-state-card"
       >
-        <Text className="text-2xl font-bold text-white">{buttonLabel}</Text>
-      </Pressable>
+        <EmptyStateIllustration />
+        <View className="items-center gap-3">
+          <Text className="text-center text-xl font-bold leading-6 text-neutral900">{title}</Text>
+          <Text className="text-center text-sm leading-5 text-neutral500">{description}</Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={buttonLabel}
+          className="mt-5 h-12 w-full items-center justify-center rounded-full bg-primary px-6 shadow-sm"
+          onPress={onPress}
+        >
+          <Text className="text-base font-bold text-white">{buttonLabel}</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

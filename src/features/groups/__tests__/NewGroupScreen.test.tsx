@@ -178,7 +178,7 @@ describe('NewGroupScreen', () => {
     });
   });
 
-  it('prepopulates the group detail cache before navigating after create success', async () => {
+  it('prepopulates the group detail cache with backend member ids and display names before navigating after create success', async () => {
     const setQueryDataSpy = jest.spyOn(sharedQueryClient, 'setQueryData');
     const invalidateQueriesSpy = jest.spyOn(sharedQueryClient, 'invalidateQueries');
 
@@ -188,7 +188,15 @@ describe('NewGroupScreen', () => {
         name: 'Viaje a Mendoza',
         type: 'trip',
         currency: 'ARS',
-        members: [{ id: 'friend-id', name: 'friend', email: 'friend@example.com' }],
+        members: [
+          {
+            id: 'member-current-backend-id',
+            displayName: 'Gaston',
+            email: 'you@example.com',
+            isCurrentUser: true,
+          },
+          { id: 'friend-id', displayName: 'Ada Lovelace', email: 'friend@example.com' },
+        ],
         expensesCount: 0,
         totalAmount: 0,
         currentUserBalance: 0,
@@ -218,7 +226,18 @@ describe('NewGroupScreen', () => {
           totalAmount: 0,
           currentUserBalance: 0,
           members: expect.arrayContaining([
-            expect.objectContaining({ id: 'friend-id', displayName: 'friend', email: 'friend@example.com' }),
+            expect.objectContaining({
+              id: 'member-current-backend-id',
+              displayName: 'Gaston',
+              email: 'you@example.com',
+              isCurrentUser: true,
+            }),
+            expect.objectContaining({
+              id: 'friend-id',
+              displayName: 'Ada Lovelace',
+              email: 'friend@example.com',
+              isCurrentUser: false,
+            }),
           ]),
         }),
       );

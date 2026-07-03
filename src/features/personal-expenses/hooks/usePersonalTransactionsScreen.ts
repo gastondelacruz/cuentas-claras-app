@@ -7,8 +7,10 @@ import type { MainTabParamList, RootStackParamList } from '../../../app/navigati
 import { getPersonalCategoryVisual } from '../constants/personalTransactionCategoryVisuals';
 import type { PersonalTransactionSummaryResponseDto } from '../schemas/personalTransactionSchema';
 import { computeDateRange } from '../utils/computeDateRange';
+import { rememberMockEditablePersonalTransaction } from '../mocks/personalTransactionEditMock';
 import { usePersonalTransactions } from './usePersonalTransactions';
 import { usePersonalTransactionsSummary } from './usePersonalTransactionsSummary';
+import type { PersonalTransactionDto } from '../schemas/personalTransactionSchema';
 import type {
   PersonalTransactionChartSegment,
   PersonalTransactionRange,
@@ -130,6 +132,14 @@ export function usePersonalTransactionsScreen() {
     rootNavigation?.navigate('AddPersonalTransaction', { type });
   }
 
+  function navigateToEditTransaction(transaction: PersonalTransactionDto) {
+    rememberMockEditablePersonalTransaction(transaction);
+    rootNavigation?.navigate('AddPersonalTransaction', {
+      type: transaction.type,
+      transactionId: transaction.id,
+    });
+  }
+
   const shouldUseBackendTransactions = transactionQuery.hasFetchedTransactions;
   const summary = summaryQuery.summary;
   const shouldUseSummary = summaryQuery.hasFetchedSummary && summary !== undefined;
@@ -165,6 +175,7 @@ export function usePersonalTransactionsScreen() {
     applyPeriod,
     closePeriodModal,
     navigateToAddTransaction,
+    navigateToEditTransaction,
     chartSegments,
     displayTransactions,
     displayTotal,

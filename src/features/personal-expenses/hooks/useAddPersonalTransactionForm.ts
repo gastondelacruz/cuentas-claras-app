@@ -6,7 +6,9 @@ import type { RootStackParamList } from '../../../app/navigation/types';
 import { maskAmountInput } from '../../expenses/utils/maskAmountInput';
 import { getPersonalTransactionCategories } from '../constants/personalTransactionCategories';
 import type { PersonalTransactionType } from '../types';
+import { getMockEditablePersonalTransaction } from '../mocks/personalTransactionEditMock';
 import { useCreatePersonalTransaction } from './useCreatePersonalTransaction';
+import { useUpdatePersonalTransaction } from './useUpdatePersonalTransaction';
 
 type AddPersonalTransactionNavigation = NativeStackNavigationProp<RootStackParamList, 'AddPersonalTransaction'>;
 type AddPersonalTransactionRoute = RouteProp<RootStackParamList, 'AddPersonalTransaction'>;
@@ -71,6 +73,10 @@ function parseAmount(value: string) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
+function formatAmountInput(value: number) {
+  return maskAmountInput(String(value));
+}
+
 const NOTE_PLACEHOLDERS: Record<PersonalTransactionType, string> = {
   expense: '¿En qué gastaste?',
   income: '¿De qué es este ingreso?',
@@ -79,27 +85,46 @@ const NOTE_PLACEHOLDERS: Record<PersonalTransactionType, string> = {
 export function useAddPersonalTransactionForm() {
   const navigation = useNavigation<AddPersonalTransactionNavigation>();
   const route = useRoute<AddPersonalTransactionRoute>();
-  const initialType = route.params?.type ?? 'expense';
+  const transactionId = route.params?.transactionId;
+  const editableTransaction = useMemo(
+    () => (transactionId ? getMockEditablePersonalTransaction(transactionId) : undefined),
+    [transactionId],
+  );
+  const isEditMode = transactionId !== undefined;
+  const initialType = editableTransaction?.type ?? route.params?.type ?? 'expense';
   const [type, setType] = useState<PersonalTransactionType>(initialType);
   const categories = useMemo(
     () => getPersonalTransactionCategories(type).filter((category) => category !== 'Más'),
     [type],
   );
-  const [selectedCategory, setSelectedCategory] = useState<string>(() => categories[0]);
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    if (editableTransaction && categories.includes(editableTransaction.category)) {
+      return editableTransaction.category;
+    }
+
+    return categories[0];
+  });
+  const [amount, setAmount] = useState(() => (
+    editableTransaction ? formatAmountInput(editableTransaction.amount) : ''
+  ));
+  const [note, setNote] = useState(() => editableTransaction?.note ?? '');
   const notePlaceholder = NOTE_PLACEHOLDERS[type];
 
   // Date chips are computed relative to the moment the form opens so labels stay
   // stable during the form session. new Date() is intercepted by jest.useFakeTimers in tests.
   const [now] = useState(() => new Date());
-  const [customDate, setCustomDate] = useState<Date | null>(null);
+  const [customDate, setCustomDate] = useState<Date | null>(() => (
+    editableTransaction ? new Date(editableTransaction.occurredAt) : null
+  ));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const dateChips = useMemo(() => getDateChips(now, customDate), [now, customDate]);
-  const [selectedDateId, setSelectedDateId] = useState<DateChipId>('today');
+  const [selectedDateId, setSelectedDateId] = useState<DateChipId>(
+    editableTransaction ? 'custom' : 'today',
+  );
 
   const [submitError, setSubmitError] = useState<string | undefined>();
   const createMutation = useCreatePersonalTransaction();
+  const updateMutation = useUpdatePersonalTransaction();
 
   function changeType(nextType: PersonalTransactionType) {
     setType(nextType);
@@ -135,6 +160,28 @@ export function useAddPersonalTransactionForm() {
 
     const selectedChip = dateChips.find((chip) => chip.id === selectedDateId) ?? dateChips[0];
     const trimmedNote = note.trim();
+
+    if (transactionId) {
+      updateMutation.mutate(
+        {
+          transactionId,
+          type,
+          amount: parsedAmount,
+          currency: CURRENCY,
+          category: selectedCategory,
+          occurredAt: selectedChip.date.toISOString(),
+          // Edit mode always sends `note`: the trimmed value, or `null` to explicitly
+          // clear it on the backend. Omitting it here would leave the existing note
+          // untouched (PATCH is a partial update), which is not what an emptied field means.
+          note: trimmedNote ? trimmedNote : null,
+        },
+        {
+          onSuccess: () => navigation.goBack(),
+          onError: () => setSubmitError('No pudimos guardar los cambios. Intentá de nuevo.'),
+        },
+      );
+      return;
+    }
 
     createMutation.mutate(
       {
@@ -174,6 +221,7 @@ export function useAddPersonalTransactionForm() {
     handleDatePickerChange,
     submit,
     submitError,
-    isSubmitting: createMutation.isPending,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
+    isEditMode,
   };
 }

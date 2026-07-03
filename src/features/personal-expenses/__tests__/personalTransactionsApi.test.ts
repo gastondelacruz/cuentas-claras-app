@@ -3,17 +3,20 @@ import {
   createPersonalTransaction,
   getPersonalTransactions,
   getPersonalTransactionsSummary,
+  updatePersonalTransaction,
 } from '../api/personalTransactionsApi';
 
 jest.mock('../../../shared/api/client', () => ({
   client: {
     get: jest.fn(),
     post: jest.fn(),
+    patch: jest.fn(),
   },
 }));
 
 const mockGet = jest.mocked(client.get);
 const mockPost = jest.mocked(client.post);
+const mockPatch = jest.mocked(client.patch);
 
 const validTransaction = {
   id: 'ptx-1',
@@ -311,5 +314,41 @@ describe('personalTransactionsApi.createPersonalTransaction', () => {
     });
 
     expect(result).toEqual(validTransaction);
+  });
+});
+
+describe('personalTransactionsApi.updatePersonalTransaction', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('calls PATCH /me/personal-transactions/:id with the partial payload', async () => {
+    mockPatch.mockResolvedValueOnce({ data: { data: validTransaction } });
+
+    const input = {
+      amount: 46000,
+      category: 'Salud',
+      note: null,
+    };
+
+    await updatePersonalTransaction('ptx-1', input);
+
+    expect(mockPatch).toHaveBeenCalledWith('/me/personal-transactions/ptx-1', input);
+  });
+
+  it('returns the parsed updated transaction', async () => {
+    mockPatch.mockResolvedValueOnce({ data: { data: validTransaction } });
+
+    const result = await updatePersonalTransaction('ptx-1', { amount: 46000 });
+
+    expect(result).toEqual(validTransaction);
+  });
+
+  it('throws when the response does not match the contract', async () => {
+    mockPatch.mockResolvedValueOnce({ data: { data: { id: 'ptx-1' } } });
+
+    await expect(updatePersonalTransaction('ptx-1', { amount: 46000 })).rejects.toThrow(
+      'API response does not match contract',
+    );
   });
 });

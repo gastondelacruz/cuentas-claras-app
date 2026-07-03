@@ -209,6 +209,92 @@ describe('PersonalTransactionsScreen', () => {
     expect(rootNavigate).toHaveBeenCalledWith('AddPersonalTransaction', { type: 'expense' });
   });
 
+  it('opens a recent expense in edit mode with accessible press feedback', () => {
+    const rootNavigate = jest.fn();
+    mockUseNavigation.mockReturnValue({ getParent: () => ({ navigate: rootNavigate }) } as never);
+    mockUsePersonalTransactions.mockReturnValue({
+      transactions: [
+        {
+          id: 'ptx-edit-expense',
+          type: 'expense',
+          amount: 12345,
+          currency: 'ARS',
+          category: 'Salud',
+          accountId: 'account-ars',
+          accountName: 'Pesos',
+          occurredAt: '2026-06-28T12:00:00.000Z',
+          note: 'Farmacia',
+          createdAt: '2026-06-28T12:00:00.000Z',
+          updatedAt: '2026-06-28T12:00:00.000Z',
+        },
+      ],
+      total: 12345,
+      incomeTotal: 0,
+      expenseTotal: 12345,
+      currency: 'ARS',
+      hasFetchedTransactions: true,
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    render(<PersonalTransactionsScreen />);
+
+    const item = screen.getByTestId('personal-transaction-item-ptx-edit-expense');
+    expect(item.props.accessibilityRole).toBe('button');
+    expect(item.props.accessibilityLabel).toBe('Editar gasto personal Salud por 12.345 $');
+    expect(item.props.accessibilityHint).toBe('Abre el formulario para modificar esta transacción');
+
+    fireEvent.press(item);
+
+    expect(rootNavigate).toHaveBeenCalledWith('AddPersonalTransaction', {
+      type: 'expense',
+      transactionId: 'ptx-edit-expense',
+    });
+  });
+
+  it('opens a recent income in edit mode', () => {
+    const rootNavigate = jest.fn();
+    mockUseNavigation.mockReturnValue({ getParent: () => ({ navigate: rootNavigate }) } as never);
+    mockUsePersonalTransactions.mockImplementation(({ type }) => ({
+      transactions: type === 'income'
+        ? [
+          {
+            id: 'ptx-edit-income',
+            type: 'income',
+            amount: 500000,
+            currency: 'ARS',
+            category: 'Salario',
+            accountId: 'account-ars',
+            accountName: 'Pesos',
+            occurredAt: '2026-06-29T12:00:00.000Z',
+            note: 'Junio',
+            createdAt: '2026-06-29T12:00:00.000Z',
+            updatedAt: '2026-06-29T12:00:00.000Z',
+          },
+        ]
+        : [],
+      total: type === 'income' ? 500000 : 0,
+      incomeTotal: type === 'income' ? 500000 : 0,
+      expenseTotal: 0,
+      currency: 'ARS',
+      hasFetchedTransactions: true,
+      isLoading: false,
+      isError: false,
+      error: null,
+    }));
+
+    render(<PersonalTransactionsScreen />);
+
+    fireEvent.press(screen.getByTestId('personal-tab-income'));
+    fireEvent.press(screen.getByTestId('personal-transaction-item-ptx-edit-income'));
+
+    expect(rootNavigate).toHaveBeenCalledWith('AddPersonalTransaction', {
+      type: 'income',
+      transactionId: 'ptx-edit-income',
+    });
+  });
+
   it('renders the white card that wraps tabs, filters, date nav and content', () => {
     render(<PersonalTransactionsScreen />);
 

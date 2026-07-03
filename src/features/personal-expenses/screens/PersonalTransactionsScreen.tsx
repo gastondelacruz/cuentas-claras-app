@@ -166,6 +166,7 @@ export function PersonalTransactionsScreen() {
     isLoading,
     isError,
     navigateToAddTransaction,
+    navigateToEditTransaction,
   } = usePersonalTransactionsScreen();
 
   const totalLabel = formatTotal(displaySummaryTotal, displaySummaryCurrency);
@@ -402,8 +403,13 @@ export function PersonalTransactionsScreen() {
               const Icon = categoryVisual.Icon;
               const isIncome = transaction.type === "income";
               return (
-                <View
+                <Pressable
                   key={transaction.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Editar ${transaction.type === 'income' ? 'ingreso' : 'gasto'} personal ${transaction.category} por ${formatTotal(transaction.amount, transaction.currency)}`}
+                  accessibilityHint="Abre el formulario para modificar esta transacción"
+                  onPress={() => navigateToEditTransaction(transaction)}
+                  testID={`personal-transaction-item-${transaction.id}`}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -439,7 +445,7 @@ export function PersonalTransactionsScreen() {
                   <Text selectable style={{ fontSize: 16, lineHeight: 24, fontWeight: "700", color: isIncome ? STITCH_SECONDARY : STITCH_ERROR, fontVariant: ["tabular-nums"] }}>
                     {formatSignedAmount(transaction.amount, transaction.currency, transaction.type)}
                   </Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>

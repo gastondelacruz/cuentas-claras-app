@@ -4,13 +4,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react-native
 import { PersonalTransactionsScreen } from '../screens/PersonalTransactionsScreen';
 import { usePersonalTransactions } from '../hooks/usePersonalTransactions';
 import { usePersonalTransactionsSummary } from '../hooks/usePersonalTransactionsSummary';
+import { isEnhancedInitialLoadingEnabled } from '../../../shared/feature-flags/initialLoadingFlags';
+import { prefetchAlternatePersonalTransactions } from '../api/personalTransactionPrefetch';
 
 jest.mock('../hooks/usePersonalTransactions');
 jest.mock('../hooks/usePersonalTransactionsSummary');
+jest.mock('../../../shared/feature-flags/initialLoadingFlags');
+jest.mock('../api/personalTransactionPrefetch');
 
 const mockUseNavigation = jest.mocked(useNavigation);
 const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
 const mockUsePersonalTransactionsSummary = jest.mocked(usePersonalTransactionsSummary);
+const mockIsEnhancedInitialLoadingEnabled = jest.mocked(isEnhancedInitialLoadingEnabled);
+const mockPrefetchAlternatePersonalTransactions = jest.mocked(prefetchAlternatePersonalTransactions);
 
 // Pin "today" to 2026-06-29 (Monday) so the dynamic rangeLabel is deterministic.
 // Expected default week label: "29 jun – 5 jul"
@@ -20,6 +26,7 @@ describe('PersonalTransactionsScreen', () => {
   beforeEach(() => {
     jest.useFakeTimers({ now: FAKE_NOW });
     jest.clearAllMocks();
+    mockIsEnhancedInitialLoadingEnabled.mockReturnValue(false);
     mockUseNavigation.mockReturnValue({
       getParent: () => ({ navigate: jest.fn() }),
     } as never);
@@ -438,6 +445,58 @@ describe('PersonalTransactionsScreen', () => {
     expect(screen.getByText('No pudimos cargar tus movimientos')).toBeTruthy();
     expect(screen.queryByText('123.629 $')).toBeNull();
     expect(screen.queryByTestId('personal-transactions-total')).toBeNull();
+  });
+
+  it('renders stable skeleton placeholders instead of hiding large sections when enhanced loading is enabled', () => {
+    mockIsEnhancedInitialLoadingEnabled.mockReturnValue(true);
+    mockUsePersonalTransactions.mockReturnValue({
+      transactions: [],
+      total: 0,
+      incomeTotal: 0,
+      expenseTotal: 0,
+      currency: 'ARS',
+      hasFetchedTransactions: false,
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
+    mockUsePersonalTransactionsSummary.mockReturnValue({
+      summary: undefined,
+      hasFetchedSummary: false,
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
+
+    render(<PersonalTransactionsScreen />);
+
+    expect(screen.getByTestId('personal-transactions-loading-skeleton')).toBeTruthy();
+    expect(screen.getByTestId('personal-transactions-total')).toBeTruthy();
+    expect(screen.getByText('Gastos Recientes')).toBeTruthy();
+    expect(screen.getByLabelText('Cargando transacciones personales')).toBeTruthy();
+    expect(screen.queryByText('Cargando movimientos...')).toBeNull();
+  });
+
+  it('prefetches the alternate default transaction type to warm the first tab switch', () => {
+    mockIsEnhancedInitialLoadingEnabled.mockReturnValue(true);
+
+    render(<PersonalTransactionsScreen />);
+
+    expect(mockPrefetchAlternatePersonalTransactions).toHaveBeenCalledWith({
+      type: 'expense',
+      range: 'week',
+      from: undefined,
+      to: undefined,
+    });
+
+    fireEvent.press(screen.getByTestId('personal-tab-income'));
+
+    expect(mockPrefetchAlternatePersonalTransactions).toHaveBeenLastCalledWith({
+      type: 'income',
+      range: 'week',
+      from: undefined,
+      to: undefined,
+    });
   });
 
   it('passes the active range to the real summary query', () => {

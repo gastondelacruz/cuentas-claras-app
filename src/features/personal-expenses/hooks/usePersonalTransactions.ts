@@ -1,20 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '../../../shared/api/queryKeys';
-import { getPersonalTransactions } from '../api/personalTransactionsApi';
+import { personalTransactionsListQueryOptions } from '../api/personalTransactionQueryOptions';
 import type { PersonalTransactionListFilters } from '../types';
 
-const DEFAULT_PERSONAL_TRANSACTION_LIMIT = 20;
-
 export function usePersonalTransactions(filters: PersonalTransactionListFilters) {
-  const query = useQuery({
-    queryKey: queryKeys.personalTransactions.list(filters),
-    queryFn: () =>
-      getPersonalTransactions({
-        ...filters,
-        limit: DEFAULT_PERSONAL_TRANSACTION_LIMIT,
-      }),
-  });
+  const query = useQuery(personalTransactionsListQueryOptions(filters));
 
   return {
     transactions: query.data?.transactions ?? [],

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Toast from 'react-native-toast-message';
 
 import { useAuthStore } from '../../../shared/store/authStore';
+import { prefetchInitialAppData } from '../../../shared/api/prefetchInitialAppData';
 import { setRefreshToken } from '../../../shared/api/tokenStorage';
 import { loginSchema, LoginFormValues } from '../schemas/loginSchema';
 import { useLogin } from './useLogin';
@@ -33,6 +34,7 @@ export function useLoginForm() {
           const { accessToken, refreshToken, user } = response.data;
           await setRefreshToken(refreshToken);
           setSession(user, accessToken);
+          prefetchInitialAppData();
         },
         onError: () => {
           Toast.show({

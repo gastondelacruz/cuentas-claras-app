@@ -4,6 +4,8 @@ import {
   ScrollView,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import {
   ChevronLeft,
@@ -14,6 +16,7 @@ import {
 import Svg, { Circle } from "react-native-svg";
 
 import { colors } from "../../../shared/theme/colors";
+import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { PeriodSelectionModal } from "../components/PeriodSelectionModal";
@@ -146,6 +149,73 @@ function DonutChart({
   );
 }
 
+function SkeletonBlock({ style }: { style: StyleProp<ViewStyle> }) {
+  return <View style={[{ backgroundColor: STITCH_SURFACE_VARIANT }, style]} />;
+}
+
+function PersonalTransactionsChartSkeleton() {
+  return (
+    <View
+      testID="personal-transactions-loading-skeleton"
+      accessibilityRole="progressbar"
+      accessibilityLabel="Cargando transacciones personales"
+      accessibilityState={{ busy: true }}
+      style={{ minHeight: 300, alignItems: "center", justifyContent: "center" }}
+    >
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{ alignItems: "center", gap: 20 }}
+      >
+        <View
+          style={{
+            width: 220,
+            height: 220,
+            borderRadius: 110,
+            borderWidth: 28,
+            borderColor: STITCH_SURFACE_VARIANT,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <SkeletonBlock style={{ width: 76, height: 12, borderRadius: 999 }} />
+          <SkeletonBlock style={{ width: 112, height: 20, borderRadius: 999, marginTop: 12 }} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function RecentTransactionsSkeleton() {
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ gap: 8 }}>
+      {[0, 1, 2].map((item) => (
+        <View
+          key={item}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: STITCH_SURFACE,
+            borderRadius: 12,
+            padding: 16,
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+            <SkeletonBlock style={{ width: 40, height: 40, borderRadius: 20 }} />
+            <View style={{ gap: 8 }}>
+              <SkeletonBlock style={{ width: 104, height: 16, borderRadius: 999 }} />
+              <SkeletonBlock style={{ width: 72, height: 12, borderRadius: 999 }} />
+            </View>
+          </View>
+          <SkeletonBlock style={{ width: 80, height: 16, borderRadius: 999 }} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function PersonalTransactionsScreen() {
   const {
     type,
@@ -169,9 +239,11 @@ export function PersonalTransactionsScreen() {
     navigateToEditTransaction,
   } = usePersonalTransactionsScreen();
 
+  const useSkeletonLoading = isEnhancedInitialLoadingEnabled();
+  const showLoadingSkeleton = isLoading && useSkeletonLoading && !isError;
   const totalLabel = formatTotal(displaySummaryTotal, displaySummaryCurrency);
   const chartTotalLabel = formatTotal(displayTotal, displayCurrency);
-  const showFinancialSummary = !isLoading && !isError;
+  const showFinancialSummary = (!isLoading || showLoadingSkeleton) && !isError;
 
   return (
     <ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
@@ -198,6 +270,15 @@ export function PersonalTransactionsScreen() {
             <Text style={{ fontSize: 14, color: GRAY }}>Total</Text>
             <Text style={{ fontSize: 16, color: GRAY }}>⌄</Text>
           </View>
+          {showLoadingSkeleton ? (
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={{ alignItems: "center", paddingTop: 8 }}
+            >
+              <SkeletonBlock style={{ width: 160, height: 32, borderRadius: 999 }} />
+            </View>
+          ) : (
           <Text
             selectable
             style={{
@@ -209,6 +290,7 @@ export function PersonalTransactionsScreen() {
           >
             {totalLabel}
           </Text>
+          )}
         </View>
       ) : null}
 
@@ -329,7 +411,9 @@ export function PersonalTransactionsScreen() {
 
         {/* ── Content area ────────────────────────────────────────────────────── */}
         <View>
-          {isLoading ? (
+          {showLoadingSkeleton ? (
+            <PersonalTransactionsChartSkeleton />
+          ) : isLoading ? (
             <View
               style={{
                 alignItems: "center",
@@ -382,7 +466,9 @@ export function PersonalTransactionsScreen() {
             {type === "income" ? "Ingresos Recientes" : "Gastos Recientes"}
           </Text>
           <View style={{ gap: 8 }}>
-            {displayTransactions.length === 0 ? (
+            {showLoadingSkeleton ? (
+              <RecentTransactionsSkeleton />
+            ) : displayTransactions.length === 0 ? (
               <View
                 accessibilityRole="text"
                 style={{

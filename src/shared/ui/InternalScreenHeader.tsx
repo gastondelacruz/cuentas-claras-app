@@ -20,7 +20,8 @@ export function InternalScreenHeader({
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView edges={["top"]} className="bg-white">
+    <View className="bg-neutral100">
+      <SafeAreaView edges={["top"]} className="bg-neutral100" />
       <View className="flex-row items-center justify-between border-b border-neutral200 bg-white px-4 py-3">
         <Pressable
           accessibilityRole="button"
@@ -43,6 +44,6 @@ export function InternalScreenHeader({
 
         {rightAction ?? <View className="h-10 w-10" />}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -6,8 +6,9 @@ import { colors } from "../theme/colors";
 
 export function AppTopBar() {
   return (
-    <View className="border-b border-neutral200 bg-white">
-      <SafeAreaView edges={["top"]} className="bg-white">
+    <View className="bg-neutral100">
+      <SafeAreaView edges={["top"]} className="bg-neutral100" />
+      <View className="border-b border-neutral200 bg-white">
         <View className="h-16 flex-row items-center gap-4 px-5">
           <View className="h-10 w-10 items-center justify-center rounded-md bg-primaryBg">
             <WalletCards color={colors.primary} size={22} strokeWidth={2.4} />
@@ -17,7 +18,7 @@ export function AppTopBar() {
             Cuentas Claras
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

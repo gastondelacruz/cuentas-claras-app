@@ -127,16 +127,30 @@ export function SettleDebtsScreen() {
           <Text className="text-sm font-bold uppercase tracking-wider text-neutral700">Resumen de saldos</Text>
 
           <View className="flex-row items-center justify-between gap-4">
-            <View className="flex-1 gap-1">
+            <View className="min-w-0 flex-1 gap-1">
               <Text className="text-base text-neutral700">Te deben</Text>
-              <Text className="text-4xl font-bold text-success">{formatCurrency(summary.owedToYou)}</Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.72}
+                numberOfLines={1}
+                className="flex-shrink text-4xl font-bold text-success"
+              >
+                {formatCurrency(summary.owedToYou)}
+              </Text>
             </View>
 
             <View className="h-16 w-px bg-neutral200" />
 
-            <View className="flex-1 gap-1">
+            <View className="min-w-0 flex-1 gap-1">
               <Text className="text-base text-neutral700">Debes</Text>
-              <Text className="text-4xl font-bold text-debt">{formatCurrency(summary.youOwe)}</Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.72}
+                numberOfLines={1}
+                className="flex-shrink text-4xl font-bold text-debt"
+              >
+                {formatCurrency(summary.youOwe)}
+              </Text>
             </View>
           </View>
         </Card>

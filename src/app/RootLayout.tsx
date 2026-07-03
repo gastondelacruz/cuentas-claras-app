@@ -5,6 +5,7 @@ import Toast from "react-native-toast-message";
 import { RootNavigator } from "./navigation/RootNavigator";
 import { AppProviders } from "./providers/AppProviders";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { colors } from '../shared/theme/colors';
 
 export function RootLayout() {
   return (
@@ -13,7 +14,7 @@ export function RootLayout() {
         <NavigationContainer>
           <RootNavigator />
         </NavigationContainer>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" backgroundColor={colors.neutral100} />
         <Toast position="bottom" />
       </AppProviders>
     </ErrorBoundary>

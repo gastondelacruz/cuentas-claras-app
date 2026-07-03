@@ -144,6 +144,7 @@ describe("groupsApi.getGroups", () => {
         currency: "ARS",
         createdAt: "2026-06-26T00:00:00.000Z",
         updatedAt: "2026-06-26T00:00:00.000Z",
+        currentUserBalance: -12500,
       },
     ];
     mockGet.mockResolvedValueOnce({ data: { data: groups } });
@@ -151,6 +152,7 @@ describe("groupsApi.getGroups", () => {
     const result = await getGroups();
 
     expect(result).toEqual({ data: groups });
+    expect(result.data[0]?.currentUserBalance).toBe(-12500);
   });
 
   it("propagates errors from the HTTP client", async () => {

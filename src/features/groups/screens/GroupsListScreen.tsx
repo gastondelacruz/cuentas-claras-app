@@ -6,6 +6,7 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 
 import { MainTabParamList, RootStackParamList } from "../../../app/navigation/types";
 import { colors } from "../../../shared/theme/colors";
+import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { FloatingCreateMenu } from "../../../shared/ui/FloatingCreateMenu";
@@ -19,10 +20,69 @@ import { useGroupsList } from "../hooks/useGroupsList";
 type GroupsListNavigation = BottomTabNavigationProp<MainTabParamList, "GroupsList">;
 type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
+function SkeletonBlock({ className }: { className: string }) {
+  return <View className={`bg-neutral200 ${className}`} />;
+}
+
+function GroupsListSkeleton() {
+  return (
+    <ScrollView
+      testID="groups-loading-skeleton"
+      accessibilityRole="progressbar"
+      accessibilityLabel="Cargando grupos"
+      accessibilityState={{ busy: true }}
+      showsVerticalScrollIndicator={false}
+      contentContainerClassName="gap-5 px-5 pb-28 pt-5"
+    >
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        className="gap-5"
+      >
+        <View className="rounded-3xl bg-white p-5">
+          <SkeletonBlock className="h-4 w-36 rounded-full" />
+          <SkeletonBlock className="mt-4 h-9 w-44 rounded-full" />
+          <View className="mt-5 flex-row gap-3">
+            <SkeletonBlock className="h-16 flex-1 rounded-2xl" />
+            <SkeletonBlock className="h-16 flex-1 rounded-2xl" />
+          </View>
+        </View>
+
+        <View className="flex-row gap-3">
+          <SkeletonBlock className="h-10 flex-1 rounded-full" />
+          <SkeletonBlock className="h-10 flex-1 rounded-full" />
+          <SkeletonBlock className="h-10 flex-1 rounded-full" />
+        </View>
+
+        <View className="gap-4">
+          {[0, 1, 2].map((item) => (
+            <View key={item} className="rounded-3xl bg-white p-5">
+              <View className="flex-row items-center gap-3">
+                <SkeletonBlock className="h-12 w-12 rounded-2xl" />
+                <View className="flex-1 gap-2">
+                  <SkeletonBlock className="h-4 w-2/3 rounded-full" />
+                  <SkeletonBlock className="h-3 w-1/2 rounded-full" />
+                </View>
+                <SkeletonBlock className="h-5 w-20 rounded-full" />
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View className="rounded-3xl border border-dashed border-neutral300 bg-white p-5">
+          <SkeletonBlock className="h-4 w-40 rounded-full" />
+          <SkeletonBlock className="mt-3 h-3 w-56 rounded-full" />
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
 export function GroupsListScreen() {
   const navigation = useNavigation<GroupsListNavigation>();
   const { groups, netBalance, owedToYou, youOwe, currency, isLoading, isError } = useGroupsList();
   const [filter, setFilter] = useState<GroupsFilter>("all");
+  const useSkeletonLoading = isEnhancedInitialLoadingEnabled();
 
   const rootNavigation = navigation.getParent?.<RootNavigation>();
   const navigateToNewGroup = () => rootNavigation?.navigate("NewGroup");
@@ -36,7 +96,9 @@ export function GroupsListScreen() {
   return (
     <ScreenContainer>
       <AppTopBar />
-      {isLoading ? (
+      {isLoading && useSkeletonLoading ? (
+        <GroupsListSkeleton />
+      ) : isLoading ? (
         <View className="flex-1 items-center justify-center p-6" accessibilityRole="progressbar" accessibilityLabel="Cargando grupos">
           <ActivityIndicator color={colors.primary} size="large" />
           <Text className="mt-4 text-base font-semibold text-neutral500">Cargando grupos...</Text>

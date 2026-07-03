@@ -1,14 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '../../../shared/api/queryKeys';
-import { getPersonalTransactionsSummary } from '../api/personalTransactionsApi';
+import { personalTransactionsSummaryQueryOptions } from '../api/personalTransactionQueryOptions';
 import type { PersonalTransactionSummaryFilters } from '../types';
 
 export function usePersonalTransactionsSummary(filters: PersonalTransactionSummaryFilters) {
-  const query = useQuery({
-    queryKey: queryKeys.personalTransactions.summary(filters),
-    queryFn: () => getPersonalTransactionsSummary(filters),
-  });
+  const query = useQuery(personalTransactionsSummaryQueryOptions(filters));
 
   return {
     summary: query.data,

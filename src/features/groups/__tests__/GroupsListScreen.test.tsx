@@ -4,15 +4,18 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { GroupsListScreen } from '../screens/GroupsListScreen';
 import { useGroupsList } from '../hooks/useGroupsList';
 import { GroupListItem } from '../types';
+import { isEnhancedInitialLoadingEnabled } from '../../../shared/feature-flags/initialLoadingFlags';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 
 jest.mock('../hooks/useGroupsList');
+jest.mock('../../../shared/feature-flags/initialLoadingFlags');
 
 const mockUseNavigation = jest.mocked(useNavigation);
 const mockUseGroupsList = jest.mocked(useGroupsList);
+const mockIsEnhancedInitialLoadingEnabled = jest.mocked(isEnhancedInitialLoadingEnabled);
 
 function createGroup(overrides: Partial<GroupListItem>): GroupListItem {
   return {
@@ -30,9 +33,11 @@ function createGroup(overrides: Partial<GroupListItem>): GroupListItem {
 
 describe('GroupsListScreen', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockUseNavigation.mockReturnValue({
       getParent: () => ({ navigate: jest.fn() }),
     } as never);
+    mockIsEnhancedInitialLoadingEnabled.mockReturnValue(false);
     mockUseGroupsList.mockReturnValue({
       groups: [],
       netBalance: 0,
@@ -62,6 +67,27 @@ describe('GroupsListScreen', () => {
     expect(screen.getByLabelText('Cargando grupos')).toBeTruthy();
     expect(screen.getByText('Cargando grupos...')).toBeTruthy();
     expect(screen.queryByText('Aún no tienes movimientos')).toBeNull();
+  });
+
+  it('renders stable skeleton placeholders instead of the centered spinner when enhanced loading is enabled', () => {
+    mockIsEnhancedInitialLoadingEnabled.mockReturnValue(true);
+    mockUseGroupsList.mockReturnValue({
+      groups: [],
+      netBalance: 0,
+      owedToYou: 0,
+      youOwe: 0,
+      currency: 'ARS',
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
+
+    render(<GroupsListScreen />);
+
+    expect(screen.getByTestId('groups-loading-skeleton')).toBeTruthy();
+    expect(screen.getByLabelText('Cargando grupos')).toBeTruthy();
+    expect(screen.queryByText('Cargando grupos...')).toBeNull();
+    expect(screen.getByText('Cuentas Claras')).toBeTruthy();
   });
 
   it('shows an error state instead of the empty state when groups fail to load', () => {

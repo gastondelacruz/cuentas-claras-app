@@ -1,13 +1,15 @@
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { MainTabParamList, RootStackParamList } from '../../../app/navigation/types';
+import { isEnhancedInitialLoadingEnabled } from '../../../shared/feature-flags/initialLoadingFlags';
 import { getPersonalCategoryVisual } from '../constants/personalTransactionCategoryVisuals';
 import type { PersonalTransactionSummaryResponseDto } from '../schemas/personalTransactionSchema';
 import { computeDateRange } from '../utils/computeDateRange';
 import { rememberMockEditablePersonalTransaction } from '../mocks/personalTransactionEditMock';
+import { prefetchAlternatePersonalTransactions } from '../api/personalTransactionPrefetch';
 import { usePersonalTransactions } from './usePersonalTransactions';
 import { usePersonalTransactionsSummary } from './usePersonalTransactionsSummary';
 import type { PersonalTransactionDto } from '../schemas/personalTransactionSchema';
@@ -106,6 +108,12 @@ export function usePersonalTransactionsScreen() {
     from,
     to,
   });
+
+  useEffect(() => {
+    if (!isEnhancedInitialLoadingEnabled()) return;
+
+    prefetchAlternatePersonalTransactions({ type, range, from, to });
+  }, [from, range, to, type]);
 
   function selectRange(nextRange: PersonalTransactionRange) {
     if (nextRange === 'period') {

@@ -3,13 +3,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { AddPersonalTransactionScreen } from '../screens/AddPersonalTransactionScreen';
-import { createPersonalTransaction } from '../api/personalTransactionsApi';
+import { createPersonalTransaction, updatePersonalTransaction } from '../api/personalTransactionsApi';
+import { getMockEditablePersonalTransaction } from '../mocks/personalTransactionEditMock';
 
 jest.mock('../api/personalTransactionsApi', () => ({
   createPersonalTransaction: jest.fn(),
+  updatePersonalTransaction: jest.fn(),
+}));
+
+jest.mock('../mocks/personalTransactionEditMock', () => ({
+  getMockEditablePersonalTransaction: jest.fn(),
 }));
 
 const mockCreatePersonalTransaction = jest.mocked(createPersonalTransaction);
+const mockUpdatePersonalTransaction = jest.mocked(updatePersonalTransaction);
+const mockGetMockEditablePersonalTransaction = jest.mocked(getMockEditablePersonalTransaction);
 
 let testClient: QueryClient;
 let navigationMock: { goBack: jest.Mock };
@@ -45,6 +53,20 @@ describe('AddPersonalTransactionScreen', () => {
       occurredAt: '2026-06-29T12:00:00.000Z',
       note: null,
       createdAt: '2026-06-29T12:00:00.000Z',
+      updatedAt: '2026-06-29T12:00:00.000Z',
+    });
+    mockGetMockEditablePersonalTransaction.mockReturnValue(undefined);
+    mockUpdatePersonalTransaction.mockResolvedValue({
+      id: 'ptx-edit-expense',
+      type: 'expense',
+      amount: 45000,
+      currency: 'ARS',
+      category: 'Salud',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-28T12:00:00.000Z',
+      note: 'Updated note',
+      createdAt: '2026-06-28T12:00:00.000Z',
       updatedAt: '2026-06-29T12:00:00.000Z',
     });
   });
@@ -366,5 +388,171 @@ describe('AddPersonalTransactionScreen', () => {
     const submittedPayload = mockCreatePersonalTransaction.mock.calls[0][0];
     expect('note' in submittedPayload).toBe(false);
     expect(submittedPayload.note).toBeUndefined();
+  });
+
+  it('pre-fills the selected expense when opened in edit mode', () => {
+    jest.mocked(useRoute).mockReturnValue({
+      params: { type: 'expense', transactionId: 'ptx-edit-expense' },
+    } as never);
+    mockGetMockEditablePersonalTransaction.mockReturnValue({
+      id: 'ptx-edit-expense',
+      type: 'expense',
+      amount: 45000,
+      currency: 'ARS',
+      category: 'Salud',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-28T12:00:00.000Z',
+      note: 'Farmacia',
+      createdAt: '2026-06-28T12:00:00.000Z',
+      updatedAt: '2026-06-28T12:00:00.000Z',
+    });
+
+    render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+    expect(screen.getByText('Editar transacción')).toBeTruthy();
+    expect(screen.getByTestId('personal-transaction-amount-input').props.value).toBe('45.000');
+    expect(screen.getByTestId('personal-note-input').props.value).toBe('Farmacia');
+    expect(screen.getByTestId('personal-category-Salud').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+    expect(screen.getByText('Guardar cambios')).toBeTruthy();
+  });
+
+  it('pre-fills the selected income when opened in edit mode', () => {
+    jest.mocked(useRoute).mockReturnValue({
+      params: { type: 'income', transactionId: 'ptx-edit-income' },
+    } as never);
+    mockGetMockEditablePersonalTransaction.mockReturnValue({
+      id: 'ptx-edit-income',
+      type: 'income',
+      amount: 500000,
+      currency: 'ARS',
+      category: 'Salario',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-29T12:00:00.000Z',
+      note: 'Junio',
+      createdAt: '2026-06-29T12:00:00.000Z',
+      updatedAt: '2026-06-29T12:00:00.000Z',
+    });
+
+    render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+    expect(screen.getByTestId('personal-form-tab-income').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+    expect(screen.getByTestId('personal-transaction-amount-input').props.value).toBe('500.000');
+    expect(screen.getByTestId('personal-note-input').props.value).toBe('Junio');
+    expect(screen.getByTestId('personal-category-Salario').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+  });
+
+  it('submits edit mode through the real update endpoint without calling create', async () => {
+    jest.mocked(useRoute).mockReturnValue({
+      params: { type: 'expense', transactionId: 'ptx-edit-expense' },
+    } as never);
+    mockGetMockEditablePersonalTransaction.mockReturnValue({
+      id: 'ptx-edit-expense',
+      type: 'expense',
+      amount: 45000,
+      currency: 'ARS',
+      category: 'Salud',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-28T12:00:00.000Z',
+      note: 'Farmacia',
+      createdAt: '2026-06-28T12:00:00.000Z',
+      updatedAt: '2026-06-28T12:00:00.000Z',
+    });
+
+    render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+    fireEvent.changeText(screen.getByTestId('personal-transaction-amount-input'), '46.000');
+    fireEvent.changeText(screen.getByTestId('personal-note-input'), '  Farmacia editada  ');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('submit-personal-transaction-button'));
+    });
+
+    await waitFor(() => {
+      expect(mockUpdatePersonalTransaction).toHaveBeenCalledWith(
+        'ptx-edit-expense',
+        expect.objectContaining({
+          type: 'expense',
+          amount: 46000,
+          category: 'Salud',
+          note: 'Farmacia editada',
+        }),
+      );
+    });
+    expect(mockCreatePersonalTransaction).not.toHaveBeenCalled();
+    expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends note: null to clear the note when the note field is emptied in edit mode', async () => {
+    jest.mocked(useRoute).mockReturnValue({
+      params: { type: 'expense', transactionId: 'ptx-edit-expense' },
+    } as never);
+    mockGetMockEditablePersonalTransaction.mockReturnValue({
+      id: 'ptx-edit-expense',
+      type: 'expense',
+      amount: 45000,
+      currency: 'ARS',
+      category: 'Salud',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-28T12:00:00.000Z',
+      note: 'Farmacia',
+      createdAt: '2026-06-28T12:00:00.000Z',
+      updatedAt: '2026-06-28T12:00:00.000Z',
+    });
+
+    render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+    fireEvent.changeText(screen.getByTestId('personal-note-input'), '');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('submit-personal-transaction-button'));
+    });
+
+    await waitFor(() => {
+      expect(mockUpdatePersonalTransaction).toHaveBeenCalledWith(
+        'ptx-edit-expense',
+        expect.objectContaining({ note: null }),
+      );
+    });
+  });
+
+  it('shows the update error message and does not navigate back when the update mutation fails', async () => {
+    jest.mocked(useRoute).mockReturnValue({
+      params: { type: 'expense', transactionId: 'ptx-edit-expense' },
+    } as never);
+    mockGetMockEditablePersonalTransaction.mockReturnValue({
+      id: 'ptx-edit-expense',
+      type: 'expense',
+      amount: 45000,
+      currency: 'ARS',
+      category: 'Salud',
+      accountId: 'account-ars',
+      accountName: 'Pesos',
+      occurredAt: '2026-06-28T12:00:00.000Z',
+      note: 'Farmacia',
+      createdAt: '2026-06-28T12:00:00.000Z',
+      updatedAt: '2026-06-28T12:00:00.000Z',
+    });
+    mockUpdatePersonalTransaction.mockRejectedValueOnce(new Error('network error'));
+
+    render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('submit-personal-transaction-button'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('No pudimos guardar los cambios. Intentá de nuevo.')).toBeTruthy();
+    });
+    expect(navigationMock.goBack).not.toHaveBeenCalled();
   });
 });

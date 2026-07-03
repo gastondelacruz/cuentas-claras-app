@@ -5,6 +5,7 @@ import {
   personalTransactionListResponseSchema,
   personalTransactionSchema,
   personalTransactionSummaryResponseSchema,
+  UpdatePersonalTransactionInput,
 } from '../schemas/personalTransactionSchema';
 import type { PersonalTransactionQueryOptions, PersonalTransactionSummaryFilters } from '../types';
 
@@ -26,6 +27,15 @@ export async function getPersonalTransactionsSummary(options: PersonalTransactio
 
 export async function createPersonalTransaction(input: CreatePersonalTransactionInput) {
   const response = await client.post('/me/personal-transactions', input);
+
+  return parseOrThrow(personalTransactionSchema, response.data.data);
+}
+
+export async function updatePersonalTransaction(
+  transactionId: string,
+  input: UpdatePersonalTransactionInput,
+) {
+  const response = await client.patch(`/me/personal-transactions/${transactionId}`, input);
 
   return parseOrThrow(personalTransactionSchema, response.data.data);
 }

@@ -1052,6 +1052,71 @@
         ],
         "tags": ["me"]
       }
+    },
+    "/api/v1/me/personal-transactions/{transactionId}": {
+      "patch": {
+        "operationId": "MeController_updatePersonalTransaction",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "description": "Personal transaction identifier.",
+            "schema": {
+              "example": "550e8400-e29b-41d4-a716-446655440000",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonalTransactionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CreatePersonalTransactionResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or category/type combination."
+          },
+          "401": {
+            "description": "Authentication is required."
+          },
+          "404": {
+            "description": "Personal transaction or account not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
     }
   },
   "info": {
@@ -2188,6 +2253,49 @@
           }
         },
         "required": ["type", "amount", "currency", "category", "occurredAt"]
+      },
+      "UpdatePersonalTransactionRequestDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Updated transaction type.",
+            "enum": ["expense", "income"],
+            "example": "expense"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Updated transaction amount. Must be a positive number.",
+            "example": 1500
+          },
+          "currency": {
+            "type": "string",
+            "description": "Updated ISO 4217 currency code.",
+            "example": "ARS"
+          },
+          "category": {
+            "type": "string",
+            "description": "Updated category name. Allowed values depend on the transaction type.",
+            "example": "Alimentación"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Updated account that owns the transaction.",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "occurredAt": {
+            "type": "string",
+            "description": "Updated date and time the transaction occurred (ISO 8601).",
+            "example": "2026-06-29T12:00:00.000Z"
+          },
+          "note": {
+            "type": "object",
+            "description": "Updated free-text note, up to 200 characters. Use null to clear it.",
+            "example": "Farmacia",
+            "maxLength": 200,
+            "nullable": true
+          }
+        }
       }
     }
   }

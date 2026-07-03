@@ -41,13 +41,14 @@ export function AddPersonalTransactionScreen() {
     submit,
     submitError,
     isSubmitting,
+    isEditMode,
   } = useAddPersonalTransactionForm();
 
   const categoryConfigs = PERSONAL_CATEGORY_CONFIGS[type];
 
   return (
     <ScreenContainer>
-      <InternalScreenHeader title="Añadir transacciones" />
+      <InternalScreenHeader title={isEditMode ? 'Editar transacción' : 'Añadir transacciones'} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -372,7 +373,7 @@ export function AddPersonalTransactionScreen() {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={type === 'income' ? 'Añadir ingreso' : 'Añadir transacción'}
+          accessibilityLabel={isEditMode ? 'Guardar cambios' : type === 'income' ? 'Añadir ingreso' : 'Añadir transacción'}
           accessibilityState={{ disabled: isSubmitting }}
           disabled={isSubmitting}
           onPress={submit}
@@ -396,7 +397,7 @@ export function AddPersonalTransactionScreen() {
               color: '#ffffff',
             }}
           >
-            {type === 'income' ? 'Añadir Ingreso' : 'Añadir'}
+            {isEditMode ? 'Guardar cambios' : type === 'income' ? 'Añadir Ingreso' : 'Añadir'}
           </Text>
         </Pressable>
       </View>

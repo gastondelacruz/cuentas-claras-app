@@ -54,7 +54,14 @@ export const createPersonalTransactionSchema = z.object({
   note: z.string().max(200).optional(),
 });
 
+// Partial update payload for PATCH /me/personal-transactions/:id. Every field is optional
+// per UpdatePersonalTransactionRequestDto; `note` additionally accepts `null` to clear it.
+export const updatePersonalTransactionSchema = createPersonalTransactionSchema.partial().extend({
+  note: z.string().max(200).nullable().optional(),
+});
+
 export type PersonalTransactionDto = z.infer<typeof personalTransactionSchema>;
 export type PersonalTransactionListResponseDto = z.infer<typeof personalTransactionListResponseSchema>;
 export type PersonalTransactionSummaryResponseDto = z.infer<typeof personalTransactionSummaryResponseSchema>;
 export type CreatePersonalTransactionInput = z.infer<typeof createPersonalTransactionSchema>;
+export type UpdatePersonalTransactionInput = z.infer<typeof updatePersonalTransactionSchema>;

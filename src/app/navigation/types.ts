@@ -14,7 +14,7 @@ export type RootStackParamList = {
   GroupDetail: { groupId?: string } | undefined;
   NewGroup: { groupId?: string } | undefined;
   AddExpense: { groupId?: string; expenseId?: string } | undefined;
-  AddPersonalTransaction: { type?: 'expense' | 'income' } | undefined;
+  AddPersonalTransaction: { type?: 'expense' | 'income'; transactionId?: string } | undefined;
   SettleDebts: { groupId: string };
 };
 

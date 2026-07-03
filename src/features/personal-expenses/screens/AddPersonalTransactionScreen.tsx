@@ -1,9 +1,10 @@
 import { Calculator, CalendarDays, Check } from 'lucide-react-native';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { colors } from '../../../shared/theme/colors';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
+import { KeyboardAwareScrollView } from '../../../shared/ui/KeyboardAwareScrollView';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { PERSONAL_CATEGORY_CONFIGS } from '../constants/personalTransactionCategoryVisuals';
 import { useAddPersonalTransactionForm } from '../hooks/useAddPersonalTransactionForm';
@@ -50,7 +51,7 @@ export function AddPersonalTransactionScreen() {
     <ScreenContainer>
       <InternalScreenHeader title={isEditMode ? 'Editar transacción' : 'Añadir transacciones'} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingBottom: 96 }}
@@ -356,7 +357,7 @@ export function AddPersonalTransactionScreen() {
             />
           ) : null}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* ── Sticky CTA button ───────────────────────────────────────────────── */}
       <View

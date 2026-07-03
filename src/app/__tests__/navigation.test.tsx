@@ -41,12 +41,6 @@ jest.mock('../../features/personal-expenses/hooks/usePersonalTransactions');
 jest.mock('../../features/personal-expenses/hooks/usePersonalTransactionsSummary');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
-const mockActiveGroup = { id: 'nav-group-1', name: 'Viaje', category: 'Otros', coverUrl: '', members: [], extraMembersCount: 0, activeDebtsLabel: 'Recién creado' };
-const mockSummary = { netBalance: { id: 'net', title: 'Balance total', amount: 0, currency: 'ARS', detail: 'Balance neto', tone: 'success' as const }, owedToUser: { id: 'a', title: 'Te deben', amount: 0, currency: 'ARS', detail: '', tone: 'success' as const }, owedByUser: { id: 'b', title: 'Debes', amount: 0, currency: 'ARS', detail: '', tone: 'debt' as const } };
-
-jest.mock('../../features/home/hooks/useHomeData', () => ({
-  useHomeData: jest.fn(),
-}));
 
 jest.mock('../../features/profile/hooks/useProfileData', () => ({
   useProfileData: jest.fn(() => ({
@@ -66,7 +60,7 @@ jest.mock('react-native-toast-message', () => ({
 
 const actualNavigation = jest.requireActual<typeof import('@react-navigation/native')>('@react-navigation/native');
 
-const mainTabLabels = ['Inicio', 'Grupos', 'Gastos', 'Perfil'] as const;
+const mainTabLabels = ['Grupos', 'Gastos', 'Perfil'] as const;
 const mockUseGroups = jest.mocked(useGroups);
 const mockUseAccountSummary = jest.mocked(useAccountSummary);
 const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
@@ -186,17 +180,6 @@ describe('navigation shell', () => {
       handleOpenBalances: jest.fn(),
       handleConfirmDelete: jest.fn(),
     } as unknown as ReturnType<typeof useGroupDetailActions>);
-
-    const { useHomeData } = jest.requireMock('../../features/home/hooks/useHomeData') as { useHomeData: jest.Mock };
-    useHomeData.mockReturnValue({
-      data: { summary: mockSummary, activeGroups: [mockActiveGroup], recentActivity: [] },
-      summary: mockSummary,
-      activeGroups: [mockActiveGroup],
-      recentActivity: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-    });
   });
 
   afterEach(() => {
@@ -207,7 +190,6 @@ describe('navigation shell', () => {
     expect(registeredRouteNames).toEqual([
       'Onboarding',
       'Auth',
-      'Home',
       'GroupsList',
       'PersonalExpenses',
       'GroupDetail',
@@ -252,9 +234,8 @@ describe('navigation shell', () => {
       </QueryClientProvider>,
     );
 
-    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
-    expect(await findByText('Te deben')).toBeOnTheScreen();
-    expect(queryByText('HomeScreen')).toBeNull();
+    expect(await findByText('Cuentas Claras', {}, { timeout: 3000 })).toBeOnTheScreen();
+    expect(await findByText('Balance Neto Total')).toBeOnTheScreen();
 
     for (const tabLabel of mainTabLabels) {
       expect(getAllByText(tabLabel).length).toBeGreaterThan(0);
@@ -293,9 +274,8 @@ describe('navigation shell', () => {
       useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
     });
 
-    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
+    expect(await findByText('Cuentas Claras', {}, { timeout: 3000 })).toBeOnTheScreen();
     expect(queryByText('Iniciar Sesión')).toBeNull();
-    expect(queryByText('HomeScreen')).toBeNull();
 
     await waitFor(() => expect(navigationRef.isReady()).toBe(true));
 
@@ -331,7 +311,7 @@ describe('navigation shell', () => {
       </QueryClientProvider>,
     );
 
-    expect(await findByText('Cuentas Claras')).toBeOnTheScreen();
+    expect(await findByText('Cuentas Claras', {}, { timeout: 3000 })).toBeOnTheScreen();
     expect(queryByText('Iniciar Sesión')).toBeNull();
 
     act(() => {

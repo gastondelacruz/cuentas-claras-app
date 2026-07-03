@@ -433,6 +433,64 @@ describe('AddExpenseScreen', () => {
       });
     });
 
+    it('prefills the form when the expense resolves asynchronously on first entry', async () => {
+      // Simulate the real flow: the detail query has not resolved on first render,
+      // so useExpenseToEdit returns undefined before returning the expense.
+      jest.mocked(useRoute).mockReturnValue({
+        params: { groupId: PRIMARY_GROUP_ID, expenseId: editableExpense.id },
+      } as ReturnType<typeof useRoute>);
+      mockUseExpenseToEdit.mockReturnValue(undefined);
+
+      const { rerender } = render(
+        <Wrapper>
+          <AddExpenseScreen />
+        </Wrapper>,
+      );
+
+      // Editing intent is known from the route param, even while the data loads.
+      expect(screen.getByText('Editar gasto')).toBeTruthy();
+      expect(screen.getByTestId('expense-amount-input').props.value).toBe('');
+
+      // The detail query resolves and the hook now returns the expense.
+      mockUseExpenseToEdit.mockReturnValue(editableExpense);
+      await act(async () => {
+        rerender(
+          <Wrapper>
+            <AddExpenseScreen />
+          </Wrapper>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('expense-amount-input').props.value).toBe('184');
+      });
+      expect(screen.getByTestId('expense-description-input').props.value).toBe('Cena Italiana @ Luigis');
+      expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('alex@example.com');
+      expect(screen.getByTestId('expense-category-FOOD').props.accessibilityState).toMatchObject({
+        selected: true,
+      });
+    });
+
+    it('does not create a new expense if edit data has not loaded yet', async () => {
+      jest.mocked(useRoute).mockReturnValue({
+        params: { groupId: PRIMARY_GROUP_ID, expenseId: editableExpense.id },
+      } as ReturnType<typeof useRoute>);
+      mockUseExpenseToEdit.mockReturnValue(undefined);
+
+      render(<AddExpenseScreen />, { wrapper: Wrapper });
+
+      fireEvent.changeText(screen.getByTestId('expense-amount-input'), '500');
+      fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Cena editada');
+
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('create-expense-button'));
+      });
+
+      expect(mockCreateExpense).not.toHaveBeenCalled();
+      expect(mockUpdateExpense).not.toHaveBeenCalled();
+      expect(screen.getByText('Estamos cargando el gasto. Esperá unos segundos e intentá de nuevo.')).toBeTruthy();
+    });
+
     it('calls the update expense API and navigates back on save', async () => {
       editStoredExpense();
 

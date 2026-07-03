@@ -22,7 +22,7 @@ export type CreateGroupMemberDto = {
   email?: string;
 };
 
-export type CreateGroupResponse = {
+export type CreateGroupResponseDto = {
   id: string;
   name?: string;
   description?: string | null;
@@ -39,6 +39,8 @@ export type CreateGroupResponse = {
   updatedAt?: Date | string;
   archivedAt?: Date | string | null;
 };
+
+export type CreateGroupResponse = CreateGroupResponseDto;
 
 export type CreateGroupMemberInput = {
   displayName: string;
@@ -63,16 +65,14 @@ export async function createGroup(
   return response.data.data;
 }
 
-export type GroupListItemDto = {
+export type GroupListItemDto = CreateGroupResponseDto & {
   id: string;
   name: string;
   description: string | null;
   currency: string;
-  createdAt: string;
-  updatedAt: string;
-  expensesCount?: number;
-  totalAmount?: number;
-  currentUserBalance?: number;
+  currentUserBalance: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 export type GetGroupsResponse = {

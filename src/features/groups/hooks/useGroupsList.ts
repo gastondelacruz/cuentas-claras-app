@@ -4,6 +4,17 @@ import { useAccountSummary } from '../../account/hooks/useAccountSummary';
 import { roundToCents } from '../utils/balanceContract';
 import { useGroups } from './useGroups';
 
+type GroupBalanceSource = {
+  id: string;
+  name: string;
+  description?: string | null;
+  currentUserBalance?: number | null;
+};
+
+function resolveGroupBalance(group: GroupBalanceSource): number {
+  return roundToCents(group.currentUserBalance ?? 0);
+}
+
 type UseGroupsListResult = {
   groups: GroupListItem[];
   netBalance: number;
@@ -18,9 +29,9 @@ type UseGroupsListResult = {
 /**
  * Returns the list of groups and the net balance for the groups tab.
  *
- * Groups are fetched from the API via React Query. The per-group balance is
- * taken directly from `currentUserBalance` on each list item returned by the
- * server, so no local expense store is needed.
+ * Groups are fetched from the API via React Query and use the documented
+ * `currentUserBalance` field from GET /groups as the source of truth for each
+ * card balance.
  */
 export function useGroupsList(): UseGroupsListResult {
   const { data, isLoading, isError, error } = useGroups();
@@ -31,7 +42,15 @@ export function useGroupsList(): UseGroupsListResult {
     error: summaryError,
   } = useAccountSummary();
 
-  const groups: GroupListItem[] = (data?.data ?? []).map((item) => ({
+  // The documented API contract is `{ data: Group[] }`.
+  // A raw array is still tolerated defensively so older/cached payloads don't crash the screen.
+  const groupItems = Array.isArray(data)
+    ? (data as GroupBalanceSource[])
+    : Array.isArray(data?.data)
+      ? (data.data as GroupBalanceSource[])
+      : [];
+
+  const groups: GroupListItem[] = groupItems.map((item) => ({
     id: item.id,
     name: item.name,
     description: item.description ?? '',
@@ -39,7 +58,7 @@ export function useGroupsList(): UseGroupsListResult {
     status: { type: 'recent' },
     members: [],
     extraMembersCount: 0,
-    balance: roundToCents(item.currentUserBalance ?? 0),
+    balance: resolveGroupBalance(item),
   }));
 
   const selectedTotals = selectAccountSummaryTotals(accountSummary);

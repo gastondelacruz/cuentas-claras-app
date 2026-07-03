@@ -135,6 +135,23 @@ describe('SettleDebtsScreen', () => {
     expect(screen.queryByText('Estás al día')).toBeNull();
   });
 
+  it('keeps long summary amounts on a single responsive line', async () => {
+    mockGetGroupBalances.mockResolvedValue({
+      balances: [
+        { ...currentUserBalance, balance: 250670 },
+        { memberId: 'm-ana', displayName: 'Ana', balance: -250670, currency: 'ARS' },
+      ],
+    });
+
+    render(<SettleDebtsScreen />, { wrapper: Wrapper });
+
+    const receivableAmount = await screen.findByText('$250.670,00');
+
+    expect(receivableAmount.props.numberOfLines).toBe(1);
+    expect(receivableAmount.props.adjustsFontSizeToFit).toBe(true);
+    expect(receivableAmount.props.minimumFontScale).toBeGreaterThanOrEqual(0.7);
+  });
+
   it('renders the you-owe direction with user-facing copy and settles from the current user', async () => {
     mockGetGroupBalances.mockResolvedValue({
       balances: [

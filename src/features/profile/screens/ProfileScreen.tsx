@@ -1,17 +1,9 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { LogOut } from "lucide-react-native";
 
 import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { Avatar } from "../../../shared/ui/Avatar";
-import { Card } from "../../../shared/ui/Card";
-import { Chip } from "../../../shared/ui/Chip";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import packageJson from "../../../../package.json";
 import { useLogout } from "../../auth/hooks/useLogout";
@@ -24,8 +16,6 @@ type ProfileUser = {
   name: string;
   status: string;
 };
-
-type SummaryCardTone = "success" | "debt";
 
 function ProfileCard({ profile }: { profile: ProfileUser }) {
   return (
@@ -45,58 +35,6 @@ function ProfileCard({ profile }: { profile: ProfileUser }) {
         </View>
       </View>
     </View>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  detail,
-  valueClassName,
-  detailTone,
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  valueClassName: string;
-  detailTone: SummaryCardTone;
-}) {
-  return (
-    <Card variant="summary">
-      <Text className="text-sm font-semibold text-neutral500">{title}</Text>
-      <Text className={`mt-2 text-xl font-bold ${valueClassName}`}>
-        {value}
-      </Text>
-      <Chip label={detail} tone={detailTone} variant="summary" />
-    </Card>
-  );
-}
-
-function SummaryStateCard({
-  title,
-  message,
-  isLoading = false,
-}: {
-  title: string;
-  message: string;
-  isLoading?: boolean;
-}) {
-  return (
-    <Card variant="summary">
-      <View
-        accessibilityRole={isLoading ? "progressbar" : "summary"}
-        accessibilityState={isLoading ? { busy: true } : undefined}
-        className="items-center gap-3 py-4"
-      >
-        {isLoading ? <ActivityIndicator color={colors.primary} /> : null}
-        <Text className="text-center text-base font-semibold text-neutral900">
-          {title}
-        </Text>
-        <Text selectable className="text-center text-sm text-neutral700">
-          {message}
-        </Text>
-      </View>
-    </Card>
   );
 }
 

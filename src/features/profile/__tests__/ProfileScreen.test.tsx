@@ -17,20 +17,21 @@
  * Preservation tests MUST PASS on unfixed code — they capture the baseline behavior.
  */
 
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import fc from 'fast-check';
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import fc from "fast-check";
 
-import { useLogout } from '../../auth/hooks/useLogout';
-import { useProfileData } from '../hooks/useProfileData';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import packageJson from "../../../../package.json";
+import { useLogout } from "../../auth/hooks/useLogout";
+import { useProfileData } from "../hooks/useProfileData";
+import { ProfileScreen } from "../screens/ProfileScreen";
 
 // Mock useLogout to capture calls to mutate
-jest.mock('../../auth/hooks/useLogout', () => ({
+jest.mock("../../auth/hooks/useLogout", () => ({
   useLogout: jest.fn(),
 }));
 
 // Mock useProfileData to avoid hitting real hooks/stores in render tests
-jest.mock('../hooks/useProfileData', () => ({
+jest.mock("../hooks/useProfileData", () => ({
   useProfileData: jest.fn(),
 }));
 
@@ -38,6 +39,7 @@ const mockedUseLogout = jest.mocked(useLogout);
 const mockedUseProfileData = jest.mocked(useProfileData);
 
 const mockMutate = jest.fn();
+const expectedVersionLabel = `Versión ${packageJson.version}`;
 
 type ProfileMockOptions = {
   name?: string;
@@ -52,19 +54,21 @@ type ProfileMockOptions = {
   owedToYou?: number;
   netBalance?: number;
   currency?: string;
-  summaryStatus?: 'loading' | 'error' | 'empty' | 'success';
+  summaryStatus?: "loading" | "error" | "empty" | "success";
   summaryError?: Error | null;
 };
 
 /** Builds a mock useLogout return value */
-function makeLogoutMock({ isPending = false } = {}): ReturnType<typeof useLogout> {
+function makeLogoutMock({ isPending = false } = {}): ReturnType<
+  typeof useLogout
+> {
   return {
     mutate: mockMutate,
     isPending,
     isError: false,
     isSuccess: false,
     isIdle: !isPending,
-    status: isPending ? 'pending' : 'idle',
+    status: isPending ? "pending" : "idle",
     error: null,
     data: undefined,
     variables: undefined,
@@ -80,28 +84,14 @@ function makeLogoutMock({ isPending = false } = {}): ReturnType<typeof useLogout
 
 /** Builds a mock useProfileData return value with the given user/summary fields */
 function makeProfileMock({
-  name = 'Ana López',
-  email = 'ana@example.com',
-  status = 'Verificado',
-  avatarUrl = 'https://example.com/avatar.jpg',
-  initials = 'AL',
-  activeDebtGroupsCount = 1,
-  totalExpenseCount = 3,
-  totalExpenses = 10000,
-  youOwe = 5000,
-  owedToYou = 8000,
-  netBalance = 3000,
-  currency = 'ARS',
-  summaryStatus = 'success',
-  summaryError = null,
+  name = "Ana López",
+  email = "ana@example.com",
+  status = "Verificado",
+  avatarUrl = "https://example.com/avatar.jpg",
+  initials = "AL",
 }: ProfileMockOptions = {}): ReturnType<typeof useProfileData> {
   return {
     user: { name, email, status, avatarUrl, initials },
-    summary: summaryStatus === 'success'
-      ? { activeDebtGroupsCount, totalExpenseCount, totalExpenses, youOwe, owedToYou, netBalance, currency }
-      : null,
-    summaryStatus,
-    summaryError,
   };
 }
 
@@ -110,7 +100,7 @@ function setupMocks({ isPending = false } = {}) {
   mockedUseProfileData.mockReturnValue(makeProfileMock());
 }
 
-describe('ProfileScreen — Bug 2: Cerrar sesión sin efecto', () => {
+describe("ProfileScreen — Bug 2: Cerrar sesión sin efecto", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupMocks();
@@ -127,7 +117,7 @@ describe('ProfileScreen — Bug 2: Cerrar sesión sin efecto', () => {
   it('pressing "Cerrar sesión" invokes useLogout().mutate()', () => {
     render(<ProfileScreen />);
 
-    const button = screen.getByLabelText('Cerrar sesión');
+    const button = screen.getByLabelText("Cerrar sesión");
     fireEvent.press(button);
 
     // EXPECTED TO FAIL on unfixed code — onPress is missing from the Pressable
@@ -145,12 +135,12 @@ describe('ProfileScreen — Bug 2: Cerrar sesión sin efecto', () => {
    *
    * Validates: Requirements 1.3, 1.4
    */
-  it('button is disabled when logout isPending is true', () => {
+  it("button is disabled when logout isPending is true", () => {
     setupMocks({ isPending: true });
 
     render(<ProfileScreen />);
 
-    const button = screen.getByLabelText('Cerrar sesión');
+    const button = screen.getByLabelText("Cerrar sesión");
 
     // EXPECTED TO FAIL on unfixed code — disabled prop is absent
     // Pressable exposes disabled state via accessibilityState.disabled in RNTL
@@ -169,12 +159,12 @@ describe('ProfileScreen — Bug 2: Cerrar sesión sin efecto', () => {
  *   - profile.name   → rendered as <Text className="text-2xl font-bold ...">
  *   - profile.email  → rendered as <Text className="... text-neutral700"> (selectable)
  *   - profile.status → rendered as <Text className="text-xl text-debt"> inside status badge
-  *   - summary cards  → account summary headings always present
- *   - version string → hardcoded "Versión 2.4.1 (Compilación 829)" at the bottom
+ *   - summary cards  → account summary headings always present
+ *   - version string → sourced from package metadata at the bottom
  *
  * Validates: Requirements 3.4, 3.5
  */
-describe('ProfileScreen — Property 4: Preservation — datos de perfil no afectados', () => {
+describe("ProfileScreen — Property 4: Preservation — datos de perfil no afectados", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupMocks();
@@ -184,79 +174,96 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
   // Concrete baseline tests (unit-level, observe specific values)
   // ---------------------------------------------------------------------------
 
-  it('renders the authenticated user name', () => {
+  it("renders the authenticated user name", () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Ana López')).toBeTruthy();
+    expect(screen.getByText("Ana López")).toBeTruthy();
   });
 
-  it('renders the authenticated user email', () => {
+  it("renders the authenticated user email", () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('ana@example.com')).toBeTruthy();
+    expect(screen.getByText("ana@example.com")).toBeTruthy();
   });
 
   it('renders the user status badge ("Verificado")', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Verificado')).toBeTruthy();
+    expect(screen.getByText("Verificado")).toBeTruthy();
   });
 
   it('renders the "Gasto Total" summary card heading', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Gasto Total')).toBeTruthy();
+    expect(screen.getByText("Gasto Total")).toBeTruthy();
   });
 
   it('renders the "Te deben" summary card heading', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Te deben')).toBeTruthy();
+    expect(screen.getByText("Te deben")).toBeTruthy();
   });
 
-  it('renders account summary balance cards from the authenticated summary', () => {
-    mockedUseProfileData.mockReturnValue(makeProfileMock({ owedToYou: 28830, youOwe: 1200, netBalance: 27630 }));
+  it("renders account summary balance cards from the authenticated summary", () => {
+    mockedUseProfileData.mockReturnValue(
+      makeProfileMock({ owedToYou: 28830, youOwe: 1200, netBalance: 27630 }),
+    );
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Te deben')).toBeTruthy();
-    expect(screen.getByText('Debes')).toBeTruthy();
-    expect(screen.getByText('Balance Total')).toBeTruthy();
-    expect(screen.getByText('$28.830,00')).toBeTruthy();
-    expect(screen.getByText('$1.200,00')).toBeTruthy();
-    expect(screen.getByText('+$27.630,00')).toBeTruthy();
+    expect(screen.getByText("Te deben")).toBeTruthy();
+    expect(screen.getByText("Debes")).toBeTruthy();
+    expect(screen.getByText("Balance Total")).toBeTruthy();
+    expect(screen.getByText("$28.830,00")).toBeTruthy();
+    expect(screen.getByText("$1.200,00")).toBeTruthy();
+    expect(screen.getByText("+$27.630,00")).toBeTruthy();
   });
 
-  it('renders a loading state for account summary without showing incorrect zero balances', () => {
-    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'loading' }));
+  it("renders a loading state for account summary without showing incorrect zero balances", () => {
+    mockedUseProfileData.mockReturnValue(
+      makeProfileMock({ summaryStatus: "loading" }),
+    );
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Cargando resumen financiero...')).toBeTruthy();
-    expect(screen.queryByText('$0,00')).toBeNull();
-    expect(screen.queryByText('+$0,00')).toBeNull();
+    expect(screen.getByText("Cargando resumen financiero...")).toBeTruthy();
+    expect(screen.queryByText("$0,00")).toBeNull();
+    expect(screen.queryByText("+$0,00")).toBeNull();
   });
 
-  it('renders an error state for account summary without showing incorrect zero balances', () => {
-    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'error', summaryError: new Error('No se pudo cargar') }));
+  it("renders an error state for account summary without showing incorrect zero balances", () => {
+    mockedUseProfileData.mockReturnValue(
+      makeProfileMock({
+        summaryStatus: "error",
+        summaryError: new Error("No se pudo cargar"),
+      }),
+    );
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('No pudimos cargar tu resumen financiero')).toBeTruthy();
-    expect(screen.getByText('No se pudo cargar')).toBeTruthy();
-    expect(screen.queryByText('$0,00')).toBeNull();
-    expect(screen.queryByText('+$0,00')).toBeNull();
+    expect(
+      screen.getByText("No pudimos cargar tu resumen financiero"),
+    ).toBeTruthy();
+    expect(screen.getByText("No se pudo cargar")).toBeTruthy();
+    expect(screen.queryByText("$0,00")).toBeNull();
+    expect(screen.queryByText("+$0,00")).toBeNull();
   });
 
-  it('renders an empty state when the account summary is unavailable without inventing zero balances', () => {
-    mockedUseProfileData.mockReturnValue(makeProfileMock({ summaryStatus: 'empty' }));
+  it("renders an empty state when the account summary is unavailable without inventing zero balances", () => {
+    mockedUseProfileData.mockReturnValue(
+      makeProfileMock({ summaryStatus: "empty" }),
+    );
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Resumen financiero no disponible')).toBeTruthy();
-    expect(screen.getByText('Todavía no hay datos suficientes para calcular tus saldos.')).toBeTruthy();
-    expect(screen.queryByText('$0,00')).toBeNull();
-    expect(screen.queryByText('+$0,00')).toBeNull();
+    expect(screen.getByText("Resumen financiero no disponible")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Todavía no hay datos suficientes para calcular tus saldos.",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText("$0,00")).toBeNull();
+    expect(screen.queryByText("+$0,00")).toBeNull();
   });
 
-  it('renders the app version string', () => {
+  it("renders the app version string", () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Versión 2.4.1 (Compilación 829)')).toBeTruthy();
+    expect(screen.getByText(expectedVersionLabel)).toBeTruthy();
   });
 
   // ---------------------------------------------------------------------------
@@ -272,16 +279,20 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
    *
    * Validates: Requirements 3.4
    */
-  it('property: name is always visible for any authenticated user', () => {
+  it("property: name is always visible for any authenticated user", () => {
     fc.assert(
       fc.property(
         // Generate realistic user names: 1–40 chars, printable ASCII, non-empty
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
 
@@ -303,15 +314,19 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
    *
    * Validates: Requirements 3.4
    */
-  it('property: email is always visible for any authenticated user', () => {
+  it("property: email is always visible for any authenticated user", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
 
@@ -333,24 +348,29 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
    *
    * Validates: Requirements 3.4
    */
-  it('property: financial summary card headings always visible for any summary values', () => {
+  it("property: financial summary card headings always visible for any summary values", () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 0, max: 50 }),   // totalExpenseCount
+        fc.integer({ min: 0, max: 50 }), // totalExpenseCount
         fc.integer({ min: 0, max: 100000 }), // totalExpenses
-        fc.integer({ min: 0, max: 10 }),    // activeDebtGroupsCount
+        fc.integer({ min: 0, max: 10 }), // activeDebtGroupsCount
         fc.integer({ min: 0, max: 50000 }), // youOwe
         (totalExpenseCount, totalExpenses, activeDebtGroupsCount, youOwe) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
           mockedUseProfileData.mockReturnValue(
-            makeProfileMock({ totalExpenseCount, totalExpenses, activeDebtGroupsCount, youOwe }),
+            makeProfileMock({
+              totalExpenseCount,
+              totalExpenses,
+              activeDebtGroupsCount,
+              youOwe,
+            }),
           );
 
           const { unmount } = render(<ProfileScreen />);
 
-          const gastoTotal = screen.queryByText('Gasto Total');
-          const teDeben = screen.queryByText('Te deben');
+          const gastoTotal = screen.queryByText("Gasto Total");
+          const teDeben = screen.queryByText("Te deben");
           unmount();
 
           return gastoTotal !== null && teDeben !== null;
@@ -368,19 +388,23 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
    *
    * Validates: Requirements 3.4
    */
-  it('property: app version string always visible regardless of user data', () => {
+  it("property: app version string always visible regardless of user data", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
 
-          const versionElement = screen.queryByText('Versión 2.4.1 (Compilación 829)');
+          const versionElement = screen.queryByText(expectedVersionLabel);
           unmount();
 
           return versionElement !== null;
@@ -406,7 +430,7 @@ describe('ProfileScreen — Property 4: Preservation — datos de perfil no afec
  *
  * Validates: Requirements 3.6, 3.7
  */
-describe('ProfileScreen — Property 6: Preservation — nombre, email y estado de verificación (Bug 3)', () => {
+describe("ProfileScreen — Property 6: Preservation — nombre, email y estado de verificación (Bug 3)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupMocks();
@@ -416,19 +440,19 @@ describe('ProfileScreen — Property 6: Preservation — nombre, email y estado 
   // Concrete baseline tests
   // ---------------------------------------------------------------------------
 
-  it('renders the authenticated user name', () => {
+  it("renders the authenticated user name", () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Ana López')).toBeTruthy();
+    expect(screen.getByText("Ana López")).toBeTruthy();
   });
 
-  it('renders the authenticated user email', () => {
+  it("renders the authenticated user email", () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('ana@example.com')).toBeTruthy();
+    expect(screen.getByText("ana@example.com")).toBeTruthy();
   });
 
   it('renders the verification status ("Verificado")', () => {
     render(<ProfileScreen />);
-    expect(screen.getByText('Verificado')).toBeTruthy();
+    expect(screen.getByText("Verificado")).toBeTruthy();
   });
 
   // ---------------------------------------------------------------------------
@@ -443,15 +467,19 @@ describe('ProfileScreen — Property 6: Preservation — nombre, email y estado 
    *
    * Validates: Requirements 3.6
    */
-  it('property: name is always visible regardless of avatar style', () => {
+  it("property: name is always visible regardless of avatar style", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
           const nameElement = screen.queryByText(name);
@@ -472,15 +500,19 @@ describe('ProfileScreen — Property 6: Preservation — nombre, email y estado 
    *
    * Validates: Requirements 3.6
    */
-  it('property: email is always visible regardless of avatar style', () => {
+  it("property: email is always visible regardless of avatar style", () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
           const emailElement = screen.queryByText(email);
@@ -505,15 +537,19 @@ describe('ProfileScreen — Property 6: Preservation — nombre, email y estado 
   it('property: "Verificado" status is always visible regardless of avatar style', () => {
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1, maxLength: 40 }).filter((s) => s.trim().length > 0),
+        fc
+          .string({ minLength: 1, maxLength: 40 })
+          .filter((s) => s.trim().length > 0),
         fc.emailAddress(),
         (name, email) => {
           jest.clearAllMocks();
           mockedUseLogout.mockReturnValue(makeLogoutMock());
-          mockedUseProfileData.mockReturnValue(makeProfileMock({ name, email, status: 'Verificado' }));
+          mockedUseProfileData.mockReturnValue(
+            makeProfileMock({ name, email, status: "Verificado" }),
+          );
 
           const { unmount } = render(<ProfileScreen />);
-          const statusElement = screen.queryByText('Verificado');
+          const statusElement = screen.queryByText("Verificado");
           unmount();
 
           return statusElement !== null;
@@ -540,7 +576,7 @@ describe('ProfileScreen — Property 6: Preservation — nombre, email y estado 
  * Test 3: asserts that the user's initials ("AL" for "Ana López") ARE visible
  *   → FAILS on unfixed code because there is no Avatar/initials component (bug confirmed)
  */
-describe('ProfileScreen — Bug 3: Imagen de perfil debe reemplazarse por avatar de iniciales', () => {
+describe("ProfileScreen — Bug 3: Imagen de perfil debe reemplazarse por avatar de iniciales", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupMocks();
@@ -562,7 +598,7 @@ describe('ProfileScreen — Bug 3: Imagen de perfil debe reemplazarse por avatar
 
     // EXPECTED TO FAIL on unfixed code — the Pressable with this label exists
     // When fixed: this element should not be found (query returns null)
-    const editButton = screen.queryByLabelText('Editar foto de perfil');
+    const editButton = screen.queryByLabelText("Editar foto de perfil");
     expect(editButton).toBeNull();
   });
 
@@ -581,13 +617,13 @@ describe('ProfileScreen — Bug 3: Imagen de perfil debe reemplazarse por avatar
    *
    * **Validates: Requirements 1.5, 1.6**
    */
-  it('does NOT render a hardcoded Image component for the profile avatar', () => {
+  it("does NOT render a hardcoded Image component for the profile avatar", () => {
     render(<ProfileScreen />);
 
     // EXPECTED TO FAIL on unfixed code — ProfileCard renders <Image accessibilityLabel="Ana López" />
     // When fixed: ProfileCard uses Avatar with initials; no <Image> with the user's name label exists
     // The Image in ProfileCard has accessibilityLabel set to profile.name ("Ana López")
-    const profileImage = screen.queryByLabelText('Ana López');
+    const profileImage = screen.queryByLabelText("Ana López");
     expect(profileImage).toBeNull();
   });
 
@@ -608,6 +644,6 @@ describe('ProfileScreen — Bug 3: Imagen de perfil debe reemplazarse por avatar
 
     // EXPECTED TO FAIL on unfixed code — ProfileCard uses <Image>, not an Avatar with initials
     // When fixed: the Avatar component should render the text "AL"
-    expect(screen.getByText('AL')).toBeTruthy();
+    expect(screen.getByText("AL")).toBeTruthy();
   });
 });

@@ -1,9 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import {
-  CircleDollarSign,
-  User,
-  WalletCards,
-} from "lucide-react-native";
+import { Users, User, Banknote } from "lucide-react-native";
 
 import { GroupsListScreen } from "../../features/groups/screens/GroupsListScreen";
 import { PersonalTransactionsScreen } from "../../features/personal-expenses/screens/PersonalTransactionsScreen";
@@ -28,7 +24,7 @@ export function MainTabs() {
         component={GroupsListScreen}
         options={{
           tabBarLabel: "Grupos",
-          tabBarIcon: ({ color }) => <CircleDollarSign color={color} />,
+          tabBarIcon: ({ color }) => <Users color={color} />,
         }}
       />
       <Tab.Screen
@@ -36,7 +32,7 @@ export function MainTabs() {
         component={PersonalTransactionsScreen}
         options={{
           tabBarLabel: "Gastos",
-          tabBarIcon: ({ color }) => <WalletCards color={color} />,
+          tabBarIcon: ({ color }) => <Banknote color={color} />,
         }}
       />
       <Tab.Screen

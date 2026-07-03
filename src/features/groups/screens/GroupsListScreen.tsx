@@ -111,9 +111,9 @@ export function GroupsListScreen() {
       ) : groups.length === 0 ? (
         <EmptyState
           buttonLabel="Crear un Grupo"
-          description="Crea tu primer grupo para empezar a dividir gastos con tus amigos."
+          description={"Crea tu primer grupo para empezar\na dividir gastos con tus amigos."}
           onPress={navigateToNewGroup}
-          title="Aún no tienes movimientos"
+          title={"¡Bienvenido! Empecemos\na ahorrar juntos"}
         />
       ) : (
         <ScrollView

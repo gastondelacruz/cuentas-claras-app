@@ -2,7 +2,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
@@ -11,7 +11,7 @@ import { RootStackParamList } from '../../../app/navigation/types';
 import { queryKeys } from '../../../shared/api/queryKeys';
 import { useGroupMembers } from '../../groups/hooks/useGroupMembers';
 import { ExpenseCategory } from '../../groups/types';
-  import { useGroups } from '../../groups/hooks/useGroups';
+import { useGroups } from '../../groups/hooks/useGroups';
 import {
   createExpense,
   deleteExpense,
@@ -50,6 +50,23 @@ function buildCreatePayload(
     notes: null,
     expenseDate: options.date.toISOString(),
   };
+}
+
+function invalidateExpenseMutationQueries(
+  queryClient: QueryClient,
+  groupId: string,
+  expenseId?: string,
+) {
+  if (expenseId) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.expenses.detail(expenseId) });
+  }
+
+  queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(groupId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(groupId) });
+  queryClient.invalidateQueries({ queryKey: queryKeys.groups.all(), exact: true });
+  queryClient.invalidateQueries({ queryKey: queryKeys.account.summary() });
+  queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
 }
 
 export function useAddExpenseForm() {
@@ -174,9 +191,7 @@ export function useAddExpenseForm() {
     mutationFn: ({ groupId: targetGroupId, input }: { groupId: string; input: ReturnType<typeof buildCreatePayload> }) =>
       createExpense(targetGroupId, input),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(variables.groupId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(variables.groupId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
+      invalidateExpenseMutationQueries(queryClient, variables.groupId);
     },
     onError: () => {
       setSubmitError('No pudimos registrar el gasto. Intentá de nuevo.');
@@ -187,24 +202,18 @@ export function useAddExpenseForm() {
     mutationFn: ({ expenseId, input }: { expenseId: string; input: ReturnType<typeof buildCreatePayload> }) =>
       updateExpense(expenseId, input),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.detail(variables.expenseId) });
       if (groupId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(groupId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(groupId) });
+        invalidateExpenseMutationQueries(queryClient, groupId, variables.expenseId);
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
     },
   });
 
   const deleteExpenseMutation = useMutation({
     mutationFn: deleteExpense,
     onSuccess: (_data, expenseId) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.expenses.detail(expenseId) });
       if (groupId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.expenses.list(groupId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.groups.balances(groupId) });
+        invalidateExpenseMutationQueries(queryClient, groupId, expenseId);
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() });
     },
   });
 

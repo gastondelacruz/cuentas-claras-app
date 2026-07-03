@@ -76,6 +76,22 @@ const mockDeleteExpense = jest.mocked(deleteExpense);
 const mockUseExpenseToEdit = jest.mocked(useExpenseToEdit);
 const mockUseGroups = jest.mocked(useGroups);
 
+function expectExpenseMutationInvalidations(
+  invalidateSpy: jest.SpyInstance,
+  groupId: string,
+  expenseId?: string,
+) {
+  if (expenseId) {
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.expenses.detail(expenseId) });
+  }
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.expenses.list(groupId) });
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groups.detail(groupId) });
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groups.balances(groupId) });
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groups.all(), exact: true });
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.account.summary() });
+  expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.auth.me() });
+}
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={testClient}>{children}</QueryClientProvider>;
 }
@@ -218,6 +234,86 @@ describe('AddExpenseScreen', () => {
         notes: null,
         expenseDate: expect.any(String),
       });
+    });
+  });
+
+  it('refreshes the group list and account summary caches after creating an expense', async () => {
+    const invalidateSpy = jest.spyOn(testClient, 'invalidateQueries');
+
+    render(<AddExpenseScreen />, { wrapper: Wrapper });
+
+    fireEvent.changeText(screen.getByTestId('expense-amount-input'), '1500,50');
+    fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Cena compartida');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('create-expense-button'));
+    });
+
+    await waitFor(() => {
+      expect(mockCreateExpense).toHaveBeenCalledWith(PRIMARY_GROUP_ID, expect.any(Object));
+      expectExpenseMutationInvalidations(invalidateSpy, PRIMARY_GROUP_ID);
+    });
+  });
+
+  it('uses backend group-member ids from a newly created group detail cache when creating an expense', async () => {
+    const newGroupId = 'newly-created-group-id';
+    testClient.setQueryData(queryKeys.groups.detail(newGroupId), {
+      id: newGroupId,
+      name: 'Trip to Bariloche',
+      members: [
+        {
+          id: 'backend-current-member-id',
+          displayName: 'Gaston',
+          email: 'you@example.com',
+          isCurrentUser: true,
+        },
+        {
+          id: 'backend-friend-member-id',
+          displayName: 'Ada Lovelace',
+          email: 'ada@example.com',
+          isCurrentUser: false,
+        },
+      ],
+    });
+    mockUseGroups.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: newGroupId,
+            name: 'Trip to Bariloche',
+            description: null,
+            currency: 'ARS',
+            createdAt: '2024-01-01T00:00:00.000Z',
+            updatedAt: '2024-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useGroups>);
+    jest.mocked(useRoute).mockReturnValue({ params: { groupId: newGroupId } } as ReturnType<typeof useRoute>);
+
+    render(<AddExpenseScreen />, { wrapper: Wrapper });
+
+    expect(screen.getByTestId('expense-paidby-field')).toHaveTextContent('Gaston');
+    expect(screen.getByText('Ada Lovelace')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByTestId('expense-amount-input'), '2500');
+    fireEvent.changeText(screen.getByTestId('expense-description-input'), 'Cena compartida');
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('create-expense-button'));
+    });
+
+    await waitFor(() => {
+      expect(mockCreateExpense).toHaveBeenCalledWith(
+        newGroupId,
+        expect.objectContaining({
+          paidByMemberId: 'backend-current-member-id',
+          participantMemberIds: ['backend-current-member-id', 'backend-friend-member-id'],
+        }),
+      );
     });
   });
 
@@ -493,6 +589,7 @@ describe('AddExpenseScreen', () => {
 
     it('calls the update expense API and navigates back on save', async () => {
       editStoredExpense();
+      const invalidateSpy = jest.spyOn(testClient, 'invalidateQueries');
 
       render(<AddExpenseScreen />, { wrapper: Wrapper });
 
@@ -507,6 +604,7 @@ describe('AddExpenseScreen', () => {
           editableExpense.id,
           expect.objectContaining({ amount: 500 }),
         );
+        expectExpenseMutationInvalidations(invalidateSpy, PRIMARY_GROUP_ID, editableExpense.id);
       });
 
       expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
@@ -541,6 +639,7 @@ describe('AddExpenseScreen', () => {
       editStoredExpense();
 
       const alertSpy = jest.spyOn(Alert, 'alert');
+      const invalidateSpy = jest.spyOn(testClient, 'invalidateQueries');
 
       render(<AddExpenseScreen />, { wrapper: Wrapper });
 
@@ -556,6 +655,7 @@ describe('AddExpenseScreen', () => {
 
       await waitFor(() => {
         expect(mockDeleteExpense).toHaveBeenCalledWith(editableExpense.id, expect.any(Object));
+        expectExpenseMutationInvalidations(invalidateSpy, PRIMARY_GROUP_ID, editableExpense.id);
       });
       expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
 

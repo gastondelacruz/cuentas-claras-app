@@ -1,4 +1,10 @@
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { LogOut } from "lucide-react-native";
 
 import { colors } from "../../../shared/theme/colors";
@@ -7,7 +13,7 @@ import { Avatar } from "../../../shared/ui/Avatar";
 import { Card } from "../../../shared/ui/Card";
 import { Chip } from "../../../shared/ui/Chip";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
-import { formatAmount, formatCurrency } from "../../../shared/utils/formatAmount";
+import packageJson from "../../../../package.json";
 import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 
@@ -58,7 +64,9 @@ function SummaryCard({
   return (
     <Card variant="summary">
       <Text className="text-sm font-semibold text-neutral500">{title}</Text>
-      <Text className={`mt-2 text-xl font-bold ${valueClassName}`}>{value}</Text>
+      <Text className={`mt-2 text-xl font-bold ${valueClassName}`}>
+        {value}
+      </Text>
       <Chip label={detail} tone={detailTone} variant="summary" />
     </Card>
   );
@@ -81,92 +89,21 @@ function SummaryStateCard({
         className="items-center gap-3 py-4"
       >
         {isLoading ? <ActivityIndicator color={colors.primary} /> : null}
-        <Text className="text-center text-base font-semibold text-neutral900">{title}</Text>
-        <Text selectable className="text-center text-sm text-neutral700">{message}</Text>
+        <Text className="text-center text-base font-semibold text-neutral900">
+          {title}
+        </Text>
+        <Text selectable className="text-center text-sm text-neutral700">
+          {message}
+        </Text>
       </View>
     </Card>
   );
 }
 
-function FinancialSummarySection({
-  summary,
-  summaryError,
-  summaryStatus,
-}: Pick<ReturnType<typeof useProfileData>, "summary" | "summaryError" | "summaryStatus">) {
-  if (summaryStatus === "loading") {
-    return (
-      <SummaryStateCard
-        isLoading
-        title="Cargando resumen financiero..."
-        message="Estamos actualizando tus saldos."
-      />
-    );
-  }
-
-  if (summaryStatus === "error") {
-    return (
-      <SummaryStateCard
-        title="No pudimos cargar tu resumen financiero"
-        message={summaryError?.message ?? "Intentalo de nuevo en unos minutos."}
-      />
-    );
-  }
-
-  if (!summary) {
-    return (
-      <SummaryStateCard
-        title="Resumen financiero no disponible"
-        message="Todavía no hay datos suficientes para calcular tus saldos."
-      />
-    );
-  }
-
-  const netBalanceValue = formatAmount(summary.netBalance, summary.currency);
-  const netBalanceTone: SummaryCardTone = summary.netBalance >= 0 ? "success" : "debt";
-  const netBalanceClassName = summary.netBalance >= 0 ? "text-success" : "text-debt";
-
-  return (
-    <>
-      <View className="flex-row gap-3">
-        <SummaryCard
-          title="Gasto Total"
-          value={formatCurrency(summary.totalExpenses, summary.currency)}
-          detail={`${summary.totalExpenseCount} ${summary.totalExpenseCount === 1 ? "gasto" : "gastos"} registrados`}
-          valueClassName="text-neutral900"
-          detailTone="success"
-        />
-        <SummaryCard
-          title="Te deben"
-          value={formatCurrency(summary.owedToYou, summary.currency)}
-          detail={`${summary.activeDebtGroupsCount} ${summary.activeDebtGroupsCount === 1 ? "grupo" : "grupos"}`}
-          valueClassName="text-success"
-          detailTone="success"
-        />
-      </View>
-
-      <View className="flex-row gap-3">
-        <SummaryCard
-          title="Debes"
-          value={formatCurrency(summary.youOwe, summary.currency)}
-          detail={summary.currency}
-          valueClassName="text-debt"
-          detailTone="debt"
-        />
-        <SummaryCard
-          title="Balance Total"
-          value={netBalanceValue}
-          detail={summary.currency}
-          valueClassName={netBalanceClassName}
-          detailTone={netBalanceTone}
-        />
-      </View>
-    </>
-  );
-}
-
 export function ProfileScreen() {
-  const { user, summary, summaryError, summaryStatus } = useProfileData();
+  const { user } = useProfileData();
   const logout = useLogout();
+  const version = packageJson.version;
 
   return (
     <ScreenContainer>
@@ -178,12 +115,13 @@ export function ProfileScreen() {
         <View className="gap-8 px-5">
           <ProfileCard profile={user} />
 
-          <FinancialSummarySection summary={summary} summaryError={summaryError} summaryStatus={summaryStatus} />
-
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
-            accessibilityState={{ busy: logout.isPending, disabled: logout.isPending }}
+            accessibilityState={{
+              busy: logout.isPending,
+              disabled: logout.isPending,
+            }}
             disabled={logout.isPending}
             onPress={() => logout.mutate()}
             className="flex-row items-center justify-center gap-3 py-6"
@@ -193,7 +131,7 @@ export function ProfileScreen() {
           </Pressable>
 
           <Text className="text-center text-lg text-neutral700">
-            Versión 2.4.1 (Compilación 829)
+            Versión {version}
           </Text>
         </View>
       </ScrollView>

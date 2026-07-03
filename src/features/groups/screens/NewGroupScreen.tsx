@@ -5,6 +5,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View 
 import { colors } from '../../../shared/theme/colors';
 import { Input } from '../../../shared/ui/Input';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
+import { KeyboardAwareScrollView } from '../../../shared/ui/KeyboardAwareScrollView';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { groupCategoryVisuals } from '../components/groupCategory';
 import { useNewGroupForm } from '../hooks/useNewGroupForm';
@@ -51,7 +52,7 @@ export function NewGroupScreen() {
     <ScreenContainer>
       <InternalScreenHeader title={isEditing ? 'Editar grupo' : 'Nuevo Grupo'} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-6 px-5 pb-8 pt-8"
@@ -268,7 +269,7 @@ export function NewGroupScreen() {
             </Text>
           )}
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </ScreenContainer>
   );
 }

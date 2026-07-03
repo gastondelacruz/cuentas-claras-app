@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
   View,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '../../../app/navigation/types';
 import { AppTopBar } from '../../../shared/ui/AppTopBar';
+import { KeyboardAwareScrollView } from '../../../shared/ui/KeyboardAwareScrollView';
 import { useLoginForm } from '../hooks/useLoginForm';
 import { useRegisterForm } from '../hooks/useRegisterForm';
 
@@ -54,10 +54,10 @@ export function AuthScreen({ route }: Props) {
   } = useRegisterForm();
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       className="flex-1 bg-[#f0f0f3]"
       contentContainerStyle={{ paddingBottom: 40 }}
-      keyboardShouldPersistTaps="handled"
+      autoScrollToEndOnKeyboardShow
     >
       <AppTopBar />
 
@@ -324,6 +324,6 @@ export function AuthScreen({ route }: Props) {
           )}
         </View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

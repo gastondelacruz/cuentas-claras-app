@@ -61,11 +61,15 @@ export function useAddExpenseForm() {
   const groups = groupsResponse?.data ?? [];
 
   const expenseToEdit = useExpenseToEdit(route.params?.groupId, route.params?.expenseId);
-  const isEditing = Boolean(expenseToEdit);
+  // Editing intent is known synchronously from the route param, before the
+  // expense detail query resolves. Deriving it from the fetched data made the
+  // screen render as "new expense" on first entry until the query completed.
+  const isEditing = Boolean(route.params?.expenseId);
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<NewExpenseFormInput, unknown, NewExpenseFormValues>({
     resolver: zodResolver(newExpenseFormSchema),
@@ -108,6 +112,7 @@ export function useAddExpenseForm() {
   const [submitError, setSubmitError] = useState<string | undefined>();
 
   const skipMemberSync = useRef(isEditing);
+  const hasHydratedEdit = useRef(false);
 
   useEffect(() => {
     if (skipMemberSync.current) {
@@ -118,6 +123,29 @@ export function useAddExpenseForm() {
     setSelectedParticipantIds(members.map((member) => member.id));
     setPaidById(members.find((member) => member.isCurrentUser)?.id ?? members[0]?.id);
   }, [members]);
+
+  // Hydrate the form once the expense detail resolves. On the first entry the
+  // detail query is still loading, so the useForm defaultValues and the state
+  // initializers above run with an empty expense. This effect fills them in
+  // exactly once, when the data arrives, without clobbering later user edits.
+  useEffect(() => {
+    if (!expenseToEdit || hasHydratedEdit.current) {
+      return;
+    }
+
+    hasHydratedEdit.current = true;
+    reset({
+      amount: formatAmountForInput(expenseToEdit.totalAmount),
+      description: expenseToEdit.title,
+    });
+    setPaidById(expenseToEdit.paidById);
+    setSelectedCategory(expenseToEdit.category);
+    setDate(new Date(expenseToEdit.date));
+    setSelectedParticipantIds(expenseToEdit.participantIds);
+    // Keep the just-hydrated participants from being overwritten if the members
+    // list resolves after the expense.
+    skipMemberSync.current = true;
+  }, [expenseToEdit, reset]);
 
   const paidByOptions = useMemo<SelectOption[]>(
     () => members.map((member) => ({ id: member.id, label: member.name })),
@@ -216,6 +244,11 @@ export function useAddExpenseForm() {
 
   function onSubmit(values: NewExpenseFormValues) {
     setSubmitError(undefined);
+
+    if (isEditing && !expenseToEdit) {
+      setSubmitError('Estamos cargando el gasto. Esperá unos segundos e intentá de nuevo.');
+      return;
+    }
 
     if (!groupId) {
       setGroupError('Seleccioná un grupo para el gasto');

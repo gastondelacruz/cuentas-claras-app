@@ -1,7 +1,6 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type MainTabParamList = {
-  Home: undefined;
   GroupsList: undefined;
   PersonalExpenses: undefined;
   Profile: undefined;
@@ -21,7 +20,6 @@ export type RootStackParamList = {
 export const registeredRouteNames = [
   'Onboarding',
   'Auth',
-  'Home',
   'GroupsList',
   'PersonalExpenses',
   'GroupDetail',

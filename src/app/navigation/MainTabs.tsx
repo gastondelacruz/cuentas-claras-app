@@ -1,13 +1,11 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
   CircleDollarSign,
-  Home,
   User,
   WalletCards,
 } from "lucide-react-native";
 
 import { GroupsListScreen } from "../../features/groups/screens/GroupsListScreen";
-import { HomeScreen } from "../../features/home/screens/HomeScreen";
 import { PersonalTransactionsScreen } from "../../features/personal-expenses/screens/PersonalTransactionsScreen";
 import { ProfileScreen } from "../../features/profile/screens/ProfileScreen";
 import { colors } from "../../shared/theme/colors";
@@ -18,21 +16,13 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName="GroupsList"
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.neutral500,
         headerShown: false,
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: "Inicio",
-          tabBarIcon: ({ color }) => <Home color={color} />,
-        }}
-      />
       <Tab.Screen
         name="GroupsList"
         component={GroupsListScreen}

@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { colors } from '../../../shared/theme/colors';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { InternalScreenHeader } from '../../../shared/ui/InternalScreenHeader';
+import { KeyboardAwareScrollView } from '../../../shared/ui/KeyboardAwareScrollView';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
 import { SelectModal } from '../components/SelectModal';
 import { useAddExpenseForm } from '../hooks/useAddExpenseForm';
@@ -73,7 +74,7 @@ export function AddExpenseScreen() {
     <ScreenContainer>
       <InternalScreenHeader title={isEditing ? 'Editar gasto' : 'Crear gasto'} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-6 px-5 pb-8 pt-10"
@@ -314,7 +315,7 @@ export function AddExpenseScreen() {
             <Text className="text-lg font-bold text-error">Eliminar gasto</Text>
           </Pressable>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <SelectModal
         visible={paidByOpen}

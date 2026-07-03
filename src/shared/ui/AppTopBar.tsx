@@ -1,8 +1,7 @@
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { WalletCards } from "lucide-react-native";
 
-import { colors } from "../theme/colors";
+const appLogo = require("../../../assets/app-logo.png");
 
 export function AppTopBar() {
   return (
@@ -10,8 +9,13 @@ export function AppTopBar() {
       <SafeAreaView edges={["top"]} className="bg-neutral100" />
       <View className="border-b border-neutral200 bg-white">
         <View className="h-16 flex-row items-center gap-4 px-5">
-          <View className="h-10 w-10 items-center justify-center rounded-md bg-primaryBg">
-            <WalletCards color={colors.primary} size={22} strokeWidth={2.4} />
+          <View className="h-10 w-10 items-center justify-center rounded-md bg-white">
+            <Image
+              source={appLogo}
+              accessibilityIgnoresInvertColors
+              resizeMode="contain"
+              className="h-9 w-9"
+            />
           </View>
 
           <Text className="flex-1 text-xl font-bold text-neutral900">

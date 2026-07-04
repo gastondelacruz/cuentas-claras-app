@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "organization": "gentleman-programming",
+  "technology": "Playwright",
+  "date": "July 2026",
+  "abstract": "Domain-based Playwright E2E testing patterns for Cuentas Claras App, including semantic locators, Swagger-aligned API mocks, data envelopes, request body validation, and honest Expo web coverage boundaries.",
+  "references": [
+    "references/playwright-domain-structure.md"
+  ],
+  "categories": [
+    {
+      "name": "Domain Structure",
+      "prefix": "structure",
+      "impact": "CRITICAL",
+      "ruleCount": 2
+    },
+    {
+      "name": "Locator Strategy",
+      "prefix": "locator",
+      "impact": "HIGH",
+      "ruleCount": 1
+    },
+    {
+      "name": "API Fixtures",
+      "prefix": "fixture",
+      "impact": "CRITICAL",
+      "ruleCount": 3
+    },
+    {
+      "name": "Verification",
+      "prefix": "verify",
+      "impact": "HIGH",
+      "ruleCount": 2
+    }
+  ],
+  "totalRules": 8,
+  "category": "Testing"
+}

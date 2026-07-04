@@ -15,6 +15,7 @@ This is a React Native Expo app for shared expense management. All product behav
 > - [`building-native-ui`](skills/building-native-ui/SKILL.md) — Expo Router, React Native UI, platform-aware components
 > - [`composition-patterns`](skills/composition-patterns/SKILL.md) — compound components, render props, context providers
 > - [`design-mobile-apps`](skills/design-mobile-apps/SKILL.md) — mobile-first product and interaction design
+> - [`e2e-testing-patterns`](skills/e2e-testing-patterns/SKILL.md) — Playwright E2E domain structure, locators, fixtures, and verification
 > - [`expo-api-routes`](skills/expo-api-routes/SKILL.md) — Expo API Routes and server-side route patterns
 > - [`expo-cicd-workflows`](skills/expo-cicd-workflows/SKILL.md) — EAS CI/CD workflow design and automation
 > - [`expo-deployment`](skills/expo-deployment/SKILL.md) — EAS builds, submission, release, deployment
@@ -65,6 +66,7 @@ When performing these actions, **ALWAYS** read the corresponding skill first:
 | Adding web or DOM-backed Expo surfaces | `use-dom` |
 | Adding web/SEO-facing behavior | `seo` |
 | Creating or improving UI design | `frontend-design` |
+| Creating or changing E2E/Playwright tests, fixtures, config, or docs | `e2e-testing-patterns` |
 | Fixing a bug | TDD rules below + relevant skill |
 | Implementing a feature | TDD rules below + `project-architecture` + relevant skill |
 | Refactoring code | TDD rules below + `project-architecture` + relevant skill |
@@ -85,11 +87,19 @@ When performing these actions, **ALWAYS** read the corresponding skill first:
 
 ## Commands
 
-After code changes, run all three — all must pass before reporting done:
+After code changes, run the full verification gate — it includes unit tests, typecheck, Playwright E2E, security audit, and Expo Doctor:
+
+```bash
+npm run verify              # Full feature completion gate
+```
+
+The gate preserves these required checks — all must pass before reporting done:
 
 ```bash
 npm test -- --runInBand     # Full test suite
 npm run typecheck           # TypeScript check
+npm run test:e2e            # Playwright E2E against Expo web export
+npm run security:audit      # Deterministic dependency audit via audit-ci
 npx expo-doctor             # Expo compatibility check
 ```
 
@@ -109,6 +119,9 @@ npx expo start --android    # Android emulator
 - [ ] Context7 was queried for live library docs before applying skill rules.
 - [ ] `project-architecture` skill was consulted before creating or moving files.
 - [ ] TDD was followed: failing test written before implementation.
+- [ ] `npm run verify` passes before finishing a feature.
 - [ ] `npm test -- --runInBand` passes (all tests green).
 - [ ] `npm run typecheck` passes with no errors.
+- [ ] `npm run test:e2e` passes with no errors.
+- [ ] `npm run security:audit` passes with no high/critical vulnerabilities.
 - [ ] `npx expo-doctor` passes with no errors.

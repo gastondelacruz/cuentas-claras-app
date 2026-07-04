@@ -74,6 +74,14 @@ describe('AuthScreen', () => {
     expect(screen.getByText('Crear Cuenta')).toBeTruthy();
   });
 
+  it('exposes semantic button roles for login and register actions', () => {
+    renderAuth('login');
+    expect(screen.getByRole('button', { name: 'Iniciar Sesión' })).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Registrarse'));
+    expect(screen.getByRole('button', { name: 'Registrarse' })).toBeTruthy();
+  });
+
   it('tapping "Registrarse" tab shows "Crear Cuenta" heading', () => {
     renderAuth('login');
     fireEvent.press(screen.getByText('Registrarse'));

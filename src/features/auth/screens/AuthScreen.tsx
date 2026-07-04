@@ -173,6 +173,8 @@ export function AuthScreen({ route }: Props) {
               {/* Login button */}
               <TouchableOpacity
                 className={`bg-[#006d37] rounded-full py-4 w-full items-center mb-5 ${isLoginPending ? 'opacity-50' : ''}`}
+                accessibilityRole="button"
+                accessibilityLabel="Iniciar Sesión"
                 onPress={handleLogin}
                 testID="login-button"
                 disabled={isLoginPending}
@@ -297,6 +299,8 @@ export function AuthScreen({ route }: Props) {
               {/* Register button */}
               <TouchableOpacity
                 className={`bg-[#006d37] rounded-full py-4 w-full items-center mb-5 ${isRegisterPending ? 'opacity-50' : ''}`}
+                accessibilityRole="button"
+                accessibilityLabel="Registrarse"
                 onPress={handleRegister}
                 testID="register-button"
                 disabled={isRegisterPending}

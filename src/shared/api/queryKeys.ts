@@ -12,6 +12,7 @@ export const queryKeys = {
   },
   auth: {
     me: () => ['auth', 'me'] as const,
+    emailVerificationStatus: () => ['auth', 'email-verification', 'status'] as const,
   },
   account: {
     summary: () => ['account', 'summary'] as const,

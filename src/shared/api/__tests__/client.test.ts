@@ -53,6 +53,32 @@ describe('api client', () => {
     expect(mock.history.post).toHaveLength(0);
   });
 
+  it('marks the session unverified on likely unverified-email 403 without logging out', async () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`);
+    mock.onPost('/groups').reply(403, { message: 'Email verification required' });
+
+    await expect(client.post('/groups', {})).rejects.toMatchObject({ response: { status: 403 } });
+
+    expect(useAuthStore.getState()).toMatchObject({
+      user: { id: '1', email: 'a@b.com' },
+      isAuthenticated: true,
+      emailVerified: false,
+    });
+  });
+
+  it('does not mark the session unverified for unrelated already-verified 403 responses', async () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`);
+    mock.onPost('/auth/email-verification/verify').reply(403, { message: 'Email already verified' });
+
+    await expect(client.post('/auth/email-verification/verify', { token: 'used-token' })).rejects.toMatchObject({ response: { status: 403 } });
+
+    expect(useAuthStore.getState()).toMatchObject({
+      user: { id: '1', email: 'a@b.com' },
+      isAuthenticated: true,
+      emailVerified: true,
+    });
+  });
+
   it('refreshes token and retries a 401 once', async () => {
     mock.onGet('/groups').replyOnce(401);
     mock.onPost('/auth/refresh').reply(200, { accessToken: 'new-token' });

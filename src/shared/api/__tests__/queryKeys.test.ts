@@ -15,6 +15,7 @@ describe('queryKeys', () => {
 
   it('builds auth keys', () => {
     expect(queryKeys.auth.me()).toEqual(['auth', 'me']);
+    expect(queryKeys.auth.emailVerificationStatus()).toEqual(['auth', 'email-verification', 'status']);
   });
 
   it('produces serializable keys for React Query', () => {

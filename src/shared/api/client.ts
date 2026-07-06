@@ -32,7 +32,8 @@ async function runRefresh() {
     const { accessToken } = response.data;
     const currentUser = useAuthStore.getState().user;
 
-    useAuthStore.setState({ accessToken, isAuthenticated: Boolean(currentUser) });
+    useAuthStore.getState().setAccessToken(accessToken);
+    useAuthStore.setState({ isAuthenticated: Boolean(currentUser) });
 
     return accessToken;
   } catch (error) {
@@ -40,6 +41,32 @@ async function runRefresh() {
     emitAuthLogout();
     throw error;
   }
+}
+
+function containsUnverifiedEmailSignal(value: unknown): boolean {
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase().replace(/[_-]+/g, ' ');
+    if (/already\s+verified|previously\s+verified/.test(normalized)) return false;
+
+    return (
+      /\bemail\b/.test(normalized) &&
+      (/\bunverified\b/.test(normalized) ||
+        /\bnot\s+verified\b/.test(normalized) ||
+        /\bverification\s+required\b/.test(normalized) ||
+        /\bverify\s+(your\s+)?email\b/.test(normalized) ||
+        /\bemail\s+must\s+be\s+verified\b/.test(normalized))
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(containsUnverifiedEmailSignal);
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).some(containsUnverifiedEmailSignal);
+  }
+
+  return false;
 }
 
 client.interceptors.request.use((config) => {
@@ -56,6 +83,10 @@ client.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined;
+
+    if (error.response?.status === 403 && containsUnverifiedEmailSignal(error.response.data)) {
+      useAuthStore.getState().setEmailVerification({ verified: false, verifiedAt: null });
+    }
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || originalRequest.url === '/auth/refresh') {
       throw error;

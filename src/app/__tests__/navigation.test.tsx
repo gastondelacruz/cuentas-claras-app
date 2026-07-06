@@ -9,8 +9,10 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { RootNavigator } from '../navigation/RootNavigator';
 import { registeredRouteNames, RootStackParamList } from '../navigation/types';
+import { useLogin } from '../../features/auth/hooks/useLogin';
 import { useGroups } from '../../features/groups/hooks/useGroups';
 import { useGroupsStore } from '../../features/groups/store/groupsStore';
+import { acceptGroupInvitation } from '../../features/groups/api/groupsApi';
 import { useAuthStore } from '../../shared/store/authStore';
 import { emitAuthLogout } from '../../shared/api/authEvents';
 import { useGroupDetail } from '../../features/groups/hooks/useGroupDetail';
@@ -41,6 +43,9 @@ jest.mock('../../features/personal-expenses/hooks/usePersonalTransactions');
 jest.mock('../../features/personal-expenses/hooks/usePersonalTransactionsSummary');
 jest.mock('../../features/groups/hooks/useGroupDetail');
 jest.mock('../../features/groups/hooks/useGroupDetailActions');
+jest.mock('../../features/groups/api/groupsApi', () => ({
+  acceptGroupInvitation: jest.fn(),
+}));
 
 jest.mock('../../features/profile/hooks/useProfileData', () => ({
   useProfileData: jest.fn(() => ({
@@ -61,10 +66,12 @@ jest.mock('react-native-toast-message', () => ({
 const actualNavigation = jest.requireActual<typeof import('@react-navigation/native')>('@react-navigation/native');
 
 const mainTabLabels = ['Grupos', 'Gastos', 'Perfil'] as const;
+const mockUseLogin = jest.mocked(useLogin);
 const mockUseGroups = jest.mocked(useGroups);
 const mockUseAccountSummary = jest.mocked(useAccountSummary);
 const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
 const mockUsePersonalTransactionsSummary = jest.mocked(usePersonalTransactionsSummary);
+const mockAcceptGroupInvitation = jest.mocked(acceptGroupInvitation);
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -99,6 +106,8 @@ describe('navigation shell', () => {
   beforeEach(() => {
     useAuthStore.getState().clearSession();
     useGroupsStore.getState().reset();
+    mockAcceptGroupInvitation.mockReset();
+    mockAcceptGroupInvitation.mockResolvedValue(undefined);
     groupId = createGroup('Viaje a la costa', ['alex@example.com', 'sarah@example.com']).id;
     mockUseGroups.mockReturnValue({
       data: {
@@ -197,6 +206,8 @@ describe('navigation shell', () => {
       'AddExpense',
       'AddPersonalTransaction',
       'SettleDebts',
+      'VerifyEmail',
+      'AcceptGroupInvitation',
       'Profile',
     ]);
   });
@@ -222,8 +233,80 @@ describe('navigation shell', () => {
     expect(await findByText('Crear Cuenta')).toBeOnTheScreen();
   });
 
+  it('keeps verification and invitation deep-link routes reachable while unauthenticated', async () => {
+    const navigationRef = createNavigationContainerRef<RootStackParamList>();
+    testClient = createTestQueryClient();
+    const { findAllByText, findByText } = render(
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer ref={navigationRef}>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
+    );
+
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
+    await waitFor(() => expect(navigationRef.isReady()).toBe(true));
+
+    act(() => {
+      navigationRef.navigate('VerifyEmail');
+    });
+
+    expect(await findByText('El enlace de verificación no es válido')).toBeOnTheScreen();
+
+    act(() => {
+      navigationRef.navigate('AcceptGroupInvitation', { token: 'invite-token' });
+    });
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().pendingGroupInvitationToken).toBe('invite-token');
+    });
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
+  });
+
+  it('resumes a pending invitation deep-link after successful login', async () => {
+    mockUseLogin.mockReturnValue({
+      isPending: false,
+      mutate: jest.fn((_variables, options) => {
+        void options?.onSuccess?.({
+          data: {
+            accessToken: `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`,
+            refreshToken: 'refresh-token',
+            user: { id: 'user-1', name: 'Ada Lovelace', email: 'ada@example.com' },
+          },
+        } as never);
+      }),
+    } as never);
+
+    const navigationRef = createNavigationContainerRef<RootStackParamList>();
+    testClient = createTestQueryClient();
+    useAuthStore.getState().setPendingGroupInvitationToken('invite-token');
+
+    const { findAllByText, getAllByPlaceholderText, getByTestId } = render(
+      <QueryClientProvider client={testClient}>
+        <NavigationContainer ref={navigationRef}>
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>,
+    );
+
+    expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
+    await waitFor(() => expect(navigationRef.isReady()).toBe(true));
+
+    fireEvent.changeText(getAllByPlaceholderText('juan@ejemplo.com')[0], 'ada@example.com');
+    fireEvent.changeText(getAllByPlaceholderText('••••••••')[0], 'Password123!');
+    fireEvent.press(getByTestId('login-button'));
+
+    await waitFor(() => {
+      expect(mockAcceptGroupInvitation).toHaveBeenCalledWith('invite-token');
+    });
+    await waitFor(() => {
+      expect(useAuthStore.getState().pendingGroupInvitationToken).toBeNull();
+      expect(navigationRef.getCurrentRoute()?.name).toBe('GroupsList');
+    });
+  });
+
   it('renders main tabs while authenticated', async () => {
-    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`);
 
     testClient = createTestQueryClient();
     const { findByText, getAllByText, getByLabelText, getByText, queryByText } = render(
@@ -271,7 +354,7 @@ describe('navigation shell', () => {
     expect((await findAllByText('Iniciar Sesión')).length).toBeGreaterThan(0);
 
     act(() => {
-      useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
+      useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`);
     });
 
     expect(await findByText('Cuentas Claras', {}, { timeout: 3000 })).toBeOnTheScreen();
@@ -300,7 +383,7 @@ describe('navigation shell', () => {
   });
 
   it('resets to the auth stack when auth:logout is emitted', async () => {
-    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, `header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`);
 
     testClient = createTestQueryClient();
     const { findByText, findAllByText, queryByText } = render(

@@ -5,11 +5,13 @@ import { Plus, ReceiptText, UserPlus, X } from "lucide-react-native";
 import { colors } from "../theme/colors";
 
 type FloatingCreateMenuProps = {
+  disabled?: boolean;
   onCreateGroup: () => void;
   onCreateExpense: () => void;
 };
 
 export function FloatingCreateMenu({
+  disabled = false,
   onCreateGroup,
   onCreateExpense,
 }: FloatingCreateMenuProps) {
@@ -42,6 +44,7 @@ export function FloatingCreateMenu({
   });
 
   const handleActionPress = (action: () => void) => {
+    if (disabled) return;
     setIsOpen(false);
     action();
   };
@@ -69,8 +72,10 @@ export function FloatingCreateMenu({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Crear nuevo grupo, divide gastos con amigos"
+              accessibilityState={{ disabled }}
+              disabled={disabled}
               onPress={() => handleActionPress(onCreateGroup)}
-              className="min-h-16 flex-row items-center gap-4 rounded-full bg-white px-5 py-3"
+              className={`min-h-16 flex-row items-center gap-4 rounded-full bg-white px-5 py-3 ${disabled ? 'opacity-60' : ''}`}
             >
               <UserPlus color={colors.primary} size={22} strokeWidth={2.4} />
               <View>
@@ -86,8 +91,10 @@ export function FloatingCreateMenu({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Crear nuevo gasto, registra un pago rápido"
+              accessibilityState={{ disabled }}
+              disabled={disabled}
               onPress={() => handleActionPress(onCreateExpense)}
-              className="min-h-16 flex-row items-center gap-4 rounded-full bg-white px-5 py-3"
+              className={`min-h-16 flex-row items-center gap-4 rounded-full bg-white px-5 py-3 ${disabled ? 'opacity-60' : ''}`}
             >
               <ReceiptText color={colors.primary} size={22} strokeWidth={2.4} />
               <View>
@@ -105,9 +112,10 @@ export function FloatingCreateMenu({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={isOpen ? "Cerrar menú de creación" : "Abrir menú de creación"}
-          accessibilityState={{ expanded: isOpen }}
+          accessibilityState={{ expanded: isOpen, disabled }}
+          disabled={disabled}
           onPress={() => setIsOpen((current) => !current)}
-          className="h-16 w-16 items-center justify-center rounded-full bg-primary"
+          className={`h-16 w-16 items-center justify-center rounded-full ${disabled ? 'bg-neutral300' : 'bg-primary'}`}
         >
           <Animated.View style={{ transform: [{ scale: iconScale }] }}>
             {isOpen ? (

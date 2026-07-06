@@ -15,6 +15,8 @@ export type RootStackParamList = {
   AddExpense: { groupId?: string; expenseId?: string } | undefined;
   AddPersonalTransaction: { type?: 'expense' | 'income'; transactionId?: string } | undefined;
   SettleDebts: { groupId: string };
+  VerifyEmail: { token?: string } | undefined;
+  AcceptGroupInvitation: { token?: string } | undefined;
 };
 
 export const registeredRouteNames = [
@@ -27,5 +29,7 @@ export const registeredRouteNames = [
   'AddExpense',
   'AddPersonalTransaction',
   'SettleDebts',
+  'VerifyEmail',
+  'AcceptGroupInvitation',
   'Profile',
 ] as const;

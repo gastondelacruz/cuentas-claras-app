@@ -2,14 +2,17 @@
   "expo": {
     "name": "Cuentas Claras",
     "slug": "cuentas-claras-app",
+    "scheme": "cuentasclaras",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.cuentasclaras.app",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.cuentasclaras.app",
       "adaptiveIcon": {
         "backgroundColor": "#0E7A3A",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -33,6 +36,11 @@
       ],
       "expo-secure-store",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7afcb531-79a2-4246-af1c-acf497189952"
+      }
+    }
   }
 }

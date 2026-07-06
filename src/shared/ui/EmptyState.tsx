@@ -5,6 +5,7 @@ const emptyGroupsIllustration = require('../../../assets/empty-groups-illustrati
 type EmptyStateProps = {
   buttonLabel: string;
   description: string;
+  disabled?: boolean;
   onPress: () => void;
   title: string;
 };
@@ -23,7 +24,7 @@ function EmptyStateIllustration() {
   );
 }
 
-export function EmptyState({ buttonLabel, description, onPress, title }: EmptyStateProps) {
+export function EmptyState({ buttonLabel, description, disabled = false, onPress, title }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center px-5 pb-12 pt-8">
       <View
@@ -40,7 +41,9 @@ export function EmptyState({ buttonLabel, description, onPress, title }: EmptySt
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={buttonLabel}
-          className="mt-5 h-12 w-full items-center justify-center rounded-full bg-primary px-6 shadow-sm"
+          accessibilityState={{ disabled }}
+          disabled={disabled}
+          className={`mt-5 h-12 w-full items-center justify-center rounded-full px-6 shadow-sm ${disabled ? 'bg-neutral300' : 'bg-primary'}`}
           onPress={onPress}
         >
           <Text className="text-base font-bold text-white">{buttonLabel}</Text>

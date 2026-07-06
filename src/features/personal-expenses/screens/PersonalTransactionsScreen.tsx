@@ -18,7 +18,9 @@ import Svg, { Circle } from "react-native-svg";
 import { colors } from "../../../shared/theme/colors";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { EmailVerificationBanner } from "../../auth/components/EmailVerificationBanner";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
+import { useEmailVerificationGate } from "../../../shared/hooks/useEmailVerificationGate";
 import { PeriodSelectionModal } from "../components/PeriodSelectionModal";
 import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsScreen";
@@ -238,6 +240,7 @@ export function PersonalTransactionsScreen() {
     navigateToAddTransaction,
     navigateToEditTransaction,
   } = usePersonalTransactionsScreen();
+  const { isEmailVerified, guard } = useEmailVerificationGate();
 
   const useSkeletonLoading = isEnhancedInitialLoadingEnabled();
   const showLoadingSkeleton = isLoading && useSkeletonLoading && !isError;
@@ -248,6 +251,7 @@ export function PersonalTransactionsScreen() {
   return (
     <ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
       <AppTopBar />
+      <EmailVerificationBanner visible={!isEmailVerified} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -494,7 +498,9 @@ export function PersonalTransactionsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Editar ${transaction.type === 'income' ? 'ingreso' : 'gasto'} personal ${transaction.category} por ${formatTotal(transaction.amount, transaction.currency)}`}
                   accessibilityHint="Abre el formulario para modificar esta transacción"
-                  onPress={() => navigateToEditTransaction(transaction)}
+                  accessibilityState={{ disabled: !isEmailVerified }}
+                  disabled={!isEmailVerified}
+                  onPress={() => guard(() => navigateToEditTransaction(transaction))}
                   testID={`personal-transaction-item-${transaction.id}`}
                   style={{
                     flexDirection: "row",
@@ -545,7 +551,9 @@ export function PersonalTransactionsScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Añadir transacción personal"
-        onPress={navigateToAddTransaction}
+        accessibilityState={{ disabled: !isEmailVerified }}
+        disabled={!isEmailVerified}
+        onPress={() => guard(navigateToAddTransaction)}
         testID="add-personal-transaction-fab"
         style={{
           position: "absolute",
@@ -554,7 +562,7 @@ export function PersonalTransactionsScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: STITCH_PRIMARY_CONTAINER,
+          backgroundColor: isEmailVerified ? STITCH_PRIMARY_CONTAINER : '#D1D5DB',
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",

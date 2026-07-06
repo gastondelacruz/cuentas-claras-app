@@ -136,3 +136,7 @@ export async function recordGroupSettlement(
   );
   return parseOrThrow(recordSettlementResponseSchema, response.data.data);
 }
+
+export async function acceptGroupInvitation(token: string): Promise<void> {
+  await client.post("/groups/invitations/accept", { token });
+}

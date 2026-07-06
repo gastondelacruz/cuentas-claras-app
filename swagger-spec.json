@@ -173,6 +173,70 @@
         "tags": ["auth"]
       }
     },
+    "/api/v1/auth/email-verification/verify": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/email-verification/resend": {
+      "post": {
+        "operationId": "AuthController_resendEmailVerification",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/api/v1/auth/email-verification/status": {
+      "get": {
+        "operationId": "AuthController_emailVerificationStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/EmailVerificationStatusResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
     "/api/v1/groups": {
       "post": {
         "operationId": "GroupsController_create",
@@ -522,6 +586,33 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["groups"]
+      }
+    },
+    "/api/v1/groups/invitations/accept": {
+      "post": {
+        "operationId": "GroupsController_acceptInvitation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptGroupInvitationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "security": [
@@ -1254,6 +1345,28 @@
         },
         "required": ["refreshToken"]
       },
+      "VerifyEmailRequestDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["token"]
+      },
+      "EmailVerificationStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": "boolean"
+          },
+          "verifiedAt": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": ["verified"]
+      },
       "CreateGroupMemberDto": {
         "type": "object",
         "properties": {
@@ -1600,6 +1713,15 @@
             }
           }
         }
+      },
+      "AcceptGroupInvitationRequestDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["token"]
       },
       "ExpensePaidByResponseDto": {
         "type": "object",

@@ -7,6 +7,8 @@ import { GroupDetailScreen } from '../screens/GroupDetailScreen';
 import { useGroupsStore } from '../store/groupsStore';
 import { useGroupDetail } from '../hooks/useGroupDetail';
 import { useGroupDetailActions } from '../hooks/useGroupDetailActions';
+import { useAuthStore } from '../../../shared/store/authStore';
+import Toast from 'react-native-toast-message';
 
 jest.mock('../hooks/useGroupDetail');
 jest.mock('../hooks/useGroupDetailActions');
@@ -76,6 +78,7 @@ describe('GroupDetailScreen', () => {
   let localExpenses: GroupExpense[];
 
   beforeEach(() => {
+    useAuthStore.getState().clearSession();
     useGroupsStore.getState().reset();
     localExpenses = [];
     groupId = useGroupsStore.getState().createGroup({
@@ -133,6 +136,10 @@ describe('GroupDetailScreen', () => {
     } as unknown as ReturnType<typeof useGroupDetailActions>);
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('hides the expand button when there are 3 or fewer expenses', () => {
     render(<GroupDetailScreen />);
 
@@ -170,6 +177,21 @@ describe('GroupDetailScreen', () => {
     editButton?.onPress?.();
 
     expect(navigationMock.navigate).toHaveBeenCalledWith('NewGroup', { groupId });
+  });
+
+  it('disables group settings for authenticated users with unverified email', () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'you@example.com' }, `header.${btoa(JSON.stringify({ emailVerified: false }))}.signature`);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+
+    render(<GroupDetailScreen />);
+
+    const settingsButton = screen.getByLabelText('Ajustes del grupo');
+    expect(settingsButton).toHaveProp('accessibilityState', { disabled: true });
+
+    fireEvent.press(settingsButton);
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
   });
 
   it('keeps only add expense and settle actions inside the group', () => {

@@ -8,9 +8,11 @@ import { MainTabParamList, RootStackParamList } from "../../../app/navigation/ty
 import { colors } from "../../../shared/theme/colors";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { EmailVerificationBanner } from "../../auth/components/EmailVerificationBanner";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { FloatingCreateMenu } from "../../../shared/ui/FloatingCreateMenu";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
+import { useEmailVerificationGate } from "../../../shared/hooks/useEmailVerificationGate";
 import { CreateGroupCard } from "../components/CreateGroupCard";
 import { GroupListCard } from "../components/GroupListCard";
 import { GroupsFilter, GroupsFilterTabs } from "../components/GroupsFilterTabs";
@@ -83,9 +85,10 @@ export function GroupsListScreen() {
   const { groups, netBalance, owedToYou, youOwe, currency, isLoading, isError } = useGroupsList();
   const [filter, setFilter] = useState<GroupsFilter>("all");
   const useSkeletonLoading = isEnhancedInitialLoadingEnabled();
+  const { isEmailVerified, guard } = useEmailVerificationGate();
 
   const rootNavigation = navigation.getParent?.<RootNavigation>();
-  const navigateToNewGroup = () => rootNavigation?.navigate("NewGroup");
+  const navigateToNewGroup = () => guard(() => rootNavigation?.navigate("NewGroup"));
 
   const visibleGroups = groups.filter((group) => {
     if (filter === "owed") return group.balance > 0;
@@ -96,6 +99,7 @@ export function GroupsListScreen() {
   return (
     <ScreenContainer>
       <AppTopBar />
+      <EmailVerificationBanner visible={!isEmailVerified} />
       {isLoading && useSkeletonLoading ? (
         <GroupsListSkeleton />
       ) : isLoading ? (
@@ -112,6 +116,7 @@ export function GroupsListScreen() {
         <EmptyState
           buttonLabel="Crear un Grupo"
           description={"Crea tu primer grupo para empezar\na dividir gastos con tus amigos."}
+          disabled={!isEmailVerified}
           onPress={navigateToNewGroup}
           title={"¡Bienvenido! Empecemos\na ahorrar juntos"}
         />
@@ -136,14 +141,15 @@ export function GroupsListScreen() {
             ))}
           </View>
 
-          <CreateGroupCard onPress={navigateToNewGroup} />
+          <CreateGroupCard disabled={!isEmailVerified} onPress={navigateToNewGroup} />
         </ScrollView>
       )}
 
       {!isLoading && !isError && groups.length > 0 ? (
-        <FloatingCreateMenu
+          <FloatingCreateMenu
+          disabled={!isEmailVerified}
           onCreateGroup={navigateToNewGroup}
-          onCreateExpense={() => rootNavigation?.navigate("AddExpense")}
+          onCreateExpense={() => guard(() => rootNavigation?.navigate("AddExpense"))}
         />
       ) : null}
     </ScreenContainer>

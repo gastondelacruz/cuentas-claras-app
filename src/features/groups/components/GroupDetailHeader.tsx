@@ -6,11 +6,13 @@ import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 
 type GroupDetailHeaderProps = {
   groupName: string;
+  settingsDisabled?: boolean;
   onPressSettings?: () => void;
 };
 
 export function GroupDetailHeader({
   groupName,
+  settingsDisabled = false,
   onPressSettings,
 }: GroupDetailHeaderProps) {
   return (
@@ -20,8 +22,10 @@ export function GroupDetailHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ajustes del grupo"
+          accessibilityState={{ disabled: settingsDisabled }}
+          disabled={settingsDisabled}
           hitSlop={8}
-          onPress={onPressSettings}
+          onPress={settingsDisabled ? undefined : onPressSettings}
           className="h-10 w-10 items-center justify-center"
         >
           <Settings color={colors.neutral900} />

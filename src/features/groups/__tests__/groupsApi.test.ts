@@ -8,6 +8,7 @@ import {
   getGroups,
   recordGroupSettlement,
   updateGroup,
+  acceptGroupInvitation,
 } from "../api/groupsApi";
 
 jest.mock("../../../shared/api/client", () => ({
@@ -159,6 +160,20 @@ describe("groupsApi.getGroups", () => {
     mockGet.mockRejectedValueOnce(new Error("Unauthorized"));
 
     await expect(getGroups()).rejects.toThrow("Unauthorized");
+  });
+});
+
+describe("groupsApi.acceptGroupInvitation", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("posts the invitation token to the accept endpoint and expects no response body", async () => {
+    mockPost.mockResolvedValueOnce({ status: 204 });
+
+    await acceptGroupInvitation("invite-token");
+
+    expect(mockPost).toHaveBeenCalledWith("/groups/invitations/accept", { token: "invite-token" });
   });
 });
 

@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../../app/navigation/types';
 import { colors } from '../../../shared/theme/colors';
 import { FloatingCreateMenu } from '../../../shared/ui/FloatingCreateMenu';
 import { ScreenContainer } from '../../../shared/ui/ScreenContainer';
+import { useEmailVerificationGate } from '../../../shared/hooks/useEmailVerificationGate';
 import { BalanceMiniCards } from '../components/BalanceMiniCards';
 import { ExpenseRow } from '../components/ExpenseRow';
 import { GroupActionButtons } from '../components/GroupActionButtons';
@@ -27,6 +28,7 @@ export function GroupDetailScreen() {
   const { group, memberBalances, recentExpenses, totalExpensesCount, isLoading, isFetching } = useGroupDetail(route.params?.groupId);
   const { handleOpenSettings, handleOpenBalances } = useGroupDetailActions(group?.id ?? '');
   const [showAllExpenses, setShowAllExpenses] = useState(false);
+  const { isEmailVerified, guard } = useEmailVerificationGate();
 
   if (!group && (isLoading || isFetching)) {
     return (
@@ -67,7 +69,11 @@ export function GroupDetailScreen() {
 
   return (
     <ScreenContainer>
-      <GroupDetailHeader groupName={group.name} onPressSettings={handleOpenSettings} />
+      <GroupDetailHeader
+        groupName={group.name}
+        settingsDisabled={!isEmailVerified}
+        onPressSettings={() => guard(handleOpenSettings)}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-6 pb-28 pt-4">
         <View className="gap-4 px-4">
@@ -76,14 +82,14 @@ export function GroupDetailScreen() {
         </View>
 
         <GroupActionButtons
-          onAddExpense={() => navigation.navigate('AddExpense', { groupId: group.id })}
-          onSettleDebts={handleOpenBalances}
+          onAddExpense={() => guard(() => navigation.navigate('AddExpense', { groupId: group.id }))}
+          onSettleDebts={() => guard(handleOpenBalances)}
         />
 
         <View className="gap-3">
           <View className="flex-row items-center justify-between px-4">
             <Text className="text-lg font-bold text-neutral900">Balances</Text>
-            <Pressable accessibilityRole="button" onPress={handleOpenBalances}>
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: !isEmailVerified }} disabled={!isEmailVerified} onPress={() => guard(handleOpenBalances)}>
               <Text className="text-sm text-primary">Ver quién debe a quién</Text>
             </Pressable>
           </View>
@@ -108,7 +114,7 @@ export function GroupDetailScreen() {
                 expense={expense}
                 testID={`group-expense-${expense.id}`}
                 onPress={() =>
-                  navigation.navigate('AddExpense', { groupId: group.id, expenseId: expense.id })
+                  guard(() => navigation.navigate('AddExpense', { groupId: group.id, expenseId: expense.id }))
                 }
               />
             ))}
@@ -131,8 +137,9 @@ export function GroupDetailScreen() {
       </ScrollView>
 
       <FloatingCreateMenu
-        onCreateGroup={() => navigation.navigate('NewGroup')}
-        onCreateExpense={() => navigation.navigate('AddExpense', { groupId: group.id })}
+        disabled={!isEmailVerified}
+        onCreateGroup={() => guard(() => navigation.navigate('NewGroup'))}
+        onCreateExpense={() => guard(() => navigation.navigate('AddExpense', { groupId: group.id }))}
       />
     </ScreenContainer>
   );

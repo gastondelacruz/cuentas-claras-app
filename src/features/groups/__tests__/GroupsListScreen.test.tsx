@@ -1,10 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import React from 'react';
 
 import { GroupsListScreen } from '../screens/GroupsListScreen';
 import { useGroupsList } from '../hooks/useGroupsList';
 import { GroupListItem } from '../types';
 import { isEnhancedInitialLoadingEnabled } from '../../../shared/feature-flags/initialLoadingFlags';
+import { useAuthStore } from '../../../shared/store/authStore';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
@@ -16,6 +19,14 @@ jest.mock('../../../shared/feature-flags/initialLoadingFlags');
 const mockUseNavigation = jest.mocked(useNavigation);
 const mockUseGroupsList = jest.mocked(useGroupsList);
 const mockIsEnhancedInitialLoadingEnabled = jest.mocked(isEnhancedInitialLoadingEnabled);
+
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false, gcTime: Infinity } },
+  });
+
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 function createGroup(overrides: Partial<GroupListItem>): GroupListItem {
   return {
@@ -36,6 +47,7 @@ describe('GroupsListScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    useAuthStore.getState().clearSession();
     rootNavigateMock = jest.fn();
     mockUseNavigation.mockReturnValue({
       getParent: () => ({ navigate: rootNavigateMock }),
@@ -65,7 +77,7 @@ describe('GroupsListScreen', () => {
       error: null,
     });
 
-    render(<GroupsListScreen />);
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByLabelText('Cargando grupos')).toBeTruthy();
     expect(screen.getByText('Cargando grupos...')).toBeTruthy();
@@ -85,7 +97,7 @@ describe('GroupsListScreen', () => {
       error: null,
     });
 
-    render(<GroupsListScreen />);
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByTestId('groups-loading-skeleton')).toBeTruthy();
     expect(screen.getByLabelText('Cargando grupos')).toBeTruthy();
@@ -105,7 +117,7 @@ describe('GroupsListScreen', () => {
       error: new Error('GET /groups failed'),
     });
 
-    render(<GroupsListScreen />);
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByText('No pudimos cargar tus grupos')).toBeTruthy();
     expect(screen.getByText('Intentá nuevamente en unos minutos.')).toBeTruthy();
@@ -113,7 +125,8 @@ describe('GroupsListScreen', () => {
   });
 
   it('renders the Stitch empty groups card and navigates to group creation', () => {
-    render(<GroupsListScreen />);
+    useAuthStore.getState().setEmailVerification({ verified: true, verifiedAt: '2026-07-05T10:00:00.000Z' });
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByText('Cuentas Claras')).toBeTruthy();
     expect(screen.getByTestId('empty-state-card')).toBeTruthy();
@@ -140,6 +153,20 @@ describe('GroupsListScreen', () => {
     expect(rootNavigateMock).toHaveBeenCalledWith('NewGroup');
   });
 
+  it('shows the verification banner and disables empty-home creation for unverified users', () => {
+    useAuthStore.getState().setSession({ id: '1', email: 'a@b.com' }, 'tok-abc');
+
+    renderWithQueryClient(<GroupsListScreen />);
+
+    expect(screen.getByText('Verifica tu email para poder usar la app')).toBeTruthy();
+
+    const createButton = screen.getByLabelText('Crear un Grupo');
+    expect(createButton.props.accessibilityState).toMatchObject({ disabled: true });
+    fireEvent.press(createButton);
+
+    expect(rootNavigateMock).not.toHaveBeenCalled();
+  });
+
   it('renders positive balances as money owed to the current user and filters receivable groups', () => {
     mockUseGroupsList.mockReturnValue({
       groups: [
@@ -155,7 +182,7 @@ describe('GroupsListScreen', () => {
       error: null,
     });
 
-    render(<GroupsListScreen />);
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByText('Balance Neto Total')).toBeTruthy();
     expect(screen.getAllByText('Te deben').length).toBeGreaterThan(0);
@@ -191,7 +218,7 @@ describe('GroupsListScreen', () => {
       error: null,
     });
 
-    render(<GroupsListScreen />);
+    renderWithQueryClient(<GroupsListScreen />);
 
     expect(screen.getByText('Balance Neto Total')).toBeTruthy();
     expect(screen.getAllByText('Debes').length).toBeGreaterThan(0);

@@ -103,6 +103,7 @@ describe('AuthScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Juan');
     fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'notanemail');
     fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    fireEvent.changeText(screen.getByPlaceholderText('Repetí tu contraseña'), 'validpassword');
     await act(async () => {
       fireEvent.press(screen.getByTestId('register-button'));
     });
@@ -122,6 +123,35 @@ describe('AuthScreen', () => {
     expect(passwordLabel.props.className).toContain('text-red-600');
   });
 
+  it('renders a second password field for registration', () => {
+    renderAuth('register');
+
+    expect(screen.getByTestId('register-confirm-password-label')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Repetí tu contraseña')).toBeTruthy();
+  });
+
+  it('blocks registration when password confirmation does not match', async () => {
+    const mockMutate = jest.fn();
+    mockedUseRegister.mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      error: null,
+    } as never);
+
+    renderAuth('register');
+    fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
+    fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    fireEvent.changeText(screen.getByPlaceholderText('Repetí tu contraseña'), 'differentpassword');
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('register-button'));
+    });
+
+    expect(screen.getByText('Las contraseñas no coinciden')).toBeTruthy();
+    expect(screen.getByTestId('register-confirm-password-label').props.className).toContain('text-red-600');
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
   it('pressing register button with valid data calls useRegister mutate', async () => {
     const mockMutate = jest.fn();
     mockedUseRegister.mockReturnValue({
@@ -134,6 +164,7 @@ describe('AuthScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
     fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
     fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    fireEvent.changeText(screen.getByPlaceholderText('Repetí tu contraseña'), 'validpassword');
     await act(async () => {
       fireEvent.press(screen.getByTestId('register-button'));
     });
@@ -168,6 +199,7 @@ describe('AuthScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
     fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
     fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    fireEvent.changeText(screen.getByPlaceholderText('Repetí tu contraseña'), 'validpassword');
     await act(async () => {
       fireEvent.press(screen.getByTestId('register-button'));
     });
@@ -209,6 +241,7 @@ describe('AuthScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Juan García'), 'Gastón');
     fireEvent.changeText(screen.getByPlaceholderText('juan@ejemplo.com'), 'gaston@example.com');
     fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'validpassword');
+    fireEvent.changeText(screen.getByPlaceholderText('Repetí tu contraseña'), 'validpassword');
     await act(async () => {
       fireEvent.press(screen.getByTestId('register-button'));
     });

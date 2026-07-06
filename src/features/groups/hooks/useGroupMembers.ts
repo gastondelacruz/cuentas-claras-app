@@ -1,22 +1,23 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-import { queryKeys } from '../../../shared/api/queryKeys';
-import { getGroup } from '../api/groupsApi';
-import { GroupMember } from '../types';
+import { queryKeys } from "../../../shared/api/queryKeys";
+import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
+import { getGroup } from "../api/groupsApi";
+import { GroupMember } from "../types";
 
 function getInitialsFromValue(value: string): string {
-  const tokens = value
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean);
+	const tokens = value
+		.split(/[^\p{L}\p{N}]+/u)
+		.map((token) => token.trim())
+		.filter(Boolean);
 
-  if (tokens.length === 0) return 'NA';
+	if (tokens.length === 0) return "NA";
 
-  return tokens
-    .slice(0, 2)
-    .map((token) => token[0]?.toUpperCase() ?? '')
-    .join('');
+	return tokens
+		.slice(0, 2)
+		.map((token) => token[0]?.toUpperCase() ?? "")
+		.join("");
 }
 
 /**
@@ -24,23 +25,24 @@ function getInitialsFromValue(value: string): string {
  * Uses the same React Query cache as useGroupDetail — no double-fetch.
  */
 export function useGroupMembers(groupId?: string): GroupMember[] {
-  const { data: groupDetail } = useQuery({
-    queryKey: queryKeys.groups.detail(groupId ?? ''),
-    queryFn: () => getGroup(groupId!),
-    enabled: Boolean(groupId),
-  });
+	const protectedDataEnabled = useProtectedDataEnabled();
+	const { data: groupDetail } = useQuery({
+		queryKey: queryKeys.groups.detail(groupId ?? ""),
+		queryFn: () => getGroup(groupId!),
+		enabled: Boolean(groupId) && protectedDataEnabled,
+	});
 
-  return useMemo(() => {
-    if (!groupDetail?.members?.length) return [];
+	return useMemo(() => {
+		if (!protectedDataEnabled || !groupDetail?.members?.length) return [];
 
-    return groupDetail.members
-      .filter((m) => !m.removedAt)
-      .map((m) => ({
-        id: m.id ?? m.displayName,
-        name: m.displayName,
-        initials: getInitialsFromValue(m.displayName),
-        avatarUrl: null,
-        isCurrentUser: m.isCurrentUser ?? false,
-      }));
-  }, [groupDetail]);
+		return groupDetail.members
+			.filter((m) => !m.removedAt)
+			.map((m) => ({
+				id: m.id ?? m.displayName,
+				name: m.displayName,
+				initials: getInitialsFromValue(m.displayName),
+				avatarUrl: null,
+				isCurrentUser: m.isCurrentUser ?? false,
+			}));
+	}, [groupDetail, protectedDataEnabled]);
 }

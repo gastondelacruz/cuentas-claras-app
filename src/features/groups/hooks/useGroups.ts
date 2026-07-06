@@ -1,7 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { groupsListQueryOptions } from '../api/groupQueryOptions';
+import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
+import { groupsListQueryOptions } from "../api/groupQueryOptions";
 
 export function useGroups() {
-  return useQuery(groupsListQueryOptions());
+	const protectedDataEnabled = useProtectedDataEnabled();
+	const query = useQuery({
+		...groupsListQueryOptions(),
+		enabled: protectedDataEnabled,
+	});
+
+	if (protectedDataEnabled) return query;
+
+	return {
+		...query,
+		data: undefined,
+		isLoading: false,
+		isError: false,
+		error: null,
+	};
 }

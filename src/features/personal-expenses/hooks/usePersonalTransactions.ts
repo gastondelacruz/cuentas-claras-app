@@ -1,20 +1,29 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { personalTransactionsListQueryOptions } from '../api/personalTransactionQueryOptions';
-import type { PersonalTransactionListFilters } from '../types';
+import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
+import { personalTransactionsListQueryOptions } from "../api/personalTransactionQueryOptions";
+import type { PersonalTransactionListFilters } from "../types";
 
-export function usePersonalTransactions(filters: PersonalTransactionListFilters) {
-  const query = useQuery(personalTransactionsListQueryOptions(filters));
+export function usePersonalTransactions(
+	filters: PersonalTransactionListFilters,
+) {
+	const protectedDataEnabled = useProtectedDataEnabled();
+	const query = useQuery({
+		...personalTransactionsListQueryOptions(filters),
+		enabled: protectedDataEnabled,
+	});
 
-  return {
-    transactions: query.data?.transactions ?? [],
-    total: query.data?.total ?? 0,
-    incomeTotal: query.data?.incomeTotal ?? 0,
-    expenseTotal: query.data?.expenseTotal ?? 0,
-    currency: query.data?.currency ?? 'ARS',
-    hasFetchedTransactions: query.data !== undefined,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-  };
+	const data = protectedDataEnabled ? query.data : undefined;
+
+	return {
+		transactions: data?.transactions ?? [],
+		total: data?.total ?? 0,
+		incomeTotal: data?.incomeTotal ?? 0,
+		expenseTotal: data?.expenseTotal ?? 0,
+		currency: data?.currency ?? "ARS",
+		hasFetchedTransactions: data !== undefined,
+		isLoading: protectedDataEnabled && query.isLoading,
+		isError: protectedDataEnabled && query.isError,
+		error: protectedDataEnabled ? query.error : null,
+	};
 }

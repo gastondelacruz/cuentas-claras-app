@@ -109,6 +109,9 @@ function seedGroupDetails(client: QueryClient) {
 describe('AddExpenseScreen', () => {
   beforeEach(() => {
     useAuthStore.getState().setSession({ id: 'current-user', email: 'you@example.com' }, 'token');
+    useAuthStore
+      .getState()
+      .setEmailVerification({ verified: true, verifiedAt: null });
     jest.clearAllMocks();
     mockUseExpenseToEdit.mockReturnValue(undefined);
 

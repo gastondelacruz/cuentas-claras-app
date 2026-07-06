@@ -1,16 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { personalTransactionsSummaryQueryOptions } from '../api/personalTransactionQueryOptions';
-import type { PersonalTransactionSummaryFilters } from '../types';
+import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
+import { personalTransactionsSummaryQueryOptions } from "../api/personalTransactionQueryOptions";
+import type { PersonalTransactionSummaryFilters } from "../types";
 
-export function usePersonalTransactionsSummary(filters: PersonalTransactionSummaryFilters) {
-  const query = useQuery(personalTransactionsSummaryQueryOptions(filters));
+export function usePersonalTransactionsSummary(
+	filters: PersonalTransactionSummaryFilters,
+) {
+	const protectedDataEnabled = useProtectedDataEnabled();
+	const query = useQuery({
+		...personalTransactionsSummaryQueryOptions(filters),
+		enabled: protectedDataEnabled,
+	});
 
-  return {
-    summary: query.data,
-    hasFetchedSummary: query.data !== undefined,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-  };
+	const summary = protectedDataEnabled ? query.data : undefined;
+
+	return {
+		summary,
+		hasFetchedSummary: summary !== undefined,
+		isLoading: protectedDataEnabled && query.isLoading,
+		isError: protectedDataEnabled && query.isError,
+		error: protectedDataEnabled ? query.error : null,
+	};
 }

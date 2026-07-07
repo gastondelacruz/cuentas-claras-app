@@ -15,25 +15,30 @@
       "package": "com.cuentasclaras.app",
       "adaptiveIcon": {
         "backgroundColor": "#0E7A3A",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#ffffff",
-          "image": "./assets/splash-screen.png",
-          "resizeMode": "cover"
-        }
-      ],
+        [
+          "expo-splash-screen",
+          {
+            "android": {
+              "backgroundColor": "#ffffff",
+              "image": "./assets/icon.png",
+              "imageWidth": 200
+            },
+            "ios": {
+              "backgroundColor": "#ffffff",
+              "image": "./assets/screen.png",
+              "resizeMode": "cover"
+            }
+          }
+        ],
       "expo-secure-store",
       "@react-native-community/datetimepicker"
     ],

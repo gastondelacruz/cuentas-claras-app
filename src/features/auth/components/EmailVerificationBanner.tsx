@@ -10,7 +10,8 @@ type EmailVerificationBannerProps = {
 export function EmailVerificationBanner({
 	visible,
 }: EmailVerificationBannerProps) {
-	const { handleResend, isResendDisabled } = useEmailVerificationBanner();
+	const { handleResend, isResendDisabled, resendButtonLabel } =
+		useEmailVerificationBanner();
 
 	if (!visible) return null;
 
@@ -36,7 +37,7 @@ export function EmailVerificationBanner({
 				className="rounded-full bg-white/80 px-3 py-2"
 			>
 				<Text className="text-xs font-bold" style={{ color: "#3b0900" }}>
-					Reenviar
+					{resendButtonLabel}
 				</Text>
 			</Pressable>
 		</View>

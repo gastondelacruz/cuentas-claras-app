@@ -6,10 +6,16 @@ import * as path from "path";
 
 declare const process: { cwd(): string };
 
-type SplashPluginConfig = {
+type SplashPlatformConfig = {
 	backgroundColor: string;
 	image: string;
-	resizeMode: string;
+	imageWidth?: number;
+	resizeMode?: string;
+};
+
+type SplashPluginConfig = {
+	android: SplashPlatformConfig;
+	ios: SplashPlatformConfig;
 };
 
 type SplashPlugin = ["expo-splash-screen", SplashPluginConfig];
@@ -30,18 +36,30 @@ describe("native app asset config", () => {
 			Array.isArray(plugin) && plugin[0] === "expo-splash-screen",
 	);
 
-	it("configures expo-splash-screen with the provided full-screen artwork", () => {
-		expect(splashPlugin?.[1]).toEqual({
+	it("configures Android splash with the recommended icon-style asset", () => {
+		expect(splashPlugin?.[1].android).toEqual({
 			backgroundColor: "#ffffff",
-			image: "./assets/splash-screen.png",
+			image: "./assets/icon.png",
+			imageWidth: 200,
+		});
+		expect(readPngDimensions("./assets/icon.png")).toEqual({
+			width: 1024,
+			height: 1024,
+		});
+	});
+
+	it("keeps the full-screen artwork for iOS cover-mode splash rendering", () => {
+		expect(splashPlugin?.[1].ios).toEqual({
+			backgroundColor: "#ffffff",
+			image: "./assets/screen.png",
 			resizeMode: "cover",
 		});
 		expect(
-			fs.existsSync(path.resolve(process.cwd(), "./assets/splash-screen.png")),
+			fs.existsSync(path.resolve(process.cwd(), "./assets/screen.png")),
 		).toBe(true);
-		expect(readPngDimensions("./assets/splash-screen.png")).toEqual({
-			width: 768,
-			height: 1376,
+		expect(readPngDimensions("./assets/screen.png")).toEqual({
+			width: 1143,
+			height: 2048,
 		});
 	});
 

@@ -59,7 +59,6 @@ export function AuthScreen({ route }: Props) {
 		<KeyboardAwareScrollView
 			className="flex-1 bg-[#f0f0f3]"
 			contentContainerStyle={{ paddingBottom: 40 }}
-			autoScrollToEndOnKeyboardShow
 		>
 			<AppTopBar />
 

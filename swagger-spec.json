@@ -2118,6 +2118,15 @@
             "type": "string",
             "example": "expense"
           },
+          "expenseKind": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "variable"
+            ],
+            "example": "variable",
+            "nullable": true
+          },
           "amount": {
             "type": "number",
             "example": 15000
@@ -2159,6 +2168,7 @@
         "required": [
           "id",
           "type",
+          "expenseKind",
           "amount",
           "currency",
           "category",
@@ -2281,6 +2291,15 @@
             "type": "string",
             "example": "expense"
           },
+          "expenseKind": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "variable"
+            ],
+            "example": "variable",
+            "nullable": true
+          },
           "amount": {
             "type": "number",
             "example": 15000
@@ -2322,6 +2341,7 @@
         "required": [
           "id",
           "type",
+          "expenseKind",
           "amount",
           "currency",
           "category",
@@ -2346,6 +2366,12 @@
             "description": "Transaction type.",
             "enum": ["expense", "income"],
             "example": "expense"
+          },
+          "expenseKind": {
+            "type": "string",
+            "description": "Expense kind. Applies only to expense transactions and defaults to variable when omitted.",
+            "enum": ["fixed", "variable"],
+            "example": "variable"
           },
           "amount": {
             "type": "number",
@@ -2384,6 +2410,12 @@
             "description": "Updated transaction type.",
             "enum": ["expense", "income"],
             "example": "expense"
+          },
+          "expenseKind": {
+            "type": "string",
+            "description": "Updated expense kind. Applies only to expense transactions.",
+            "enum": ["fixed", "variable"],
+            "example": "fixed"
           },
           "amount": {
             "type": "number",

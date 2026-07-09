@@ -2,7 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
 import { personalTransactionsListQueryOptions } from "../api/personalTransactionQueryOptions";
-import type { PersonalTransactionListFilters } from "../types";
+import { resolvePersonalExpenseType } from "../utils/personalExpenseType";
+import type {
+	PersonalExpenseType,
+	PersonalTransactionListFilters,
+	PersonalTransactionViewItem,
+} from "../types";
 
 export function usePersonalTransactions(
 	filters: PersonalTransactionListFilters,
@@ -14,9 +19,24 @@ export function usePersonalTransactions(
 	});
 
 	const data = protectedDataEnabled ? query.data : undefined;
+	const transactions: PersonalTransactionViewItem[] = (
+		data?.transactions ?? []
+	).map((transaction) => {
+		if (transaction.type !== "expense") {
+			return transaction;
+		}
+
+		const sourceExpenseKind = (
+			transaction as { expenseKind?: PersonalExpenseType }
+		).expenseKind;
+		return {
+			...transaction,
+			expenseKind: resolvePersonalExpenseType(sourceExpenseKind),
+		};
+	});
 
 	return {
-		transactions: data?.transactions ?? [],
+		transactions,
 		total: data?.total ?? 0,
 		incomeTotal: data?.incomeTotal ?? 0,
 		expenseTotal: data?.expenseTotal ?? 0,

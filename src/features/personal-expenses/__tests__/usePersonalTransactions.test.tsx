@@ -10,6 +10,7 @@ import {
 import { useCreatePersonalTransaction } from "../hooks/useCreatePersonalTransaction";
 import { usePersonalTransactions } from "../hooks/usePersonalTransactions";
 import { usePersonalTransactionsSummary } from "../hooks/usePersonalTransactionsSummary";
+import type { PersonalTransactionViewItem } from "../types";
 
 jest.mock("../api/personalTransactionsApi", () => ({
 	getPersonalTransactions: jest.fn(),
@@ -205,6 +206,58 @@ describe("usePersonalTransactions", () => {
 		expect(result.current.total).toBe(876371);
 	});
 
+	it("preserves backend expense kind and defaults nullable expense kinds to variable", async () => {
+		const transactions: PersonalTransactionViewItem[] = [
+			{
+				id: "fixed-expense",
+				type: "expense",
+				expenseKind: "fixed",
+				amount: 1000,
+				currency: "ARS",
+				category: "Alquiler",
+				accountId: "account-ars",
+				accountName: "Pesos",
+				occurredAt: "2026-06-27T12:00:00.000Z",
+				note: null,
+			},
+			{
+				id: "legacy-expense",
+				type: "expense",
+				expenseKind: null,
+				amount: 500,
+				currency: "ARS",
+				category: "Café",
+				accountId: "account-ars",
+				accountName: "Pesos",
+				occurredAt: "2026-06-27T12:00:00.000Z",
+				note: null,
+			},
+		];
+		mockGetPersonalTransactions.mockResolvedValueOnce({
+			transactions,
+			nextCursor: null,
+			total: 1500,
+			incomeTotal: 0,
+			expenseTotal: 1500,
+			currency: "ARS",
+		});
+
+		const { result } = renderHook(
+			() => usePersonalTransactions({ type: "expense", range: "week" }),
+			{ wrapper: Wrapper },
+		);
+
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+		expect(result.current.transactions).toEqual([
+			expect.objectContaining({ id: "fixed-expense", expenseKind: "fixed" }),
+			expect.objectContaining({
+				id: "legacy-expense",
+				expenseKind: "variable",
+			}),
+		]);
+	});
+
 	it("invalidates personal transaction lists after a successful create mutation", async () => {
 		const invalidateSpy = jest.spyOn(testClient, "invalidateQueries");
 		const { result } = renderHook(() => useCreatePersonalTransaction(), {
@@ -213,6 +266,7 @@ describe("usePersonalTransactions", () => {
 
 		result.current.mutate({
 			type: "expense",
+				expenseKind: "variable",
 			amount: 1200,
 			currency: "ARS",
 			category: "Café",

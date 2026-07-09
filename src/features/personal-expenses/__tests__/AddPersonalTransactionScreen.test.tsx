@@ -176,6 +176,33 @@ describe("AddPersonalTransactionScreen", () => {
 		expect(navigationMock.goBack).toHaveBeenCalledTimes(1);
 	});
 
+	it("submits the selected fixed expense kind on create", async () => {
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		fireEvent.press(screen.getByTestId("personal-expense-type-fixed"));
+		fireEvent.changeText(
+			screen.getByTestId("personal-transaction-amount-input"),
+			"12.500",
+		);
+		fireEvent.press(screen.getByTestId("personal-category-Café"));
+
+		await act(async () => {
+			fireEvent.press(screen.getByTestId("submit-personal-transaction-button"));
+		});
+
+		await waitFor(() => {
+			expect(mockCreatePersonalTransaction).toHaveBeenCalledWith(
+				expect.objectContaining({
+					type: "expense",
+					expenseKind: "fixed",
+					amount: 12500,
+					category: "Café",
+				}),
+				expect.any(Object),
+			);
+		});
+	});
+
 	it("renders income categories and submit copy for the income route", () => {
 		jest
 			.mocked(useRoute)
@@ -603,6 +630,7 @@ describe("AddPersonalTransactionScreen", () => {
 			screen.getByTestId("personal-note-input"),
 			"  Farmacia editada  ",
 		);
+		fireEvent.press(screen.getByTestId("personal-expense-type-fixed"));
 
 		await act(async () => {
 			fireEvent.press(screen.getByTestId("submit-personal-transaction-button"));
@@ -613,6 +641,7 @@ describe("AddPersonalTransactionScreen", () => {
 				"ptx-edit-expense",
 				expect.objectContaining({
 					type: "expense",
+					expenseKind: "fixed",
 					amount: 46000,
 					category: "Salud",
 					note: "Farmacia editada",

@@ -1,38 +1,40 @@
-export type PersonalTransactionType = 'expense' | 'income';
+import type { PersonalTransactionDto } from "./schemas/personalTransactionSchema";
 
-export type PersonalTransactionRange = 'day' | 'week' | 'month' | 'year' | 'period';
+export type PersonalTransactionType = "expense" | "income";
 
-export type PersonalTransactionCategory = string;
+export type PersonalExpenseType = "variable" | "fixed";
+
+export type PersonalExpenseTypeFilter = "all" | PersonalExpenseType;
+
+export type PersonalTransactionRange =
+	| "day"
+	| "week"
+	| "month"
+	| "year"
+	| "period";
+
+export type PersonalTransactionViewItem = PersonalTransactionDto;
 
 export type PersonalTransactionListFilters = {
-  type: PersonalTransactionType;
-  range: PersonalTransactionRange;
-  from?: string;
-  to?: string;
+	type: PersonalTransactionType;
+	range: PersonalTransactionRange;
+	from?: string;
+	to?: string;
 };
 
 export type PersonalTransactionSummaryFilters = {
-  range: PersonalTransactionRange;
-  from?: string;
-  to?: string;
+	range: PersonalTransactionRange;
+	from?: string;
+	to?: string;
 };
 
 export type PersonalTransactionQueryOptions = PersonalTransactionListFilters & {
-  cursor?: string;
-  limit?: number;
-};
-
-export type PersonalTransactionListItem = {
-  id: string;
-  type: PersonalTransactionType;
-  category: string;
-  amount: number;
-  currency: string;
-  occurredAt: string;
+	cursor?: string;
+	limit?: number;
 };
 
 export type PersonalTransactionChartSegment = {
-  color: string;
-  dasharray: string;
-  dashoffset?: string;
+	color: string;
+	dasharray: string;
+	dashoffset?: string;
 };

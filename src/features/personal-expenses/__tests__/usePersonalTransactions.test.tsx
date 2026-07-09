@@ -266,7 +266,7 @@ describe("usePersonalTransactions", () => {
 
 		result.current.mutate({
 			type: "expense",
-				expenseKind: "variable",
+			expenseKind: "variable",
 			amount: 1200,
 			currency: "ARS",
 			category: "Café",

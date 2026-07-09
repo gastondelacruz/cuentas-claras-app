@@ -13,6 +13,7 @@ import {
 	createPersonalTransaction,
 	updatePersonalTransaction,
 } from "../api/personalTransactionsApi";
+import { PERSONAL_CATEGORY_CONFIGS } from "../constants/personalTransactionCategoryVisuals";
 import { getMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
 
 jest.mock("../api/personalTransactionsApi", () => ({
@@ -102,9 +103,9 @@ describe("AddPersonalTransactionScreen", () => {
 		expect(screen.getByText("Cuenta")).toBeTruthy();
 		expect(screen.getByText("Pesos")).toBeTruthy();
 		// Expense categories
-		expect(screen.getByText("Salud")).toBeTruthy();
-		expect(screen.getByText("Ocio")).toBeTruthy();
-		expect(screen.getByText("Departament")).toBeTruthy();
+		for (const category of PERSONAL_CATEGORY_CONFIGS.expense) {
+			expect(screen.getByText(category.name)).toBeTruthy();
+		}
 		// Expense-only type selector
 		expect(screen.getByTestId("personal-expense-type-selector")).toBeTruthy();
 		expect(screen.getByText("Tipo de Gasto")).toBeTruthy();
@@ -372,6 +373,16 @@ describe("AddPersonalTransactionScreen", () => {
 
 		expect(screen.queryByText("Más")).toBeNull();
 		expect(screen.queryByTestId("personal-category-Más")).toBeNull();
+	});
+
+	it("keeps Otros available only for expenses", () => {
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		expect(screen.getByTestId("personal-category-Otros")).toBeTruthy();
+
+		fireEvent.press(screen.getByTestId("personal-form-tab-income"));
+
+		expect(screen.queryByTestId("personal-category-Otros")).toBeNull();
 	});
 
 	it("selects the first income category automatically when switching from expense to income", () => {

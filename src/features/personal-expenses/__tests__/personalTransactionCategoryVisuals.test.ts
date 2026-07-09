@@ -1,46 +1,85 @@
-import { MoreHorizontal } from 'lucide-react-native';
+import { MoreHorizontal } from "lucide-react-native";
 
 import {
-  PERSONAL_CATEGORY_CONFIGS,
-  PERSONAL_CATEGORY_FALLBACK_VISUAL,
-  getPersonalCategoryVisual,
-} from '../constants/personalTransactionCategoryVisuals';
-import {
-  PERSONAL_INCOME_CATEGORIES,
-} from '../constants/personalTransactionCategories';
+	PERSONAL_CATEGORY_CONFIGS,
+	PERSONAL_CATEGORY_FALLBACK_VISUAL,
+	getPersonalCategoryVisual,
+} from "../constants/personalTransactionCategoryVisuals";
+import { PERSONAL_INCOME_CATEGORIES } from "../constants/personalTransactionCategories";
 
-describe('personalTransactionCategoryVisuals', () => {
-  it('assigns a distinct color to every expense category', () => {
-    const colors = PERSONAL_CATEGORY_CONFIGS.expense.map((config) => config.color);
-    expect(new Set(colors).size).toBe(colors.length);
-  });
+describe("personalTransactionCategoryVisuals", () => {
+	it("matches the backend-supported expense category catalog in order", () => {
+		expect(
+			PERSONAL_CATEGORY_CONFIGS.expense.map((config) => config.name),
+		).toEqual([
+			"Salud",
+			"Ocio",
+			"Departament",
+			"Café",
+			"Educación",
+			"Regalos",
+			"Transporte",
+			"Otros",
+			"Servicio",
+			"Tarjetas",
+			"Auto",
+			"Ropa",
+			"Alimentación",
+		]);
+	});
 
-  it('assigns a distinct color to every income category', () => {
-    const colors = PERSONAL_CATEGORY_CONFIGS.income.map((config) => config.color);
-    expect(new Set(colors).size).toBe(colors.length);
-  });
+	it("assigns a distinct color to every expense category", () => {
+		const colors = PERSONAL_CATEGORY_CONFIGS.expense.map(
+			(config) => config.color,
+		);
+		expect(new Set(colors).size).toBe(colors.length);
+	});
 
-  it('does not include the "Otros" income category', () => {
-    const incomeNames = PERSONAL_CATEGORY_CONFIGS.income.map((config) => config.name);
-    expect(incomeNames).not.toContain('Otros');
-    expect(PERSONAL_INCOME_CATEGORIES).not.toContain('Otros');
-  });
+	it("assigns a distinct color to every income category", () => {
+		const colors = PERSONAL_CATEGORY_CONFIGS.income.map(
+			(config) => config.color,
+		);
+		expect(new Set(colors).size).toBe(colors.length);
+	});
 
-  it('returns the configured visual for a known category', () => {
-    const salud = getPersonalCategoryVisual('expense', 'Salud');
-    expect(salud.color).toBe('#ef4444');
-  });
+	it('does not include the "Otros" income category', () => {
+		const incomeNames = PERSONAL_CATEGORY_CONFIGS.income.map(
+			(config) => config.name,
+		);
+		expect(incomeNames).not.toContain("Otros");
+		expect(PERSONAL_INCOME_CATEGORIES).not.toContain("Otros");
+	});
 
-  it('falls back to a neutral visual for an unknown backend category', () => {
-    const unknown = getPersonalCategoryVisual('expense', 'Criptomonedas');
-    expect(unknown).toEqual(PERSONAL_CATEGORY_FALLBACK_VISUAL);
-    expect(unknown.Icon).toBe(MoreHorizontal);
-  });
+	it("returns the configured visual for a known category", () => {
+		const salud = getPersonalCategoryVisual("expense", "Salud");
+		expect(salud.color).toBe("#ef4444");
+	});
 
-  it('resolves the same category name differently per transaction type', () => {
-    // "Regalos" exists in both catalogs but with different colors/icons.
-    const expenseGift = getPersonalCategoryVisual('expense', 'Regalos');
-    const incomeGift = getPersonalCategoryVisual('income', 'Regalos');
-    expect(expenseGift.color).not.toBe(incomeGift.color);
-  });
+	it("falls back to a neutral visual for an unknown backend category", () => {
+		const unknown = getPersonalCategoryVisual("expense", "Criptomonedas");
+		expect(unknown).toEqual(PERSONAL_CATEGORY_FALLBACK_VISUAL);
+		expect(unknown.Icon).toBe(MoreHorizontal);
+	});
+
+	it("resolves the same category name differently per transaction type", () => {
+		// "Regalos" exists in both catalogs but with different colors/icons.
+		const expenseGift = getPersonalCategoryVisual("expense", "Regalos");
+		const incomeGift = getPersonalCategoryVisual("income", "Regalos");
+		expect(expenseGift.color).not.toBe(incomeGift.color);
+	});
+
+	it("returns configured visuals for the added backend expense categories", () => {
+		for (const category of [
+			"Transporte",
+			"Otros",
+			"Servicio",
+			"Tarjetas",
+			"Auto",
+			"Ropa",
+		]) {
+			expect(getPersonalCategoryVisual("expense", category)).not.toEqual(
+				PERSONAL_CATEGORY_FALLBACK_VISUAL,
+			);
+		}
+	});
 });

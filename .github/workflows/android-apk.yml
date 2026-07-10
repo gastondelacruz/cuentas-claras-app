@@ -1,0 +1,60 @@
+name: Build Android APK
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build.
+        required: true
+        type: string
+    secrets:
+      EXPO_TOKEN:
+        required: true
+
+concurrency:
+  group: android-apk-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate and build Android APK
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release tag version
+        run: node scripts/validate-release-tag.js "$RELEASE_TAG"
+
+      - name: Run tests
+        run: npm test -- --runInBand
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Expo Doctor
+        run: npx expo-doctor
+
+      - name: Build release APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas-cli@latest build --platform android \
+            --profile release-apk --non-interactive

@@ -1,0 +1,39 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  release:
+    name: Create release PR or release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+
+  # GITHUB_TOKEN-created tags do not start push workflows.
+  # Call the reusable workflow directly after a release is created.
+  build-android-apk:
+    name: Build Android APK for released version
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/android-apk.yml
+    with:
+      tag: "${{ needs.release.outputs.tag_name }}"
+    secrets:
+      EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}"

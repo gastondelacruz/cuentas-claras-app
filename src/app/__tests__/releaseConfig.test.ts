@@ -40,4 +40,15 @@ describe("release configuration", () => {
 			`Release tag v0.0.0 does not match package version ${packageJson.version}.`,
 		);
 	});
+
+	it("submits Android APK builds asynchronously", () => {
+		const { readFileSync } = jest.requireActual<{
+			readFileSync(path: string, encoding: string): string;
+		}>("fs");
+		const workflow = readFileSync(".github/workflows/android-apk.yml", "utf8");
+
+		expect(workflow).toMatch(
+			/eas-cli@latest build --platform android[\s\S]*--no-wait/,
+		);
+	});
 });

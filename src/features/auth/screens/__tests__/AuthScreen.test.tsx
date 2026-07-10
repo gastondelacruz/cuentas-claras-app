@@ -54,7 +54,10 @@ function renderAuth(initialTab?: "login" | "register") {
 
 beforeEach(() => {
 	jest.clearAllMocks();
-	Object.defineProperty(Platform, "OS", { configurable: true, value: "android" });
+	Object.defineProperty(Platform, "OS", {
+		configurable: true,
+		value: "android",
+	});
 	mockedUseAuthStore.mockImplementation(
 		(selector) =>
 			(selector as (s: unknown) => unknown)({ setSession }) as never,

@@ -9,7 +9,8 @@ jest.mock("../../../features/auth/utils/googleAuthTelemetry", () => ({
 }));
 
 jest.mock("react-native-gesture-handler", () => ({
-	GestureHandlerRootView: ({ children }: { children: React.ReactNode }) => children,
+	GestureHandlerRootView: ({ children }: { children: React.ReactNode }) =>
+		children,
 }));
 
 jest.mock("react-native-safe-area-context", () => ({

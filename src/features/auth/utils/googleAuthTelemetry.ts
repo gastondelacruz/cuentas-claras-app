@@ -39,7 +39,9 @@ function createFailureEntry(
 	};
 }
 
-async function persistFailureEntry(entry: GoogleAuthFailureEntry): Promise<void> {
+async function persistFailureEntry(
+	entry: GoogleAuthFailureEntry,
+): Promise<void> {
 	try {
 		const existingRaw = await SecureStore.getItemAsync(
 			GOOGLE_AUTH_FAILURE_LOG_KEY,

@@ -56,7 +56,10 @@ const mockToast = jest.mocked(Toast);
 describe("useGoogleLogin", () => {
 	beforeEach(() => {
 		jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate"] });
-		Object.defineProperty(Platform, "OS", { configurable: true, value: "android" });
+		Object.defineProperty(Platform, "OS", {
+			configurable: true,
+			value: "android",
+		});
 		jest.clearAllMocks();
 		queryClient.clear();
 		useAuthStore.getState().clearSession();
@@ -92,11 +95,7 @@ describe("useGoogleLogin", () => {
 		promptAsyncMock.mockResolvedValue({ type: "success" });
 		mockedUseAuthRequest.mockImplementation(
 			() =>
-				[
-					{ serviceType: "test" },
-					providerResponse,
-					promptAsyncMock,
-				] as never,
+				[{ serviceType: "test" }, providerResponse, promptAsyncMock] as never,
 		);
 		mockLoginWithGoogle.mockResolvedValue({
 			data: {

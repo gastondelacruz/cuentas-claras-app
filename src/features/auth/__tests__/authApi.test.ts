@@ -2,6 +2,8 @@ import { client } from "../../../shared/api/client";
 import {
 	getEmailVerificationStatus,
 	getMeSummary,
+	loginWithGoogle,
+	refreshAuthSession,
 	resendEmailVerification,
 	verifyEmail,
 } from "../api/authApi";
@@ -46,6 +48,47 @@ describe("authApi.getMeSummary", () => {
 		await expect(getMeSummary()).rejects.toThrow(
 			"API response does not match contract",
 		);
+	});
+});
+
+describe("authApi.google", () => {
+	it("posts id token to /auth/google and returns response data", async () => {
+		const payload = {
+			data: {
+				accessToken: "google-access",
+				refreshToken: "google-refresh",
+				user: {
+					id: "u1",
+					name: "Google User",
+					email: "google@example.com",
+				},
+			},
+		};
+		mockPost.mockResolvedValueOnce(payload);
+
+		const response = await loginWithGoogle("id-token-123");
+
+		expect(mockPost).toHaveBeenCalledWith("/auth/google", {
+			idToken: "id-token-123",
+		});
+		expect(response).toEqual(payload.data);
+	});
+
+	it("refreshes session by posting refresh token and returning next tokens", async () => {
+		const payload = {
+			data: {
+				accessToken: "access-refreshed",
+				refreshToken: "refresh-refreshed",
+			},
+		};
+		mockPost.mockResolvedValueOnce(payload);
+
+		const response = await refreshAuthSession("old-refresh-token");
+
+		expect(mockPost).toHaveBeenCalledWith("/auth/refresh", {
+			refreshToken: "old-refresh-token",
+		});
+		expect(response).toEqual(payload.data);
 	});
 });
 

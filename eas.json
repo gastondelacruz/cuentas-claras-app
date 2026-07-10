@@ -10,19 +10,19 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://cuentas-claras-api-ghwm.onrender.com"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
-      "android": {
-        "buildType": "app-bundle"
-      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://cuentas-claras-api-ghwm.onrender.com"
+      },
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },

@@ -11,6 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../app/navigation/types";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { KeyboardAwareScrollView } from "../../../shared/ui/KeyboardAwareScrollView";
+import { useGoogleLogin } from "../hooks/useGoogleLogin";
 import { useLoginForm } from "../hooks/useLoginForm";
 import { useRegisterForm } from "../hooks/useRegisterForm";
 
@@ -54,6 +55,13 @@ export function AuthScreen({ route }: Props) {
 		isPending: isRegisterPending,
 		handleRegister,
 	} = useRegisterForm();
+
+	const {
+		startGoogleLogin,
+		isPending: isGoogleLoginPending,
+		isReady: isGoogleLoginReady,
+		isSupportedPlatform: isGoogleLoginSupported,
+	} = useGoogleLogin();
 
 	return (
 		<KeyboardAwareScrollView
@@ -199,22 +207,40 @@ export function AuthScreen({ route }: Props) {
 								)}
 							</TouchableOpacity>
 
-							{/* Divider */}
-							<View className="flex-row items-center mb-5">
-								<View className="flex-1 h-px bg-gray-200" />
-								<Text className="text-gray-400 mx-3 text-sm">
-									o continuar con
-								</Text>
-								<View className="flex-1 h-px bg-gray-200" />
-							</View>
+							{isGoogleLoginSupported ? (
+								<>
+									{/* Divider */}
+									<View className="flex-row items-center mb-5">
+										<View className="flex-1 h-px bg-gray-200" />
+										<Text className="text-gray-400 mx-3 text-sm">
+											o continuar con
+										</Text>
+										<View className="flex-1 h-px bg-gray-200" />
+									</View>
 
-							{/* Google */}
-							<TouchableOpacity className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3">
-								<Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
-								<Text className="text-[#1a1c1e] font-medium">
-									Continuar con Google
-								</Text>
-							</TouchableOpacity>
+									{/* Google */}
+									<TouchableOpacity
+										testID="google-login-button-login"
+										accessibilityRole="button"
+										accessibilityLabel="Continuar con Google"
+										accessibilityState={{
+											disabled: !isGoogleLoginReady || isGoogleLoginPending,
+										}}
+										className={`flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3 ${
+											!isGoogleLoginReady || isGoogleLoginPending
+												? "opacity-50"
+												: ""
+										}`}
+										disabled={!isGoogleLoginReady || isGoogleLoginPending}
+										onPress={startGoogleLogin}
+									>
+										<Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
+										<Text className="text-[#1a1c1e] font-medium">
+											Continuar con Google
+										</Text>
+									</TouchableOpacity>
+								</>
+							) : null}
 						</>
 					) : (
 						<>
@@ -382,22 +408,40 @@ export function AuthScreen({ route }: Props) {
 								)}
 							</TouchableOpacity>
 
-							{/* Divider */}
-							<View className="flex-row items-center mb-5">
-								<View className="flex-1 h-px bg-gray-200" />
-								<Text className="text-gray-400 mx-3 text-sm">
-									o continuar con
-								</Text>
-								<View className="flex-1 h-px bg-gray-200" />
-							</View>
+							{isGoogleLoginSupported ? (
+								<>
+									{/* Divider */}
+									<View className="flex-row items-center mb-5">
+										<View className="flex-1 h-px bg-gray-200" />
+										<Text className="text-gray-400 mx-3 text-sm">
+											o continuar con
+										</Text>
+										<View className="flex-1 h-px bg-gray-200" />
+									</View>
 
-							{/* Google */}
-							<TouchableOpacity className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3">
-								<Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
-								<Text className="text-[#1a1c1e] font-medium">
-									Continuar con Google
-								</Text>
-							</TouchableOpacity>
+									{/* Google */}
+									<TouchableOpacity
+										testID="google-login-button-register"
+										accessibilityRole="button"
+										accessibilityLabel="Continuar con Google"
+										accessibilityState={{
+											disabled: !isGoogleLoginReady || isGoogleLoginPending,
+										}}
+										className={`flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3 ${
+											!isGoogleLoginReady || isGoogleLoginPending
+												? "opacity-50"
+												: ""
+										}`}
+										disabled={!isGoogleLoginReady || isGoogleLoginPending}
+										onPress={startGoogleLogin}
+									>
+										<Text className="text-[#1a1c1e] font-medium mr-2">G</Text>
+										<Text className="text-[#1a1c1e] font-medium">
+											Continuar con Google
+										</Text>
+									</TouchableOpacity>
+								</>
+							) : null}
 						</>
 					)}
 				</View>

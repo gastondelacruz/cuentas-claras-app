@@ -30,6 +30,31 @@ describe('useLogout', () => {
     jest.useRealTimers();
   });
 
+  it('clears local auth state while the logout request is still pending', async () => {
+    let resolveLogout: (() => void) | undefined;
+    mockLogoutUser.mockImplementationOnce(
+      () => new Promise<void>((resolve) => {
+        resolveLogout = resolve;
+      }),
+    );
+
+    const { result, unmount } = renderHook(() => useLogout(), { wrapper: Wrapper });
+
+    result.current.mutate();
+    await waitFor(() => expect(mockLogoutUser).toHaveBeenCalledTimes(1));
+
+    expect(result.current.isPending).toBe(true);
+    expect(useAuthStore.getState()).toMatchObject({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+    });
+
+    resolveLogout?.();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    unmount();
+  });
+
   it('calls POST /auth/logout, clears the session, and resets the query cache', async () => {
     mockLogoutUser.mockResolvedValueOnce(undefined);
     const clearSpy = jest.spyOn(queryClient, 'clear');

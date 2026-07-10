@@ -2,7 +2,7 @@
   "expo": {
     "name": "Cuentas Claras",
     "slug": "cuentas-claras-app",
-    "scheme": "cuentasclaras",
+    "scheme": ["cuentasclaras", "com.cuentasclaras.app"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,23 +24,24 @@
     },
     "plugins": [
       "expo-font",
-        [
-          "expo-splash-screen",
-          {
-            "android": {
-              "backgroundColor": "#ffffff",
-              "image": "./assets/icon.png",
-              "imageWidth": 200
-            },
-            "ios": {
-              "backgroundColor": "#ffffff",
-              "image": "./assets/screen.png",
-              "resizeMode": "cover"
-            }
+      [
+        "expo-splash-screen",
+        {
+          "android": {
+            "backgroundColor": "#ffffff",
+            "image": "./assets/icon.png",
+            "imageWidth": 200
+          },
+          "ios": {
+            "backgroundColor": "#ffffff",
+            "image": "./assets/screen.png",
+            "resizeMode": "cover"
           }
-        ],
+        }
+      ],
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

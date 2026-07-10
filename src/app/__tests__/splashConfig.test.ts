@@ -63,6 +63,13 @@ describe("native app asset config", () => {
 		});
 	});
 
+	it("registers both the public and Android package URI schemes", () => {
+		expect(appConfig.expo.scheme).toEqual([
+			"cuentasclaras",
+			"com.cuentasclaras.app",
+		]);
+	});
+
 	it("configures the installed app icon from a square high-resolution asset", () => {
 		expect(appConfig.expo.icon).toBe("./assets/icon.png");
 		expect(

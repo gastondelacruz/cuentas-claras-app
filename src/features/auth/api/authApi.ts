@@ -25,6 +25,13 @@ export type AuthResponse = {
 	};
 };
 
+export type AuthRefreshResponse = {
+	data: {
+		accessToken: string;
+		refreshToken: string;
+	};
+};
+
 export type EmailVerificationStatus = EmailVerificationStatusDto;
 
 export async function loginUser(
@@ -34,6 +41,13 @@ export async function loginUser(
 	const response = await client.post<AuthResponse>("/auth/login", {
 		email,
 		password,
+	});
+	return response.data;
+}
+
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+	const response = await client.post<AuthResponse>("/auth/google", {
+		idToken,
 	});
 	return response.data;
 }
@@ -51,10 +65,20 @@ export async function registerUser(
 	return response.data;
 }
 
+export async function refreshAuthSession(
+	refreshToken: string,
+): Promise<AuthRefreshResponse> {
+	const response = await client.post<AuthRefreshResponse>("/auth/refresh", {
+		refreshToken,
+	});
+	return response.data;
+}
+
 export async function logoutUser(): Promise<void> {
 	const refreshToken = await getRefreshToken();
-
-	await client.post("/auth/logout", { refreshToken });
+	if (refreshToken) {
+		await client.post("/auth/logout", { refreshToken });
+	}
 	await clearRefreshToken();
 }
 

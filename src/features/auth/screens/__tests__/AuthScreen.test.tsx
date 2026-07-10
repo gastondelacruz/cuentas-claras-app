@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
 
 import { useAuthStore } from "../../../../shared/store/authStore";
 import { setRefreshToken } from "../../../../shared/api/tokenStorage";
 import { useLogin } from "../../hooks/useLogin";
 import { useRegister } from "../../hooks/useRegister";
+import { useGoogleLogin } from "../../hooks/useGoogleLogin";
 import { KeyboardAwareScrollView } from "../../../../shared/ui/KeyboardAwareScrollView";
 import { AuthScreen } from "../AuthScreen";
 
@@ -24,6 +26,10 @@ jest.mock("../../hooks/useRegister", () => ({
 	useRegister: jest.fn(),
 }));
 
+jest.mock("../../hooks/useGoogleLogin", () => ({
+	useGoogleLogin: jest.fn(),
+}));
+
 jest.mock("react-native-toast-message", () => ({
 	show: jest.fn(),
 }));
@@ -35,6 +41,7 @@ jest.mock("../../../../shared/ui/KeyboardAwareScrollView", () => ({
 const mockedUseAuthStore = jest.mocked(useAuthStore);
 const mockedUseLogin = jest.mocked(useLogin);
 const mockedUseRegister = jest.mocked(useRegister);
+const mockedUseGoogleLogin = jest.mocked(useGoogleLogin);
 const mockedToast = jest.mocked(Toast);
 const mockedSetRefreshToken = jest.mocked(setRefreshToken);
 const setSession = jest.fn();
@@ -47,6 +54,7 @@ function renderAuth(initialTab?: "login" | "register") {
 
 beforeEach(() => {
 	jest.clearAllMocks();
+	Object.defineProperty(Platform, "OS", { configurable: true, value: "android" });
 	mockedUseAuthStore.mockImplementation(
 		(selector) =>
 			(selector as (s: unknown) => unknown)({ setSession }) as never,
@@ -60,6 +68,12 @@ beforeEach(() => {
 		mutate: jest.fn(),
 		isPending: false,
 		error: null,
+	} as never);
+	mockedUseGoogleLogin.mockReturnValue({
+		startGoogleLogin: jest.fn(),
+		isPending: false,
+		isReady: true,
+		isSupportedPlatform: true,
 	} as never);
 });
 
@@ -501,5 +515,71 @@ describe("AuthScreen", () => {
 			}),
 		);
 		expect(setSession).not.toHaveBeenCalled();
+	});
+
+	it("does not render Google login controls on iOS", () => {
+		Object.defineProperty(Platform, "OS", { configurable: true, value: "ios" });
+		mockedUseGoogleLogin.mockReturnValue({
+			startGoogleLogin: jest.fn(),
+			isPending: false,
+			isReady: false,
+			isSupportedPlatform: false,
+		} as never);
+
+		renderAuth("login");
+
+		expect(screen.queryByTestId("google-login-button-login")).toBeNull();
+		expect(screen.queryByText("o continuar con")).toBeNull();
+	});
+
+	it("calls startGoogleLogin when pressing Google button on login tab", async () => {
+		const mockStartGoogleLogin = jest.fn();
+		mockedUseGoogleLogin.mockReturnValue({
+			startGoogleLogin: mockStartGoogleLogin,
+			isPending: false,
+			isReady: true,
+			isSupportedPlatform: true,
+		} as never);
+
+		renderAuth("login");
+		await act(async () => {
+			fireEvent.press(screen.getByTestId("google-login-button-login"));
+		});
+
+		expect(mockStartGoogleLogin).toHaveBeenCalledTimes(1);
+	});
+
+	it("calls startGoogleLogin when pressing Google button on register tab", async () => {
+		const mockStartGoogleLogin = jest.fn();
+		mockedUseGoogleLogin.mockReturnValue({
+			startGoogleLogin: mockStartGoogleLogin,
+			isPending: false,
+			isReady: true,
+			isSupportedPlatform: true,
+		} as never);
+
+		renderAuth("register");
+		await act(async () => {
+			fireEvent.press(screen.getByTestId("google-login-button-register"));
+		});
+
+		expect(mockStartGoogleLogin).toHaveBeenCalledTimes(1);
+	});
+
+	it("disables Google button while Google auth is unavailable", () => {
+		mockedUseGoogleLogin.mockReturnValue({
+			startGoogleLogin: jest.fn(),
+			isPending: false,
+			isReady: false,
+			isSupportedPlatform: true,
+		} as never);
+
+		renderAuth("login");
+
+		const loginGoogleButton = screen.getByTestId("google-login-button-login");
+
+		expect(loginGoogleButton.props.accessibilityState).toMatchObject({
+			disabled: true,
+		});
 	});
 });

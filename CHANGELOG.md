@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.0...v1.1.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* **personal-expenses:** stabilize session and transaction workflows ([#67](https://github.com/gastondelacruz/cuentas-claras-app/issues/67)) ([52346cf](https://github.com/gastondelacruz/cuentas-claras-app/commit/52346cf316846c4222ba9f12d472a7049ccdf103))
+
 ## [1.1.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.0.0...v1.1.0) (2026-07-11)
 
 

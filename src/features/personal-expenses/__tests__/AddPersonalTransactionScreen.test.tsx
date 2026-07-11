@@ -443,7 +443,9 @@ describe("AddPersonalTransactionScreen", () => {
 
 		expect(screen.queryByTestId("single-date-selection-modal")).toBeNull();
 		const customChip = screen.getByTestId("date-chip-custom");
-		expect(customChip.props.accessibilityState).toMatchObject({ selected: true });
+		expect(customChip.props.accessibilityState).toMatchObject({
+			selected: true,
+		});
 	});
 
 	it("submits the custom date as occurredAt when the custom chip is selected", async () => {
@@ -578,7 +580,9 @@ describe("AddPersonalTransactionScreen", () => {
 		expect(screen.getByText("Guardar cambios")).toBeTruthy();
 
 		fireEvent.press(screen.getByTestId("personal-date-calendar"));
-		expect(screen.getByTestId("single-date-day-2026-06-28").props.accessibilityState).toMatchObject({ selected: true });
+		expect(
+			screen.getByTestId("single-date-day-2026-06-28").props.accessibilityState,
+		).toMatchObject({ selected: true });
 	});
 
 	it("pre-fills the selected income when opened in edit mode", () => {
@@ -841,7 +845,9 @@ describe("AddPersonalTransactionScreen", () => {
 			onPress?: () => void;
 		}>;
 		await act(async () => {
-			confirmationButtons.find((button) => button.text === "Eliminar")?.onPress?.();
+			confirmationButtons
+				.find((button) => button.text === "Eliminar")
+				?.onPress?.();
 		});
 
 		await waitFor(() =>

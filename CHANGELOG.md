@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.0.0...v1.1.0) (2026-07-11)
+
+
+### Features
+
+* **personal-expenses:** add category drill-down flow ([#64](https://github.com/gastondelacruz/cuentas-claras-app/issues/64)) ([7a561bf](https://github.com/gastondelacruz/cuentas-claras-app/commit/7a561bf42a298ca2fc87a96f7ff73da8bed8a845))
+
 ## 1.0.0 (2026-07-10)
 
 

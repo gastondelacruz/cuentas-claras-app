@@ -250,6 +250,7 @@ describe("navigation shell", () => {
 			"NewGroup",
 			"AddExpense",
 			"AddPersonalTransaction",
+			"PersonalCategoryDetail",
 			"SettleDebts",
 			"VerifyEmail",
 			"AcceptGroupInvitation",
@@ -408,14 +409,20 @@ describe("navigation shell", () => {
 			);
 
 		testClient = createTestQueryClient();
-		const { findByText, getAllByText, getByLabelText, getByText, queryByText } =
-			render(
-				<QueryClientProvider client={testClient}>
-					<NavigationContainer>
-						<RootNavigator />
-					</NavigationContainer>
-				</QueryClientProvider>,
-			);
+		const {
+			findByText,
+			findByTestId,
+			getAllByText,
+			getByLabelText,
+			getByText,
+			queryByText,
+		} = render(
+			<QueryClientProvider client={testClient}>
+				<NavigationContainer>
+					<RootNavigator />
+				</NavigationContainer>
+			</QueryClientProvider>,
+		);
 
 		expect(
 			await findByText("Cuentas Claras", {}, { timeout: 3000 }),
@@ -435,7 +442,13 @@ describe("navigation shell", () => {
 		expect(await findByText("Crear nuevo gasto")).toBeOnTheScreen();
 
 		fireEvent.press(getByText("Gastos"));
-		expect(await findByText("Gastos Recientes")).toBeOnTheScreen();
+		expect(
+			await findByTestId(
+				"personal-transactions-donut-chart",
+				{},
+				{ timeout: 3000 },
+			),
+		).toBeOnTheScreen();
 
 		fireEvent.press(getByText("Perfil"));
 		expect(await findByText("Alex Thompson")).toBeOnTheScreen();

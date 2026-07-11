@@ -22,7 +22,6 @@ import type {
 	PersonalTransactionChartSegment,
 	PersonalTransactionRange,
 	PersonalTransactionType,
-	PersonalTransactionViewItem,
 } from "../types";
 
 type PersonalTransactionsNavigation = BottomTabNavigationProp<
@@ -50,8 +49,6 @@ function buildChartSegments(
 		.map((item) => {
 			const length =
 				(DONUT_CIRCUMFERENCE * Math.min(item.percentage, 100)) / 100;
-			// Each slice uses the same color the category shows on the add-transaction
-			// screen, so the chart legend and the category grid always match.
 			const segment = {
 				color: getPersonalCategoryVisual(type, item.category).color,
 				dasharray: `${formatDashValue(length)} ${formatDashValue(DONUT_CIRCUMFERENCE - length)}`,
@@ -125,9 +122,6 @@ export function usePersonalTransactionsScreen() {
 
 	const isPeriod = range === "period";
 
-	// Bug 7 fix: only send from/to to the backend for the custom "period" range.
-	// For day/week/month/year the backend computes the window itself; sending our
-	// own date-only bounds narrowed the window to nothing (e.g. "day" showed empty).
 	const from =
 		isPeriod && periodRange ? startOfDayIso(periodRange.from) : undefined;
 	const to = isPeriod && periodRange ? endOfDayIso(periodRange.to) : undefined;
@@ -159,7 +153,6 @@ export function usePersonalTransactionsScreen() {
 
 	function selectRange(nextRange: PersonalTransactionRange) {
 		if (nextRange === "period") {
-			// The period range only becomes active once the user confirms dates.
 			setIsPeriodModalOpen(true);
 			return;
 		}
@@ -192,12 +185,27 @@ export function usePersonalTransactionsScreen() {
 		});
 	}
 
+	function navigateToCategoryDetail(category: string) {
+		rootNavigation?.navigate("PersonalCategoryDetail", {
+			type,
+			category,
+			range,
+			from,
+			to,
+			expenseKind:
+				type === "expense" && expenseKindFilter !== "all"
+					? expenseKindFilter
+					: undefined,
+		});
+	}
+
 	const shouldUseBackendTransactions = transactionQuery.hasFetchedTransactions;
 	const summary = summaryQuery.summary;
 	const shouldUseSummary =
 		summaryQuery.hasFetchedSummary && summary !== undefined;
-	const backendTransactions: PersonalTransactionViewItem[] =
-		shouldUseBackendTransactions ? transactionQuery.transactions : [];
+	const backendTransactions = shouldUseBackendTransactions
+		? transactionQuery.transactions
+		: [];
 	const displayTransactions =
 		type === "expense"
 			? filterPersonalExpenseTransactions(
@@ -216,6 +224,25 @@ export function usePersonalTransactionsScreen() {
 	const chartSegments = shouldUseSummary
 		? buildChartSegments(summary.breakdown, type)
 		: [];
+	const categoryRows = shouldUseSummary
+		? summary.breakdown
+				.filter(
+					(item) =>
+						item.type === type && item.amount > 0 && item.percentage > 0,
+				)
+				.map((item) => {
+					const visual = getPersonalCategoryVisual(type, item.category);
+					return {
+						category: item.category,
+						amount: item.amount,
+						percentage: item.percentage,
+						color: visual.color,
+						Icon: visual.Icon,
+						accessibilityLabel: `Ver detalle de la categoría ${item.category}`,
+						onPress: () => navigateToCategoryDetail(item.category),
+					};
+				})
+		: [];
 
 	return {
 		type,
@@ -231,7 +258,9 @@ export function usePersonalTransactionsScreen() {
 		closePeriodModal,
 		navigateToAddTransaction,
 		navigateToEditTransaction,
+		navigateToCategoryDetail,
 		chartSegments,
+		categoryRows,
 		displayTransactions,
 		displayTotal,
 		displaySummaryTotal,

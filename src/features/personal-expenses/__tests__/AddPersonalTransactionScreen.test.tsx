@@ -7,11 +7,14 @@ import {
 } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AddPersonalTransactionScreen } from "../screens/AddPersonalTransactionScreen";
 import {
 	createPersonalTransaction,
 	updatePersonalTransaction,
+	deletePersonalTransaction,
 } from "../api/personalTransactionsApi";
 import { PERSONAL_CATEGORY_CONFIGS } from "../constants/personalTransactionCategoryVisuals";
 import { getMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
@@ -19,6 +22,7 @@ import { getMockEditablePersonalTransaction } from "../mocks/personalTransaction
 jest.mock("../api/personalTransactionsApi", () => ({
 	createPersonalTransaction: jest.fn(),
 	updatePersonalTransaction: jest.fn(),
+	deletePersonalTransaction: jest.fn(),
 }));
 
 jest.mock("../mocks/personalTransactionEditMock", () => ({
@@ -27,6 +31,7 @@ jest.mock("../mocks/personalTransactionEditMock", () => ({
 
 const mockCreatePersonalTransaction = jest.mocked(createPersonalTransaction);
 const mockUpdatePersonalTransaction = jest.mocked(updatePersonalTransaction);
+const mockDeletePersonalTransaction = jest.mocked(deletePersonalTransaction);
 const mockGetMockEditablePersonalTransaction = jest.mocked(
 	getMockEditablePersonalTransaction,
 );
@@ -47,6 +52,12 @@ describe("AddPersonalTransactionScreen", () => {
 	beforeEach(() => {
 		jest.useFakeTimers({ now: FAKE_NOW });
 		jest.clearAllMocks();
+		jest.mocked(useSafeAreaInsets).mockReturnValue({
+			top: 0,
+			right: 0,
+			bottom: 0,
+			left: 0,
+		});
 		testClient = new QueryClient({
 			defaultOptions: {
 				queries: { retry: false, gcTime: Infinity },
@@ -73,6 +84,7 @@ describe("AddPersonalTransactionScreen", () => {
 			updatedAt: "2026-06-29T12:00:00.000Z",
 		});
 		mockGetMockEditablePersonalTransaction.mockReturnValue(undefined);
+		mockDeletePersonalTransaction.mockResolvedValue(undefined);
 		mockUpdatePersonalTransaction.mockResolvedValue({
 			id: "ptx-edit-expense",
 			type: "expense",
@@ -408,35 +420,30 @@ describe("AddPersonalTransactionScreen", () => {
 			disabled: true,
 		});
 		expect(calendarButton.props.disabled).not.toBe(true);
-		// The Pressable onPress is consumed internally; verify tappability by opening the picker.
 		fireEvent.press(calendarButton);
-		expect(screen.getByTestId("personal-date-picker")).toBeTruthy();
+		expect(screen.getByTestId("single-date-selection-modal")).toBeTruthy();
 	});
 
-	it("opens the date picker when the calendar button is pressed", () => {
+	it("opens the single-date calendar without period fields", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
 		fireEvent.press(screen.getByTestId("personal-date-calendar"));
 
-		expect(screen.getByTestId("personal-date-picker")).toBeTruthy();
+		expect(screen.getByTestId("single-date-selection-modal")).toBeTruthy();
+		expect(screen.queryByText("Desde")).toBeNull();
+		expect(screen.queryByText("Hasta")).toBeNull();
 	});
 
-	it("renders a selected custom chip after choosing a date from the picker", () => {
+	it("applies a selected date, closes the modal, and renders a selected custom chip", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
 		fireEvent.press(screen.getByTestId("personal-date-calendar"));
+		fireEvent.press(screen.getByTestId("single-date-day-2026-06-25"));
+		fireEvent.press(screen.getByTestId("single-date-apply-button"));
 
-		const picker = screen.getByTestId("personal-date-picker");
-		const chosenDate = new Date("2026-06-25T12:00:00.000Z");
-		act(() => {
-			picker.props.onChange({}, chosenDate);
-		});
-
+		expect(screen.queryByTestId("single-date-selection-modal")).toBeNull();
 		const customChip = screen.getByTestId("date-chip-custom");
-		expect(customChip).toBeTruthy();
-		expect(customChip.props.accessibilityState).toMatchObject({
-			selected: true,
-		});
+		expect(customChip.props.accessibilityState).toMatchObject({ selected: true });
 	});
 
 	it("submits the custom date as occurredAt when the custom chip is selected", async () => {
@@ -447,12 +454,8 @@ describe("AddPersonalTransactionScreen", () => {
 			"100",
 		);
 		fireEvent.press(screen.getByTestId("personal-date-calendar"));
-
-		const picker = screen.getByTestId("personal-date-picker");
-		const chosenDate = new Date("2026-06-25T12:00:00.000Z");
-		act(() => {
-			picker.props.onChange({}, chosenDate);
-		});
+		fireEvent.press(screen.getByTestId("single-date-day-2026-06-25"));
+		fireEvent.press(screen.getByTestId("single-date-apply-button"));
 
 		await act(async () => {
 			fireEvent.press(screen.getByTestId("submit-personal-transaction-button"));
@@ -573,6 +576,9 @@ describe("AddPersonalTransactionScreen", () => {
 		});
 		expect(screen.getByTestId("personal-expense-type-selector")).toBeTruthy();
 		expect(screen.getByText("Guardar cambios")).toBeTruthy();
+
+		fireEvent.press(screen.getByTestId("personal-date-calendar"));
+		expect(screen.getByTestId("single-date-day-2026-06-28").props.accessibilityState).toMatchObject({ selected: true });
 	});
 
 	it("pre-fills the selected income when opened in edit mode", () => {
@@ -696,6 +702,156 @@ describe("AddPersonalTransactionScreen", () => {
 				expect.objectContaining({ note: null }),
 			);
 		});
+	});
+
+	it("keeps edit-mode actions after the date controls in safe-area-aware scroll flow", () => {
+		jest.mocked(useSafeAreaInsets).mockReturnValue({
+			top: 0,
+			right: 0,
+			bottom: 34,
+			left: 0,
+		});
+		jest.mocked(useRoute).mockReturnValue({
+			params: { type: "expense", transactionId: "ptx-edit-expense" },
+		} as never);
+		mockGetMockEditablePersonalTransaction.mockReturnValue({
+			id: "ptx-edit-expense",
+			type: "expense",
+			expenseKind: "variable",
+			amount: 45000,
+			currency: "ARS",
+			category: "Salud",
+			accountId: "account-ars",
+			accountName: "Pesos",
+			occurredAt: "2026-06-28T12:00:00.000Z",
+			note: "Farmacia",
+			createdAt: "2026-06-28T12:00:00.000Z",
+			updatedAt: "2026-06-29T12:00:00.000Z",
+		});
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		let actionGroup = screen.getByTestId(
+			"submit-personal-transaction-button",
+		).parent;
+		while (
+			actionGroup?.parent &&
+			StyleSheet.flatten(actionGroup.props.style).paddingBottom === undefined
+		) {
+			actionGroup = actionGroup.parent;
+		}
+		const dateControl = screen.getByTestId("personal-date-calendar");
+		const dateAncestors = [dateControl];
+		let dateAncestor = dateControl.parent;
+		while (dateAncestor) {
+			dateAncestors.push(dateAncestor);
+			dateAncestor = dateAncestor.parent;
+		}
+		const actionAncestors = actionGroup ? [actionGroup] : [];
+		let actionAncestor = actionGroup?.parent;
+		while (actionAncestor) {
+			actionAncestors.push(actionAncestor);
+			actionAncestor = actionAncestor.parent;
+		}
+		const commonAncestor = dateAncestors.find((ancestor) =>
+			actionAncestors.includes(ancestor),
+		);
+		const dateBranch =
+			dateAncestors[dateAncestors.indexOf(commonAncestor!) - 1];
+		const actionsBranch =
+			actionAncestors[actionAncestors.indexOf(commonAncestor!) - 1];
+
+		expect(actionGroup).not.toBeNull();
+		expect(commonAncestor).toBeDefined();
+		const dateIndex = commonAncestor?.children.indexOf(dateBranch) ?? -1;
+		const actionsIndex = commonAncestor?.children.indexOf(actionsBranch) ?? -1;
+		expect(dateIndex).toBeGreaterThanOrEqual(0);
+		expect(actionsIndex).toBeGreaterThan(dateIndex);
+		expect(StyleSheet.flatten(actionGroup?.props.style)).toMatchObject({
+			paddingBottom: 34,
+		});
+		expect(StyleSheet.flatten(actionGroup?.props.style).position).not.toBe(
+			"absolute",
+		);
+	});
+
+	it("renders and confirms delete in edit mode", async () => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: { type: "expense", transactionId: "ptx-edit-expense" },
+		} as never);
+		mockGetMockEditablePersonalTransaction.mockReturnValue({
+			id: "ptx-edit-expense",
+			type: "expense",
+			expenseKind: "variable",
+			amount: 45000,
+			currency: "ARS",
+			category: "Salud",
+			accountId: "account-ars",
+			accountName: "Pesos",
+			occurredAt: "2026-06-28T12:00:00.000Z",
+			note: "Farmacia",
+			createdAt: "2026-06-28T12:00:00.000Z",
+			updatedAt: "2026-06-29T12:00:00.000Z",
+		});
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+		expect(
+			screen.getByTestId("delete-personal-transaction-button"),
+		).toBeTruthy();
+		const alertButtons = jest.spyOn(require("react-native").Alert, "alert");
+		fireEvent.press(screen.getByTestId("delete-personal-transaction-button"));
+		expect(alertButtons).toHaveBeenCalled();
+		const buttons = alertButtons.mock.calls.at(-1)?.[2] as Array<{
+			text: string;
+			onPress?: () => void;
+		}>;
+		buttons.find((button) => button.text === "Eliminar")?.onPress?.();
+		await waitFor(() =>
+			expect(mockDeletePersonalTransaction.mock.calls[0]?.[0]).toBe(
+				"ptx-edit-expense",
+			),
+		);
+		alertButtons.mockRestore();
+	});
+
+	it("shows deletion failure feedback and stays on the edit screen", async () => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: { type: "expense", transactionId: "ptx-edit-expense" },
+		} as never);
+		mockGetMockEditablePersonalTransaction.mockReturnValue({
+			id: "ptx-edit-expense",
+			type: "expense",
+			expenseKind: "variable",
+			amount: 45000,
+			currency: "ARS",
+			category: "Salud",
+			accountId: "account-ars",
+			accountName: "Pesos",
+			occurredAt: "2026-06-28T12:00:00.000Z",
+			note: "Farmacia",
+			createdAt: "2026-06-28T12:00:00.000Z",
+			updatedAt: "2026-06-29T12:00:00.000Z",
+		});
+		mockDeletePersonalTransaction.mockRejectedValueOnce(new Error("network"));
+		const alertSpy = jest.spyOn(require("react-native").Alert, "alert");
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		fireEvent.press(screen.getByTestId("delete-personal-transaction-button"));
+		const confirmationButtons = alertSpy.mock.calls.at(-1)?.[2] as Array<{
+			text: string;
+			onPress?: () => void;
+		}>;
+		await act(async () => {
+			confirmationButtons.find((button) => button.text === "Eliminar")?.onPress?.();
+		});
+
+		await waitFor(() =>
+			expect(alertSpy).toHaveBeenLastCalledWith(
+				"No pudimos eliminar la transacción",
+				"Intentá de nuevo.",
+			),
+		);
+		expect(navigationMock.goBack).not.toHaveBeenCalled();
+		alertSpy.mockRestore();
 	});
 
 	it("shows the update error message and does not navigate back when the update mutation fails", async () => {

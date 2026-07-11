@@ -270,6 +270,50 @@ describe("PersonalTransactionsScreen", () => {
 			from: undefined,
 			to: undefined,
 			expenseKind: undefined,
+			percentage: 75,
+		});
+	});
+
+	it("passes the tapped overview percentage to income category detail", () => {
+		const rootNavigate = jest.fn();
+		mockUseNavigation.mockReturnValue({
+			getParent: () => ({ navigate: rootNavigate }),
+		} as never);
+		mockUsePersonalTransactionsSummary.mockReturnValue({
+			summary: {
+				total: 550000,
+				incomeTotal: 550000,
+				expenseTotal: 0,
+				currency: "ARS",
+				breakdown: [
+					{
+						category: "Intereses",
+						type: "income",
+						amount: 50000,
+						percentage: 9.09,
+					},
+				],
+			},
+			hasFetchedSummary: true,
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+
+		render(<PersonalTransactionsScreen />);
+		fireEvent.press(screen.getByTestId("personal-tab-income"));
+		fireEvent.press(
+			screen.getByLabelText("Ver detalle de la categoría Intereses"),
+		);
+
+		expect(rootNavigate).toHaveBeenCalledWith("PersonalCategoryDetail", {
+			type: "income",
+			category: "Intereses",
+			range: "week",
+			from: undefined,
+			to: undefined,
+			expenseKind: undefined,
+			percentage: 9.09,
 		});
 	});
 

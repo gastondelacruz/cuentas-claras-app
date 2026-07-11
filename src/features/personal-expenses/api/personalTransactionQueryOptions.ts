@@ -36,6 +36,23 @@ export function personalTransactionsSummaryQueryOptions(
 	});
 }
 
+export function personalTransactionsFilteredTotalsQueryOptions(
+	filters: Omit<PersonalTransactionCategoryDetailFilters, "category">,
+) {
+	return queryOptions({
+		queryKey: queryKeys.personalTransactions.filteredTotals(filters),
+		queryFn: () =>
+			getPersonalTransactions({
+				...filters,
+				limit: 1,
+				expenseKind:
+					filters.expenseKind && filters.expenseKind !== "all"
+						? filters.expenseKind
+						: undefined,
+			}),
+	});
+}
+
 export function personalTransactionsCategoryDetailQueryOptions(
 	filters: PersonalTransactionCategoryDetailFilters,
 ) {

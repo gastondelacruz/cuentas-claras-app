@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { PropsWithChildren } from "react";
 
 import { getEmailVerificationStatus } from "../../auth/api/authApi";
@@ -16,10 +16,17 @@ const mockedGetEmailVerificationStatus = jest.mocked(
 
 describe("useProfileData", () => {
 	let testClient: QueryClient;
+	let unmount: (() => void) | undefined;
 	function Wrapper({ children }: PropsWithChildren) {
 		return (
 			<QueryClientProvider client={testClient}>{children}</QueryClientProvider>
 		);
+	}
+
+	function renderProfileData() {
+		const rendered = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		unmount = rendered.unmount;
+		return rendered;
 	}
 
 	beforeEach(() => {
@@ -29,7 +36,7 @@ describe("useProfileData", () => {
 			.getState()
 			.setSession({ id: "current-user", email: "you@example.com" }, "tok");
 		testClient = new QueryClient({
-			defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+			defaultOptions: { queries: { retry: false, gcTime: 0 } },
 		});
 		mockedGetEmailVerificationStatus.mockResolvedValue({
 			verified: true,
@@ -37,14 +44,21 @@ describe("useProfileData", () => {
 		});
 	});
 
-	afterEach(() => testClient.clear());
+	afterEach(async () => {
+		unmount?.();
+		await testClient.cancelQueries();
+		testClient.clear();
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 0));
+		});
+	});
 
 	it("uses the authenticated user from authStore and the verification endpoint for status", async () => {
 		useAuthStore
 			.getState()
 			.setSession({ id: "u1", email: "alex@example.com" }, "tok");
 
-		const { result } = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		const { result } = renderProfileData();
 
 		await waitFor(() => expect(result.current.user.status).toBe("Verificado"));
 		expect(mockedGetEmailVerificationStatus).toHaveBeenCalledTimes(1);
@@ -65,7 +79,7 @@ describe("useProfileData", () => {
 			.getState()
 			.setSession({ id: "u1", email: "alex@example.com" }, "tok");
 
-		const { result } = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		const { result } = renderProfileData();
 
 		await waitFor(() =>
 			expect(result.current.user.status).toBe("No verificado"),
@@ -85,7 +99,7 @@ describe("useProfileData", () => {
 				"tok",
 			);
 
-		const { result } = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		const { result } = renderProfileData();
 
 		await waitFor(() => expect(result.current.user.status).toBe("Verificado"));
 		expect(result.current.user).toMatchObject({
@@ -100,7 +114,7 @@ describe("useProfileData", () => {
 			.getState()
 			.setSession({ id: "u1", email: "alex@example.com" }, "tok");
 
-		const { result } = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		const { result } = renderProfileData();
 
 		await waitFor(() => expect(result.current.user.status).toBe("Verificado"));
 		expect(result.current.user.name).toBe("alex@example.com");
@@ -110,7 +124,7 @@ describe("useProfileData", () => {
 	it("falls back to a generic user when there is no authenticated user", () => {
 		useAuthStore.getState().clearSession();
 
-		const { result } = renderHook(() => useProfileData(), { wrapper: Wrapper });
+		const { result } = renderProfileData();
 
 		expect(result.current.user).toMatchObject({
 			name: "Usuario",

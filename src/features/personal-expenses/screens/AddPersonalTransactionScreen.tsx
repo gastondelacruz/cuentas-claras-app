@@ -1,6 +1,6 @@
-import { Calculator, CalendarDays, Check } from "lucide-react-native";
+import { Calculator, CalendarDays, Check, Trash2 } from "lucide-react-native";
 import { Pressable, Text, TextInput, View } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
 import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
@@ -8,6 +8,7 @@ import { KeyboardAwareScrollView } from "../../../shared/ui/KeyboardAwareScrollV
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { PERSONAL_CATEGORY_CONFIGS } from "../constants/personalTransactionCategoryVisuals";
 import { PersonalExpenseTypeSelector } from "../components/PersonalExpenseTypeSelector";
+import { SingleDateSelectionModal } from "../components/SingleDateSelectionModal";
 import { useAddPersonalTransactionForm } from "../hooks/useAddPersonalTransactionForm";
 import type { PersonalTransactionType } from "../types";
 
@@ -37,17 +38,19 @@ export function AddPersonalTransactionScreen() {
 		dateChips,
 		selectedDateId,
 		setSelectedDateId,
-		customDate,
+		calendarInitialDate,
 		showDatePicker,
 		setShowDatePicker,
-		handleDatePickerChange,
+		applyCustomDate,
 		submit,
+		deleteTransaction,
 		submitError,
 		isSubmitting,
 		isEditMode,
 	} = useAddPersonalTransactionForm();
 
 	const categoryConfigs = PERSONAL_CATEGORY_CONFIGS[type];
+	const insets = useSafeAreaInsets();
 
 	return (
 		<ScreenContainer>
@@ -58,7 +61,6 @@ export function AddPersonalTransactionScreen() {
 			<KeyboardAwareScrollView
 				showsVerticalScrollIndicator={false}
 				contentInsetAdjustmentBehavior="automatic"
-				contentContainerStyle={{ paddingBottom: 96 }}
 			>
 				{/* ── Tabs: GASTOS | INGRESOS ─────────────────────────────────────────── */}
 				<View
@@ -386,71 +388,88 @@ export function AddPersonalTransactionScreen() {
 						</Pressable>
 					</View>
 
-					{showDatePicker ? (
-						<DateTimePicker
-							value={customDate ?? new Date()}
-							mode="date"
-							display="spinner"
-							onChange={(_, date) => handleDatePickerChange(date)}
-							testID="personal-date-picker"
-						/>
+					<SingleDateSelectionModal
+						visible={showDatePicker}
+						initialDate={calendarInitialDate}
+						onClose={() => setShowDatePicker(false)}
+						onApply={applyCustomDate}
+					/>
+				</View>
+
+				{/* ── Form actions ─────────────────────────────────────────────────────── */}
+				<View
+					style={{
+						paddingHorizontal: 16,
+						paddingBottom: Math.max(insets.bottom, 16),
+						paddingTop: 12,
+						backgroundColor: colors.neutral100,
+					}}
+				>
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={
+							isEditMode
+								? "Guardar cambios"
+								: type === "income"
+									? "Añadir ingreso"
+									: "Añadir transacción"
+						}
+						accessibilityState={{ disabled: isSubmitting }}
+						disabled={isSubmitting}
+						onPress={submit}
+						testID="submit-personal-transaction-button"
+						style={{
+							height: 52,
+							borderRadius: 12,
+							backgroundColor: PRIMARY,
+							flexDirection: "row",
+							alignItems: "center",
+							justifyContent: "center",
+							gap: 6,
+							opacity: isSubmitting ? 0.7 : 1,
+						}}
+					>
+						<Check color="#ffffff" size={18} strokeWidth={2.5} />
+						<Text
+							style={{
+								fontSize: 16,
+								fontWeight: "600",
+								color: "#ffffff",
+							}}
+						>
+							{isEditMode
+								? "Guardar cambios"
+								: type === "income"
+									? "Añadir Ingreso"
+									: "Añadir"}
+						</Text>
+					</Pressable>
+					{isEditMode ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel="Eliminar transacción"
+							onPress={deleteTransaction}
+							testID="delete-personal-transaction-button"
+							style={{
+								height: 48,
+								marginTop: 8,
+								borderRadius: 12,
+								borderWidth: 1,
+								borderColor: colors.error,
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "center",
+								gap: 6,
+							}}
+						>
+							<Trash2 color={colors.error} size={18} />
+							<Text style={{ color: colors.error, fontWeight: "600" }}>
+								Eliminar transacción
+							</Text>
+						</Pressable>
 					) : null}
 				</View>
 			</KeyboardAwareScrollView>
-
-			{/* ── Sticky CTA button ───────────────────────────────────────────────── */}
-			<View
-				style={{
-					position: "absolute",
-					bottom: 0,
-					left: 0,
-					right: 0,
-					paddingHorizontal: 16,
-					paddingBottom: 32,
-					paddingTop: 12,
-					backgroundColor: colors.neutral100,
-				}}
-			>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={
-						isEditMode
-							? "Guardar cambios"
-							: type === "income"
-								? "Añadir ingreso"
-								: "Añadir transacción"
-					}
-					accessibilityState={{ disabled: isSubmitting }}
-					disabled={isSubmitting}
-					onPress={submit}
-					testID="submit-personal-transaction-button"
-					style={{
-						height: 52,
-						borderRadius: 12,
-						backgroundColor: PRIMARY,
-						flexDirection: "row",
-						alignItems: "center",
-						justifyContent: "center",
-						gap: 6,
-						opacity: isSubmitting ? 0.7 : 1,
-					}}
-				>
-					<Check color="#ffffff" size={18} strokeWidth={2.5} />
-					<Text
-						style={{
-							fontSize: 16,
-							fontWeight: "600",
-							color: "#ffffff",
-						}}
-					>
-						{isEditMode
-							? "Guardar cambios"
-							: type === "income"
-								? "Añadir Ingreso"
-								: "Añadir"}
-					</Text>
-				</Pressable>
-			</View>
 		</ScreenContainer>
 	);
 }

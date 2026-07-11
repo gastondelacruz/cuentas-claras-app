@@ -42,10 +42,13 @@ export type PersonalTransactionCategoryDetailRouteParams = {
 	from?: string;
 	to?: string;
 	expenseKind?: PersonalExpenseTypeFilter;
+	percentage: number;
 };
 
-export type PersonalTransactionCategoryDetailFilters =
-	PersonalTransactionCategoryDetailRouteParams;
+export type PersonalTransactionCategoryDetailFilters = Omit<
+	PersonalTransactionCategoryDetailRouteParams,
+	"percentage"
+>;
 
 export type PersonalTransactionChartSegment = {
 	color: string;

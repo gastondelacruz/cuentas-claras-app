@@ -1,5 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Alert } from "react-native";
 import { useMemo, useState } from "react";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
@@ -10,6 +11,7 @@ import { getMockEditablePersonalTransaction } from "../mocks/personalTransaction
 import { DEFAULT_PERSONAL_EXPENSE_TYPE } from "../utils/personalExpenseType";
 import { useCreatePersonalTransaction } from "./useCreatePersonalTransaction";
 import { useUpdatePersonalTransaction } from "./useUpdatePersonalTransaction";
+import { useDeletePersonalTransaction } from "./useDeletePersonalTransaction";
 
 type AddPersonalTransactionNavigation = NativeStackNavigationProp<
 	RootStackParamList,
@@ -173,6 +175,7 @@ export function useAddPersonalTransactionForm() {
 	const [submitError, setSubmitError] = useState<string | undefined>();
 	const createMutation = useCreatePersonalTransaction();
 	const updateMutation = useUpdatePersonalTransaction();
+	const deleteMutation = useDeletePersonalTransaction();
 
 	function changeType(nextType: PersonalTransactionType) {
 		setType(nextType);
@@ -191,12 +194,40 @@ export function useAddPersonalTransactionForm() {
 		setNote(value);
 	}
 
-	function handleDatePickerChange(date?: Date) {
-		if (date) {
-			setCustomDate(date);
-			setSelectedDateId("custom");
-		}
+	function applyCustomDate(date: Date) {
+		const normalizedDate = new Date(
+			Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12),
+		);
+		setCustomDate(normalizedDate);
+		setSelectedDateId("custom");
 		setShowDatePicker(false);
+	}
+
+	const calendarInitialDate =
+		customDate ?? dateChips.find((chip) => chip.id === selectedDateId)?.date ?? dateChips[0].date;
+
+	function deleteTransaction() {
+		if (!transactionId) return;
+		Alert.alert(
+			"Eliminar transacción",
+			"¿Seguro que querés eliminar esta transacción? Esta acción no se puede deshacer.",
+			[
+				{ text: "Cancelar", style: "cancel" },
+				{
+					text: "Eliminar",
+					style: "destructive",
+					onPress: () =>
+						deleteMutation.mutate(transactionId, {
+							onSuccess: () => navigation.goBack(),
+							onError: () =>
+								Alert.alert(
+									"No pudimos eliminar la transacción",
+									"Intentá de nuevo.",
+								),
+						}),
+				},
+			],
+		);
 	}
 
 	function submit() {
@@ -272,12 +303,14 @@ export function useAddPersonalTransactionForm() {
 		selectedDateId,
 		setSelectedDateId,
 		customDate,
+		calendarInitialDate,
 		showDatePicker,
 		setShowDatePicker,
-		handleDatePickerChange,
+		applyCustomDate,
 		submit,
+		deleteTransaction,
 		submitError,
-		isSubmitting: createMutation.isPending || updateMutation.isPending,
+		isSubmitting: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
 		isEditMode,
 	};
 }

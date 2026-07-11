@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	screen,
@@ -31,11 +32,11 @@ const baseReturnValue = {
 			expenseKind: "variable" as const,
 			amount: 3200,
 			currency: "ARS",
-			category: "Comida",
+			category: "Tarjetas",
 			accountId: "account-ars",
 			accountName: "Pesos",
 			occurredAt: "2026-06-29T12:00:00.000Z",
-			note: null,
+			note: "Naranja",
 			createdAt: "2026-06-29T12:00:00.000Z",
 			updatedAt: "2026-06-29T12:00:00.000Z",
 		},
@@ -49,6 +50,7 @@ const baseReturnValue = {
 	error: null,
 	hasFetchedTransactions: true,
 	navigateToEditTransaction: jest.fn(),
+	deleteTransaction: jest.fn(),
 	formatDate: () => "29 de jun de 2026",
 };
 
@@ -98,7 +100,8 @@ describe("PersonalCategoryDetailScreen", () => {
 			? transactionChildren[1].props.children
 			: [transactionChildren[1].props.children];
 
-		expect(screen.getAllByText("Comida")).toHaveLength(2);
+		expect(screen.getByText("Naranja")).toBeTruthy();
+		expect(screen.queryByText("Tarjetas")).toBeNull();
 		expect(
 			within(summaryCard).getByText("Gasto · 29 jun – 5 jul"),
 		).toBeTruthy();
@@ -117,10 +120,35 @@ describe("PersonalCategoryDetailScreen", () => {
 		expect(screen.getByText("VARIABLE")).toBeTruthy();
 
 		fireEvent.press(
-			screen.getByLabelText("Editar gasto personal Comida por 3.200 $"),
+			screen.getByLabelText("Editar gasto personal Tarjetas por 3.200 $"),
 		);
 
 		expect(baseReturnValue.navigateToEditTransaction).toHaveBeenCalled();
+	});
+
+	it("reveals an accessible delete action after swiping a transaction left", async () => {
+		render(<PersonalCategoryDetailScreen />);
+
+		const transactionItem = screen.getByTestId(
+			"personal-category-transaction-item-ptx-1",
+		);
+		await act(async () => {
+			fireEvent(transactionItem, "touchStart", {
+				nativeEvent: { pageX: 200 },
+			});
+			fireEvent(transactionItem, "touchMove", {
+				nativeEvent: { pageX: 140 },
+			});
+		});
+
+		const deleteButton = await screen.findByTestId(
+			"delete-personal-transaction-ptx-1",
+		);
+		expect(deleteButton.props.accessibilityRole).toBe("button");
+		expect(deleteButton.props.accessibilityLabel).toBe("Eliminar transacción");
+
+		fireEvent.press(deleteButton);
+		expect(baseReturnValue.deleteTransaction).toHaveBeenCalledWith("ptx-1");
 	});
 
 	it("hides the fixed/variable chips for income categories", () => {

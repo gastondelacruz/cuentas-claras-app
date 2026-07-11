@@ -29,6 +29,13 @@ export const queryKeys = {
 			from?: string;
 			to?: string;
 		}) => ["personal-transactions", filters] as const,
+		filteredTotals: (filters: {
+			type: string;
+			range: string;
+			from?: string;
+			to?: string;
+			expenseKind?: string;
+		}) => ["personal-transactions", "filtered-totals", filters] as const,
 		categoryDetail: (filters: {
 			type: string;
 			category: string;

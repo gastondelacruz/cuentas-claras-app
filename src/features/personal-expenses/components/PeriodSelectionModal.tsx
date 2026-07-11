@@ -1,8 +1,9 @@
-import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { colors } from '../../../shared/theme/colors';
+import { CalendarMonth, shiftUtcMonth, utcMonthStart, utcNoon } from './CalendarMonth';
 
 type PeriodRange = {
   from: Date;
@@ -18,72 +19,17 @@ type PeriodSelectionModalProps = {
 
 type ActiveDateField = 'from' | 'to';
 
-const MONTHS_ES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-] as const;
-
 const MONTHS_ES_SHORT = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
 ] as const;
 
-const WEEKDAY_LABELS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'] as const;
-
 function startOfCurrentMonth(now: Date) {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 12, 0, 0));
+  return utcMonthStart(now);
 }
 
 function todayNoon(now: Date) {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0));
-}
-
-function shiftMonthNoon(date: Date, delta: number) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + delta, date.getUTCDate(), 12, 0, 0),
-  );
-}
-
-function monthStart(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 12, 0, 0));
-}
-
-function daysInMonth(year: number, month: number) {
-  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-}
-
-function isSameUtcDay(a: Date, b: Date) {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear()
-    && a.getUTCMonth() === b.getUTCMonth()
-    && a.getUTCDate() === b.getUTCDate()
-  );
-}
-
-type CalendarCell = {
-  date: Date;
-  day: number;
-  inCurrentMonth: boolean;
-};
-
-function buildCalendarCells(displayedMonth: Date): CalendarCell[] {
-  const year = displayedMonth.getUTCFullYear();
-  const month = displayedMonth.getUTCMonth();
-  const firstWeekday = new Date(Date.UTC(year, month, 1, 12, 0, 0)).getUTCDay();
-  const currentMonthDays = daysInMonth(year, month);
-  const visibleRows = Math.max(5, Math.ceil((firstWeekday + currentMonthDays) / 7));
-  const visibleCells = visibleRows * 7;
-
-  return Array.from({ length: visibleCells }, (_, index) => {
-    const dayOffset = index - firstWeekday + 1;
-    const date = new Date(Date.UTC(year, month, dayOffset, 12, 0, 0));
-
-    return {
-      date,
-      day: date.getUTCDate(),
-      inCurrentMonth: date.getUTCMonth() === month,
-    };
-  });
+  return utcNoon(now);
 }
 
 function formatDisplayDate(date: Date) {
@@ -108,7 +54,7 @@ export function PeriodSelectionModal({
   const [draftTo, setDraftTo] = useState(() => initialRange?.to ?? createDefaultRange().to);
   const [activeField, setActiveField] = useState<ActiveDateField>('to');
   const activeDate = activeField === 'from' ? draftFrom : draftTo;
-  const [displayedMonth, setDisplayedMonth] = useState(() => monthStart(activeDate));
+  const [displayedMonth, setDisplayedMonth] = useState(() => utcMonthStart(activeDate));
 
   useEffect(() => {
     if (!visible) return;
@@ -116,11 +62,8 @@ export function PeriodSelectionModal({
     setDraftFrom(initialRange?.from ?? defaultRange.from);
     setDraftTo(initialRange?.to ?? defaultRange.to);
     setActiveField('to');
-    setDisplayedMonth(monthStart(initialRange?.to ?? defaultRange.to));
+    setDisplayedMonth(utcMonthStart(initialRange?.to ?? defaultRange.to));
   }, [initialRange, visible]);
-
-  const monthLabel = `${MONTHS_ES[displayedMonth.getUTCMonth()]} ${displayedMonth.getUTCFullYear()}`;
-  const calendarCells = useMemo(() => buildCalendarCells(displayedMonth), [displayedMonth]);
 
   function selectDate(date: Date) {
     const normalized = todayNoon(date);
@@ -132,12 +75,12 @@ export function PeriodSelectionModal({
   }
 
   function shiftActiveMonth(delta: number) {
-    setDisplayedMonth((current) => shiftMonthNoon(current, delta));
+    setDisplayedMonth((current) => shiftUtcMonth(current, delta));
   }
 
   function activateField(field: ActiveDateField) {
     setActiveField(field);
-    setDisplayedMonth(monthStart(field === 'from' ? draftFrom : draftTo));
+    setDisplayedMonth(utcMonthStart(field === 'from' ? draftFrom : draftTo));
   }
 
   return (
@@ -220,97 +163,13 @@ export function PeriodSelectionModal({
               />
             </View>
 
-            <View style={{ marginTop: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text selectable style={{ fontSize: 16, fontWeight: '700', color: '#191c1d' }}>
-                  {monthLabel}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Mes anterior"
-                    hitSlop={8}
-                    onPress={() => shiftActiveMonth(-1)}
-                    testID="period-previous-month"
-                  >
-                    <ChevronLeft color="#414844" size={24} strokeWidth={2} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Mes siguiente"
-                    hitSlop={8}
-                    onPress={() => shiftActiveMonth(1)}
-                    testID="period-next-month"
-                  >
-                    <ChevronRight color="#414844" size={24} strokeWidth={2} />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-                {WEEKDAY_LABELS.map((day) => (
-                  <Text
-                    key={day}
-                    style={{
-                      width: `${100 / 7}%`,
-                      paddingVertical: 6,
-                      textAlign: 'center',
-                      textTransform: 'uppercase',
-                      fontSize: 12,
-                      fontWeight: '700',
-                      color: '#717973',
-                    }}
-                  >
-                    {day}
-                  </Text>
-                ))}
-              </View>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }} testID="period-calendar-grid">
-                {calendarCells.map((cell) => {
-                  const selected = isSameUtcDay(cell.date, activeDate);
-                  const isoKey = `${cell.date.getUTCFullYear()}-${String(cell.date.getUTCMonth() + 1).padStart(2, '0')}-${String(cell.date.getUTCDate()).padStart(2, '0')}`;
-                  return (
-                    <Pressable
-                      key={isoKey}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Seleccionar ${cell.day}`}
-                      accessibilityState={{ selected }}
-                      onPress={() => selectDate(cell.date)}
-                      testID={`period-day-${isoKey}`}
-                      style={{
-                        width: `${100 / 7}%`,
-                        height: 40,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 2,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: selected ? 18 : 0,
-                          backgroundColor: selected ? '#012d1d' : 'transparent',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: selected ? '#ffffff' : cell.inCurrentMonth ? '#191c1d' : '#717973',
-                            fontWeight: selected ? '700' : '400',
-                            opacity: cell.inCurrentMonth || selected ? 1 : 0.4,
-                          }}
-                        >
-                          {cell.day}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+            <CalendarMonth
+              displayedMonth={displayedMonth}
+              selectedDate={activeDate}
+              testIDPrefix="period"
+              onChangeMonth={shiftActiveMonth}
+              onSelectDate={selectDate}
+            />
           </View>
 
           <View

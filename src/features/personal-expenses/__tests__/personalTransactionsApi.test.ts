@@ -4,6 +4,7 @@ import {
 	getPersonalTransactions,
 	getPersonalTransactionsSummary,
 	updatePersonalTransaction,
+	deletePersonalTransaction,
 } from "../api/personalTransactionsApi";
 
 jest.mock("../../../shared/api/client", () => ({
@@ -11,12 +12,14 @@ jest.mock("../../../shared/api/client", () => ({
 		get: jest.fn(),
 		post: jest.fn(),
 		patch: jest.fn(),
+		delete: jest.fn(),
 	},
 }));
 
 const mockGet = jest.mocked(client.get);
 const mockPost = jest.mocked(client.post);
 const mockPatch = jest.mocked(client.patch);
+const mockDelete = jest.mocked(client.delete);
 
 const validTransaction = {
 	id: "ptx-1",
@@ -347,7 +350,20 @@ describe("personalTransactionsApi.createPersonalTransaction", () => {
 	});
 });
 
-describe("personalTransactionsApi.updatePersonalTransaction", () => {
+describe("personalTransactionsApi.deletePersonalTransaction", () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
+	it("calls DELETE /me/personal-transactions/:id and returns no envelope", async () => {
+		mockDelete.mockResolvedValueOnce({ status: 204, data: "" });
+
+		await expect(deletePersonalTransaction("ptx-1")).resolves.toBeUndefined();
+		expect(mockDelete).toHaveBeenCalledWith("/me/personal-transactions/ptx-1");
+	});
+});
+
+    describe("personalTransactionsApi.updatePersonalTransaction", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 	});

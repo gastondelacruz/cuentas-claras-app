@@ -1,14 +1,19 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Alert } from "react-native";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
 import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
-import { personalTransactionsCategoryDetailQueryOptions } from "../api/personalTransactionQueryOptions";
+import {
+	personalTransactionsCategoryDetailQueryOptions,
+	personalTransactionsFilteredTotalsQueryOptions,
+} from "../api/personalTransactionQueryOptions";
 import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { rememberMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
+import { useDeletePersonalTransaction } from "./useDeletePersonalTransaction";
 import { computeDateRange } from "../utils/computeDateRange";
 import {
 	filterPersonalExpenseTransactions,
@@ -69,6 +74,7 @@ export function usePersonalCategoryDetailScreen() {
 	const route = useRoute<PersonalCategoryDetailRoute>();
 	const navigation = useNavigation<PersonalCategoryDetailNavigation>();
 	const protectedDataEnabled = useProtectedDataEnabled();
+	const deleteMutation = useDeletePersonalTransaction();
 	const [expenseKindFilter, setExpenseKindFilter] =
 		useState<PersonalExpenseTypeFilter>(route.params.expenseKind ?? "all");
 
@@ -97,6 +103,11 @@ export function usePersonalCategoryDetailScreen() {
 	const query = useQuery({
 		...personalTransactionsCategoryDetailQueryOptions(queryFilters),
 		enabled: protectedDataEnabled,
+	});
+	const { category: _category, ...globalFilters } = queryFilters;
+	const globalTotalsQuery = useQuery({
+		...personalTransactionsFilteredTotalsQueryOptions(globalFilters),
+		enabled: protectedDataEnabled && route.params.type === "expense",
 	});
 
 	const data = protectedDataEnabled ? query.data : undefined;
@@ -136,6 +147,14 @@ export function usePersonalCategoryDetailScreen() {
 		0,
 	);
 	const displayCurrency = data?.currency ?? "ARS";
+	const percentage =
+		route.params.type === "expense"
+			? globalTotalsQuery.data?.expenseTotal
+				? Math.round(
+						(displayTotal / globalTotalsQuery.data.expenseTotal) * 10000,
+					) / 100
+				: 0
+			: route.params.percentage;
 	const categoryVisual = getPersonalCategoryVisual(
 		route.params.type,
 		route.params.category,
@@ -155,14 +174,27 @@ export function usePersonalCategoryDetailScreen() {
 		return computeDateRange(route.params.range).rangeLabel;
 	}, [route.params.from, route.params.range, route.params.to]);
 
-	const displayBaseTotal =
-		route.params.type === "income"
-			? (data?.incomeTotal ?? 0)
-			: (data?.expenseTotal ?? 0);
-	const displaySharePercentage =
-		displayBaseTotal > 0
-			? Math.round((displayTotal / displayBaseTotal) * 100)
-			: 0;
+	function deleteTransaction(transactionId: string) {
+		Alert.alert(
+			"Eliminar transacción",
+			"¿Seguro que querés eliminar esta transacción? Esta acción no se puede deshacer.",
+			[
+				{ text: "Cancelar", style: "cancel" },
+				{
+					text: "Eliminar",
+					style: "destructive",
+					onPress: () =>
+						deleteMutation.mutate(transactionId, {
+							onError: () =>
+								Alert.alert(
+									"No pudimos eliminar la transacción",
+									"Intentá de nuevo.",
+								),
+						}),
+				},
+			],
+		);
+	}
 
 	function navigateToEditTransaction(transaction: PersonalTransactionDto) {
 		rememberMockEditablePersonalTransaction(transaction);
@@ -183,12 +215,13 @@ export function usePersonalCategoryDetailScreen() {
 		displayTotal,
 		displayCurrency,
 		displayTotalLabel: formatTotal(displayTotal, displayCurrency),
-		displayShareLabel: `${displaySharePercentage}% del total`,
+		displayShareLabel: `${percentage}% del total`,
 		isLoading: protectedDataEnabled && query.isLoading,
 		isError: protectedDataEnabled && query.isError,
 		error: protectedDataEnabled ? query.error : null,
 		hasFetchedTransactions: data !== undefined,
 		navigateToEditTransaction,
+		deleteTransaction,
 		formatDate,
 	};
 }

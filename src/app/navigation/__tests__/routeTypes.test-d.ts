@@ -13,6 +13,7 @@ navigation.navigate("PersonalCategoryDetail", {
 	category: "Comida",
 	range: "week",
 	expenseKind: "fixed",
+	percentage: 35,
 });
 
 // @ts-expect-error unknown root routes must fail at compile time.

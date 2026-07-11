@@ -955,6 +955,27 @@
             }
           },
           {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by exact category name.",
+            "schema": {
+              "example": "Food",
+              "type": "string"
+            }
+          },
+          {
+            "name": "expenseKind",
+            "required": false,
+            "in": "query",
+            "description": "Filter expenses by kind. Ignored when type is income.",
+            "schema": {
+              "example": "fixed",
+              "type": "string",
+              "enum": ["fixed", "variable"]
+            }
+          },
+          {
             "name": "from",
             "required": false,
             "in": "query",
@@ -1199,6 +1220,38 @@
           },
           "404": {
             "description": "Personal transaction or account not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      },
+      "delete": {
+        "operationId": "MeController_deletePersonalTransaction",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "description": "Personal transaction identifier.",
+            "schema": {
+              "example": "550e8400-e29b-41d4-a716-446655440000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Personal transaction deleted successfully."
+          },
+          "401": {
+            "description": "Authentication is required."
+          },
+          "404": {
+            "description": "Personal transaction not found."
           }
         },
         "security": [
@@ -2120,10 +2173,7 @@
           },
           "expenseKind": {
             "type": "string",
-            "enum": [
-              "fixed",
-              "variable"
-            ],
+            "enum": ["fixed", "variable"],
             "example": "variable",
             "nullable": true
           },
@@ -2152,7 +2202,7 @@
             "example": "2026-06-29T00:00:00.000Z"
           },
           "note": {
-            "type": "object",
+            "type": "string",
             "example": "Farmacia",
             "nullable": true
           },
@@ -2190,7 +2240,7 @@
             }
           },
           "nextCursor": {
-            "type": "object",
+            "type": "string",
             "example": "eyJpZCI6MTAwfQ==",
             "nullable": true
           },
@@ -2293,10 +2343,7 @@
           },
           "expenseKind": {
             "type": "string",
-            "enum": [
-              "fixed",
-              "variable"
-            ],
+            "enum": ["fixed", "variable"],
             "example": "variable",
             "nullable": true
           },
@@ -2325,7 +2372,7 @@
             "example": "2026-06-29T00:00:00.000Z"
           },
           "note": {
-            "type": "object",
+            "type": "string",
             "example": "Farmacia",
             "nullable": true
           },
@@ -2385,7 +2432,24 @@
           },
           "category": {
             "type": "string",
-            "description": "Category name. Allowed values depend on the transaction type.",
+            "description": "Category name. Swagger lists every supported category; the selected transaction type determines which ones are allowed.",
+            "enum": [
+              "Salud",
+              "Ocio",
+              "Departament",
+              "Café",
+              "Educación",
+              "Regalos",
+              "Transporte",
+              "Otros",
+              "Servicio",
+              "Tarjetas",
+              "Auto",
+              "Ropa",
+              "Alimentación",
+              "Salario",
+              "Intereses"
+            ],
             "example": "Alimentación"
           },
           "occurredAt": {
@@ -2429,7 +2493,24 @@
           },
           "category": {
             "type": "string",
-            "description": "Updated category name. Allowed values depend on the transaction type.",
+            "description": "Updated category name. Swagger lists every supported category; the selected transaction type determines which ones are allowed.",
+            "enum": [
+              "Salud",
+              "Ocio",
+              "Departament",
+              "Café",
+              "Educación",
+              "Regalos",
+              "Transporte",
+              "Otros",
+              "Servicio",
+              "Tarjetas",
+              "Auto",
+              "Ropa",
+              "Alimentación",
+              "Salario",
+              "Intereses"
+            ],
             "example": "Alimentación"
           },
           "accountId": {

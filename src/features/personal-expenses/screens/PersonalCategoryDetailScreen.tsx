@@ -5,6 +5,8 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useRef, useState } from "react";
+import { Trash2 } from "lucide-react-native";
 
 import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
@@ -48,9 +50,14 @@ export function PersonalCategoryDetailScreen() {
 		isLoading,
 		isError,
 		navigateToEditTransaction,
+		deleteTransaction,
 		formatDate,
 	} = usePersonalCategoryDetailScreen();
 	const Icon = categoryVisual.Icon;
+	const [revealedTransactionId, setRevealedTransactionId] = useState<
+		string | null
+	>(null);
+	const swipeStartX = useRef(0);
 	const emptyMessage: string =
 		type === "expense"
 			? expenseKindFilter === "fixed"
@@ -249,6 +256,14 @@ export function PersonalCategoryDetailScreen() {
 										accessibilityLabel={`Editar ${isExpense ? "gasto" : "ingreso"} personal ${transaction.category} por ${amountLabel.replace(/^[-+]\s/, "")}`}
 										accessibilityHint="Abre el formulario para modificar esta transacción"
 										onPress={() => navigateToEditTransaction(transaction)}
+										onTouchStart={(event) => {
+											swipeStartX.current = event.nativeEvent.pageX;
+										}}
+										onTouchMove={(event) => {
+											if (swipeStartX.current - event.nativeEvent.pageX > 40) {
+												setRevealedTransactionId(transaction.id);
+											}
+										}}
 										testID={`personal-category-transaction-item-${transaction.id}`}
 										style={{
 											flexDirection: "row",
@@ -292,7 +307,7 @@ export function PersonalCategoryDetailScreen() {
 														color: DARK,
 													}}
 												>
-													{transaction.category}
+													{transaction.note?.trim() || transaction.category}
 												</Text>
 												<Text
 													selectable
@@ -332,6 +347,17 @@ export function PersonalCategoryDetailScreen() {
 											>
 												{amountLabel}
 											</Text>
+											{revealedTransactionId === transaction.id ? (
+												<Pressable
+													accessibilityRole="button"
+													accessibilityLabel="Eliminar transacción"
+													onPress={() => deleteTransaction(transaction.id)}
+													testID={`delete-personal-transaction-${transaction.id}`}
+													style={{ padding: 8 }}
+												>
+													<Trash2 color={ERROR} size={20} />
+												</Pressable>
+											) : null}
 										</View>
 									</Pressable>
 								);

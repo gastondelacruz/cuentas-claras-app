@@ -185,7 +185,7 @@ export function usePersonalTransactionsScreen() {
 		});
 	}
 
-	function navigateToCategoryDetail(category: string) {
+	function navigateToCategoryDetail(category: string, percentage: number) {
 		rootNavigation?.navigate("PersonalCategoryDetail", {
 			type,
 			category,
@@ -196,6 +196,7 @@ export function usePersonalTransactionsScreen() {
 				type === "expense" && expenseKindFilter !== "all"
 					? expenseKindFilter
 					: undefined,
+			percentage,
 		});
 	}
 
@@ -239,7 +240,8 @@ export function usePersonalTransactionsScreen() {
 						color: visual.color,
 						Icon: visual.Icon,
 						accessibilityLabel: `Ver detalle de la categoría ${item.category}`,
-						onPress: () => navigateToCategoryDetail(item.category),
+						onPress: () =>
+							navigateToCategoryDetail(item.category, item.percentage),
 					};
 				})
 		: [];

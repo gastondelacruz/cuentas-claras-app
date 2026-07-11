@@ -22,9 +22,6 @@ import { EmailVerificationBanner } from "../../auth/components/EmailVerification
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { useEmailVerificationGate } from "../../../shared/hooks/useEmailVerificationGate";
 import { PeriodSelectionModal } from "../components/PeriodSelectionModal";
-import { PersonalExpenseTypeBadge } from "../components/PersonalExpenseTypeBadge";
-import { PersonalExpenseTypeFilterChips } from "../components/PersonalExpenseTypeFilterChips";
-import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsScreen";
 import type {
 	PersonalTransactionChartSegment,
@@ -52,17 +49,15 @@ const RANGE_FILTERS: Array<{
 	{ value: "period", label: "Período", testID: "personal-range-period" },
 ];
 
-const PRIMARY = colors.primary; // #0E7A3A
+const PRIMARY = colors.primary;
 const STITCH_PRIMARY = "#012d1d";
 const STITCH_PRIMARY_CONTAINER = "#1b4332";
-const STITCH_SECONDARY = "#116c4a";
 const STITCH_PRIMARY_FIXED_DIM = "#a5d0b9";
 const STITCH_BACKGROUND = "#f8f9fa";
 const STITCH_SURFACE = "#ffffff";
 const STITCH_SURFACE_VARIANT = "#e1e3e4";
 const STITCH_ON_BACKGROUND = "#191c1d";
 const STITCH_ON_SURFACE_VARIANT = "#414844";
-const STITCH_ERROR = "#ba1a1a";
 const GRAY = STITCH_ON_SURFACE_VARIANT;
 const DARK = STITCH_ON_BACKGROUND;
 
@@ -71,26 +66,6 @@ function formatTotal(value: number, currency: string) {
 		maximumFractionDigits: 0,
 	}).format(value);
 	return currency === "ARS" ? `${formatted} $` : `${formatted} ${currency}`;
-}
-
-function formatSignedAmount(
-	value: number,
-	currency: string,
-	type: PersonalTransactionType,
-) {
-	return `${type === "income" ? "+" : "-"} ${formatTotal(value, currency)}`;
-}
-
-function formatDate(value: string) {
-	const date = new Date(value);
-	return new Intl.DateTimeFormat("es-AR", {
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-		timeZone: "UTC",
-	})
-		.format(date)
-		.replace(".", "");
 }
 
 function DonutChart({
@@ -202,52 +177,10 @@ function PersonalTransactionsChartSkeleton() {
 	);
 }
 
-function RecentTransactionsSkeleton() {
-	return (
-		<View
-			accessibilityElementsHidden
-			importantForAccessibility="no-hide-descendants"
-			style={{ gap: 8 }}
-		>
-			{[0, 1, 2].map((item) => (
-				<View
-					key={item}
-					style={{
-						flexDirection: "row",
-						alignItems: "center",
-						justifyContent: "space-between",
-						backgroundColor: STITCH_SURFACE,
-						borderRadius: 12,
-						padding: 16,
-						boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-					}}
-				>
-					<View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-						<SkeletonBlock
-							style={{ width: 40, height: 40, borderRadius: 20 }}
-						/>
-						<View style={{ gap: 8 }}>
-							<SkeletonBlock
-								style={{ width: 104, height: 16, borderRadius: 999 }}
-							/>
-							<SkeletonBlock
-								style={{ width: 72, height: 12, borderRadius: 999 }}
-							/>
-						</View>
-					</View>
-					<SkeletonBlock style={{ width: 80, height: 16, borderRadius: 999 }} />
-				</View>
-			))}
-		</View>
-	);
-}
-
 export function PersonalTransactionsScreen() {
 	const {
 		type,
 		setType,
-		expenseKindFilter,
-		setExpenseKindFilter,
 		range,
 		selectRange,
 		rangeLabel,
@@ -256,15 +189,14 @@ export function PersonalTransactionsScreen() {
 		applyPeriod,
 		closePeriodModal,
 		chartSegments,
+		categoryRows,
 		displayCurrency,
 		displaySummaryCurrency,
 		displaySummaryTotal,
 		displayTotal,
-		displayTransactions,
 		isLoading,
 		isError,
 		navigateToAddTransaction,
-		navigateToEditTransaction,
 	} = usePersonalTransactionsScreen();
 	const { isEmailVerified, guard } = useEmailVerificationGate();
 
@@ -273,14 +205,6 @@ export function PersonalTransactionsScreen() {
 	const totalLabel = formatTotal(displaySummaryTotal, displaySummaryCurrency);
 	const chartTotalLabel = formatTotal(displayTotal, displayCurrency);
 	const showFinancialSummary = (!isLoading || showLoadingSkeleton) && !isError;
-	const emptyRecentTransactionsMessage =
-		type === "income"
-			? "No hay ingresos para este período."
-			: expenseKindFilter === "fixed"
-				? "No hay gastos fijos para este período."
-				: expenseKindFilter === "variable"
-					? "No hay gastos variables para este período."
-					: "No hay gastos para este período.";
 
 	return (
 		<ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
@@ -291,7 +215,6 @@ export function PersonalTransactionsScreen() {
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{ paddingBottom: 112 }}
 			>
-				{/* ── Total section ───────────────────────────────────────────────────── */}
 				{showFinancialSummary ? (
 					<View
 						testID="personal-transactions-total"
@@ -335,7 +258,6 @@ export function PersonalTransactionsScreen() {
 					</View>
 				) : null}
 
-				{/* ── Card: tabs, filters, date nav and content ─────────────────────────── */}
 				<View
 					testID="personal-transactions-card"
 					style={{
@@ -347,7 +269,6 @@ export function PersonalTransactionsScreen() {
 					}}
 				>
 					<View>
-						{/* ── Tabs: GASTOS | INGRESOS ───────────────────────────────────────── */}
 						<View
 							accessibilityRole="tablist"
 							style={{
@@ -397,7 +318,6 @@ export function PersonalTransactionsScreen() {
 							})}
 						</View>
 
-						{/* ── Range filters ───────────────────────────────────────────────────── */}
 						<View
 							style={{
 								flexDirection: "row",
@@ -439,7 +359,6 @@ export function PersonalTransactionsScreen() {
 							})}
 						</View>
 
-						{/* ── Date navigation row ─────────────────────────────────────────────── */}
 						<View
 							style={{
 								flexDirection: "row",
@@ -473,7 +392,6 @@ export function PersonalTransactionsScreen() {
 							/>
 						</View>
 
-						{/* ── Content area ────────────────────────────────────────────────────── */}
 						<View>
 							{showLoadingSkeleton ? (
 								<PersonalTransactionsChartSkeleton />
@@ -535,129 +453,73 @@ export function PersonalTransactionsScreen() {
 							paddingHorizontal: 20,
 							paddingTop: 32,
 							paddingBottom: 112,
-							gap: 16,
+							gap: 8,
 						}}
 					>
-						<View style={{ gap: 10, paddingHorizontal: 8 }}>
-							<Text
-								style={{
-									fontSize: 20,
-									lineHeight: 28,
-									fontWeight: "600",
-									color: DARK,
-								}}
-							>
-								{type === "income" ? "Ingresos Recientes" : "Gastos Recientes"}
-							</Text>
-							{type === "expense" ? (
-								<PersonalExpenseTypeFilterChips
-									value={expenseKindFilter}
-									onChange={setExpenseKindFilter}
-								/>
-							) : null}
-						</View>
-						<View style={{ gap: 8 }}>
-							{showLoadingSkeleton ? (
-								<RecentTransactionsSkeleton />
-							) : displayTransactions.length === 0 ? (
-								<View
-									accessibilityRole="text"
+						{categoryRows.map((row) => {
+							const Icon = row.Icon;
+							return (
+								<Pressable
+									key={row.category}
+									accessibilityRole="button"
+									accessibilityLabel={row.accessibilityLabel}
+									accessibilityHint="Abre el detalle de las transacciones de esta categoría"
+									accessibilityState={{ disabled: !isEmailVerified }}
+									disabled={!isEmailVerified}
+									onPress={() => guard(() => row.onPress())}
 									style={{
+										flexDirection: "row",
+										alignItems: "center",
+										gap: 16,
 										backgroundColor: STITCH_SURFACE,
 										borderRadius: 12,
 										padding: 16,
 										boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
 									}}
 								>
-									<Text
+									<View
 										style={{
-											fontSize: 14,
-											lineHeight: 20,
-											color: GRAY,
-											textAlign: "center",
+											width: 40,
+											height: 40,
+											borderRadius: 20,
+											backgroundColor: row.color,
+											alignItems: "center",
+											justifyContent: "center",
 										}}
 									>
-										{emptyRecentTransactionsMessage}
-									</Text>
-								</View>
-							) : (
-								displayTransactions.map((transaction) => {
-									const categoryVisual = getPersonalCategoryVisual(
-										transaction.type,
-										transaction.category,
-									);
-									const Icon = categoryVisual.Icon;
-									const isIncome = transaction.type === "income";
-									return (
-										<Pressable
-											key={transaction.id}
-											accessibilityRole="button"
-											accessibilityLabel={`Editar ${transaction.type === "income" ? "ingreso" : "gasto"} personal ${transaction.category} por ${formatTotal(transaction.amount, transaction.currency)}`}
-											accessibilityHint="Abre el formulario para modificar esta transacción"
-											accessibilityState={{ disabled: !isEmailVerified }}
-											disabled={!isEmailVerified}
-											onPress={() =>
-												guard(() => navigateToEditTransaction(transaction))
-											}
-											testID={`personal-transaction-item-${transaction.id}`}
+										<Icon color="#ffffff" size={22} strokeWidth={2} />
+									</View>
+									<View style={{ flex: 1, gap: 8 }}>
+										<View
 											style={{
 												flexDirection: "row",
-												alignItems: "center",
+												alignItems: "flex-start",
 												justifyContent: "space-between",
-												backgroundColor: STITCH_SURFACE,
-												borderRadius: 12,
-												padding: 16,
-												boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
+												gap: 12,
 											}}
 										>
-											<View
-												style={{
-													flexDirection: "row",
-													alignItems: "center",
-													gap: 16,
-												}}
-											>
-												<View
+											<View style={{ flex: 1, gap: 4 }}>
+												<Text
 													style={{
-														width: 40,
-														height: 40,
-														borderRadius: 20,
-														backgroundColor: categoryVisual.color,
-														alignItems: "center",
-														justifyContent: "center",
+														fontSize: 16,
+														lineHeight: 24,
+														fontWeight: "600",
+														color: DARK,
 													}}
 												>
-													<Icon color="#ffffff" size={22} strokeWidth={2} />
-												</View>
-												<View style={{ gap: 4 }}>
-													<Text
-														style={{
-															fontSize: 16,
-															lineHeight: 24,
-															fontWeight: "600",
-															color: DARK,
-														}}
-													>
-														{transaction.category}
-													</Text>
-													<Text
-														selectable
-														style={{
-															fontSize: 12,
-															lineHeight: 16,
-															fontWeight: "600",
-															letterSpacing: 0.6,
-															color: GRAY,
-														}}
-													>
-														{formatDate(transaction.occurredAt)}
-													</Text>
-													{!isIncome ? (
-														<PersonalExpenseTypeBadge
-															expenseKind={transaction.expenseKind}
-														/>
-													) : null}
-												</View>
+													{row.category}
+												</Text>
+												<Text
+													style={{
+														fontSize: 12,
+														lineHeight: 16,
+														fontWeight: "600",
+														letterSpacing: 0.6,
+														color: GRAY,
+													}}
+												>
+													{row.percentage}% del total
+												</Text>
 											</View>
 											<Text
 												selectable
@@ -665,26 +527,39 @@ export function PersonalTransactionsScreen() {
 													fontSize: 16,
 													lineHeight: 24,
 													fontWeight: "700",
-													color: isIncome ? STITCH_SECONDARY : STITCH_ERROR,
+													color: STITCH_PRIMARY,
 													fontVariant: ["tabular-nums"],
 												}}
 											>
-												{formatSignedAmount(
-													transaction.amount,
-													transaction.currency,
-													transaction.type,
-												)}
+												{formatTotal(row.amount, displayCurrency)}
 											</Text>
-										</Pressable>
-									);
-								})
-							)}
-						</View>
+										</View>
+										<View
+											accessibilityRole="progressbar"
+											accessibilityLabel={`${row.category} representa ${row.percentage}% del total`}
+											style={{
+												height: 6,
+												borderRadius: 999,
+												backgroundColor: STITCH_SURFACE_VARIANT,
+												overflow: "hidden",
+											}}
+										>
+											<View
+												style={{
+													width: `${row.percentage}%`,
+													height: "100%",
+													borderRadius: 999,
+													backgroundColor: row.color,
+												}}
+											/>
+										</View>
+									</View>
+								</Pressable>
+							);
+						})}
 					</View>
 				) : null}
 			</ScrollView>
-
-			{/* ── FAB ─────────────────────────────────────────────────────────────── */}
 
 			<Pressable
 				accessibilityRole="button"

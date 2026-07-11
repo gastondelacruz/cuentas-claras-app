@@ -11,7 +11,6 @@ import { usePersonalTransactions } from "../hooks/usePersonalTransactions";
 import { usePersonalTransactionsSummary } from "../hooks/usePersonalTransactionsSummary";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { prefetchAlternatePersonalTransactions } from "../api/personalTransactionPrefetch";
-import type { PersonalTransactionViewItem } from "../types";
 
 jest.mock("../hooks/usePersonalTransactions");
 jest.mock("../hooks/usePersonalTransactionsSummary");
@@ -94,14 +93,12 @@ describe("PersonalTransactionsScreen", () => {
 		expect(screen.getByText("376.371 $")).toBeTruthy();
 		// Dynamic date range label: current week (Monday 29 jun → Sunday 5 jul)
 		expect(screen.getByText("29 jun – 5 jul")).toBeTruthy();
-		// Summary/chart visuals now come from the (mocked) real summary API, not a design fixture.
-		expect(screen.getByText("Gastos Recientes")).toBeTruthy();
-		expect(screen.getByText("No hay gastos para este período.")).toBeTruthy();
-		expect(screen.queryByText("Comida")).toBeNull();
-		expect(screen.queryByText("- 350.548 $")).toBeNull();
-		expect(screen.queryByText("Transporte")).toBeNull();
-		expect(screen.queryByText("Compras")).toBeNull();
-		expect(screen.queryByText("Otros")).toBeNull();
+		expect(
+			screen.getByLabelText("Ver detalle de la categoría Comida"),
+		).toBeTruthy();
+		expect(
+			screen.getByLabelText("Comida representa 75% del total"),
+		).toBeTruthy();
 		expect(
 			screen.getByTestId("personal-transactions-donut-chart"),
 		).toBeTruthy();
@@ -111,17 +108,16 @@ describe("PersonalTransactionsScreen", () => {
 		).toMatchObject({ selected: true });
 	});
 
-	it("switches to the income tab and preserves the backend empty list", () => {
+	it("switches to the income tab and shows income category rows", () => {
 		render(<PersonalTransactionsScreen />);
 
 		fireEvent.press(screen.getByTestId("personal-tab-income"));
 
-		expect(screen.getByText("Ingresos Recientes")).toBeTruthy();
-		expect(screen.getByText("No hay ingresos para este período.")).toBeTruthy();
-		expect(screen.queryByText("Salario")).toBeNull();
-		expect(screen.queryByText("+ 613.460 $")).toBeNull();
-		expect(screen.queryByText("Regalos")).toBeNull();
-		expect(screen.queryByText("Intereses")).toBeNull();
+		expect(
+			screen.getByLabelText("Ver detalle de la categoría Salario"),
+		).toBeTruthy();
+		expect(screen.getByText("Salario")).toBeTruthy();
+		expect(screen.queryByText("Ingresos Recientes")).toBeNull();
 		expect(screen.queryByTestId("personal-expense-type-filters")).toBeNull();
 		expect(
 			screen.getByTestId("personal-tab-income").props.accessibilityState,
@@ -178,11 +174,11 @@ describe("PersonalTransactionsScreen", () => {
 				"123.629 $",
 			),
 		).toBeTruthy();
-		expect(screen.getByText("2.500 $")).toBeTruthy();
+		expect(screen.getAllByText("2.500 $")).toHaveLength(2);
 
 		fireEvent.press(screen.getByTestId("personal-tab-income"));
 
-		expect(screen.getByText("10.000 $")).toBeTruthy();
+		expect(screen.getAllByText("10.000 $")).toHaveLength(2);
 	});
 
 	it("keeps the summary top total unchanged when switching tabs", () => {
@@ -255,89 +251,43 @@ describe("PersonalTransactionsScreen", () => {
 		);
 	});
 
-	it("renders expense type filters and expense card chips, and filters the visible list", () => {
-		const transactions: PersonalTransactionViewItem[] = [
-			{
-				id: "ptx-fixed",
-				type: "expense",
-				expenseKind: "fixed",
-				amount: 50000,
-				currency: "ARS",
-				category: "Alquiler",
-				accountId: "account-ars",
-				accountName: "Pesos",
-				occurredAt: "2026-06-28T12:00:00.000Z",
-				note: null,
-				createdAt: "2026-06-28T12:00:00.000Z",
-				updatedAt: "2026-06-28T12:00:00.000Z",
-			},
-			{
-				id: "ptx-variable",
-				type: "expense",
-				expenseKind: "variable",
-				amount: 3200,
-				currency: "ARS",
-				category: "Café",
-				accountId: "account-ars",
-				accountName: "Pesos",
-				occurredAt: "2026-06-29T12:00:00.000Z",
-				note: "Merienda",
-				createdAt: "2026-06-29T12:00:00.000Z",
-				updatedAt: "2026-06-29T12:00:00.000Z",
-			},
-		];
-
-		mockUsePersonalTransactions.mockReturnValue({
-			transactions,
-			total: 53200,
-			incomeTotal: 0,
-			expenseTotal: 53200,
-			currency: "ARS",
-			hasFetchedTransactions: true,
-			isLoading: false,
-			isError: false,
-			error: null,
-		});
+	it("opens the category detail screen from a category row", () => {
+		const rootNavigate = jest.fn();
+		mockUseNavigation.mockReturnValue({
+			getParent: () => ({ navigate: rootNavigate }),
+		} as never);
 
 		render(<PersonalTransactionsScreen />);
 
-		expect(screen.getByTestId("personal-expense-type-filters")).toBeTruthy();
-		expect(
-			screen.getByTestId("personal-expense-filter-all").props
-				.accessibilityState,
-		).toMatchObject({
-			selected: true,
+		fireEvent.press(
+			screen.getByLabelText("Ver detalle de la categoría Comida"),
+		);
+
+		expect(rootNavigate).toHaveBeenCalledWith("PersonalCategoryDetail", {
+			type: "expense",
+			category: "Comida",
+			range: "week",
+			from: undefined,
+			to: undefined,
+			expenseKind: undefined,
 		});
-		expect(screen.getByText("Todos")).toBeTruthy();
-		expect(screen.getByText("Fijos")).toBeTruthy();
-		expect(screen.getByText("Variables")).toBeTruthy();
-		expect(screen.getAllByText("FIJO")).toHaveLength(1);
-		expect(screen.getAllByText("VARIABLE")).toHaveLength(1);
+	});
 
-		fireEvent.press(screen.getByTestId("personal-expense-filter-fixed"));
+	it("renders category summary rows with percentage bars", () => {
+		render(<PersonalTransactionsScreen />);
 
+		expect(screen.queryByTestId("personal-expense-type-filters")).toBeNull();
 		expect(
-			screen.getByTestId("personal-expense-filter-fixed").props
-				.accessibilityState,
-		).toMatchObject({
-			selected: true,
-		});
-		expect(screen.getByText("Alquiler")).toBeTruthy();
-		expect(screen.getByText("FIJO")).toBeTruthy();
-		expect(screen.queryByText("Café")).toBeNull();
-		expect(screen.queryByText("VARIABLE")).toBeNull();
-
-		fireEvent.press(screen.getByTestId("personal-expense-filter-variable"));
-
+			screen.getByLabelText("Ver detalle de la categoría Comida"),
+		).toBeTruthy();
 		expect(
-			screen.getByTestId("personal-expense-filter-variable").props
-				.accessibilityState,
-		).toMatchObject({
-			selected: true,
-		});
-		expect(screen.getByText("Café")).toBeTruthy();
-		expect(screen.getByText("VARIABLE")).toBeTruthy();
-		expect(screen.queryByText("Alquiler")).toBeNull();
+			screen.getByLabelText("Comida representa 75% del total"),
+		).toBeTruthy();
+		expect(screen.getByText("Comida")).toBeTruthy();
+		expect(screen.getByText("15.000 $")).toBeTruthy();
+		expect(
+			screen.getByTestId("personal-transactions-donut-chart"),
+		).toBeTruthy();
 	});
 
 	it("queries the backend day range without custom from/to dates", () => {
@@ -365,107 +315,6 @@ describe("PersonalTransactionsScreen", () => {
 
 		expect(rootNavigate).toHaveBeenCalledWith("AddPersonalTransaction", {
 			type: "expense",
-		});
-	});
-
-	it("opens a recent expense in edit mode with accessible press feedback", () => {
-		const rootNavigate = jest.fn();
-		mockUseNavigation.mockReturnValue({
-			getParent: () => ({ navigate: rootNavigate }),
-		} as never);
-		mockUsePersonalTransactions.mockReturnValue({
-			transactions: [
-				{
-					id: "ptx-edit-expense",
-					type: "expense",
-					expenseKind: "variable",
-					amount: 12345,
-					currency: "ARS",
-					category: "Salud",
-					accountId: "account-ars",
-					accountName: "Pesos",
-					occurredAt: "2026-06-28T12:00:00.000Z",
-					note: "Farmacia",
-					createdAt: "2026-06-28T12:00:00.000Z",
-					updatedAt: "2026-06-28T12:00:00.000Z",
-				},
-			],
-			total: 12345,
-			incomeTotal: 0,
-			expenseTotal: 12345,
-			currency: "ARS",
-			hasFetchedTransactions: true,
-			isLoading: false,
-			isError: false,
-			error: null,
-		});
-
-		render(<PersonalTransactionsScreen />);
-
-		const item = screen.getByTestId(
-			"personal-transaction-item-ptx-edit-expense",
-		);
-		expect(item.props.accessibilityRole).toBe("button");
-		expect(item.props.accessibilityLabel).toBe(
-			"Editar gasto personal Salud por 12.345 $",
-		);
-		expect(item.props.accessibilityHint).toBe(
-			"Abre el formulario para modificar esta transacción",
-		);
-
-		fireEvent.press(item);
-
-		expect(rootNavigate).toHaveBeenCalledWith("AddPersonalTransaction", {
-			type: "expense",
-			transactionId: "ptx-edit-expense",
-		});
-	});
-
-	it("opens a recent income in edit mode", () => {
-		const rootNavigate = jest.fn();
-		mockUseNavigation.mockReturnValue({
-			getParent: () => ({ navigate: rootNavigate }),
-		} as never);
-		mockUsePersonalTransactions.mockImplementation(({ type }) => ({
-			transactions:
-				type === "income"
-					? [
-							{
-								id: "ptx-edit-income",
-								type: "income",
-								expenseKind: null,
-								amount: 500000,
-								currency: "ARS",
-								category: "Salario",
-								accountId: "account-ars",
-								accountName: "Pesos",
-								occurredAt: "2026-06-29T12:00:00.000Z",
-								note: "Junio",
-								createdAt: "2026-06-29T12:00:00.000Z",
-								updatedAt: "2026-06-29T12:00:00.000Z",
-							},
-						]
-					: [],
-			total: type === "income" ? 500000 : 0,
-			incomeTotal: type === "income" ? 500000 : 0,
-			expenseTotal: 0,
-			currency: "ARS",
-			hasFetchedTransactions: true,
-			isLoading: false,
-			isError: false,
-			error: null,
-		}));
-
-		render(<PersonalTransactionsScreen />);
-
-		fireEvent.press(screen.getByTestId("personal-tab-income"));
-		fireEvent.press(
-			screen.getByTestId("personal-transaction-item-ptx-edit-income"),
-		);
-
-		expect(rootNavigate).toHaveBeenCalledWith("AddPersonalTransaction", {
-			type: "income",
-			transactionId: "ptx-edit-income",
 		});
 	});
 
@@ -503,76 +352,6 @@ describe("PersonalTransactionsScreen", () => {
 		fireEvent.press(screen.getByTestId("personal-tab-income"));
 
 		expect(screen.getByTestId("add-personal-transaction-fab")).toBeTruthy();
-	});
-
-	it("renders backend transactions instead of deterministic fixtures when the list endpoint returns data", () => {
-		mockUsePersonalTransactions.mockReturnValue({
-			transactions: [
-				{
-					id: "ptx-custom-1",
-					type: "expense",
-					expenseKind: "variable",
-					amount: 12345,
-					currency: "ARS",
-					category: "Salud",
-					accountId: "account-ars",
-					accountName: "Pesos",
-					occurredAt: "2026-06-28T12:00:00.000Z",
-					note: null,
-					createdAt: "2026-06-28T12:00:00.000Z",
-					updatedAt: "2026-06-28T12:00:00.000Z",
-				},
-			],
-			total: 12345,
-			incomeTotal: 0,
-			expenseTotal: 12345,
-			currency: "ARS",
-			hasFetchedTransactions: true,
-			isLoading: false,
-			isError: false,
-			error: null,
-		});
-
-		render(<PersonalTransactionsScreen />);
-
-		expect(screen.getByText("Salud")).toBeTruthy();
-		expect(screen.getByText("- 12.345 $")).toBeTruthy();
-		expect(screen.getByText("28 de jun de 2026")).toBeTruthy();
-		expect(screen.queryByText("Comida")).toBeNull();
-	});
-
-	it("renders the real year from a 2026 backend transaction date", () => {
-		mockUsePersonalTransactions.mockReturnValue({
-			transactions: [
-				{
-					id: "ptx-custom-2026",
-					type: "expense",
-					expenseKind: "variable",
-					amount: 2400,
-					currency: "ARS",
-					category: "Libros",
-					accountId: "account-ars",
-					accountName: "Pesos",
-					occurredAt: "2026-07-02T12:00:00.000Z",
-					note: null,
-					createdAt: "2026-07-02T12:00:00.000Z",
-					updatedAt: "2026-07-02T12:00:00.000Z",
-				},
-			],
-			total: 2400,
-			incomeTotal: 0,
-			expenseTotal: 2400,
-			currency: "ARS",
-			hasFetchedTransactions: true,
-			isLoading: false,
-			isError: false,
-			error: null,
-		});
-
-		render(<PersonalTransactionsScreen />);
-
-		expect(screen.getByText("2 de jul de 2026")).toBeTruthy();
-		expect(screen.queryByText("2 jul, 2024")).toBeNull();
 	});
 
 	it("renders loading and error states inside the Stitch card content area", () => {
@@ -645,7 +424,7 @@ describe("PersonalTransactionsScreen", () => {
 			screen.getByTestId("personal-transactions-loading-skeleton"),
 		).toBeTruthy();
 		expect(screen.getByTestId("personal-transactions-total")).toBeTruthy();
-		expect(screen.getByText("Gastos Recientes")).toBeTruthy();
+		expect(screen.queryByText("Gastos Recientes")).toBeNull();
 		expect(
 			screen.getByLabelText("Cargando transacciones personales"),
 		).toBeTruthy();

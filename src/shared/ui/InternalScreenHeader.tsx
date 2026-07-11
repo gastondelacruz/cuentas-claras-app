@@ -34,9 +34,6 @@ export function InternalScreenHeader({
         </Pressable>
 
         <View className="flex-1 flex-row items-center justify-center gap-2 px-2">
-          <View className="h-8 w-8 items-center justify-center rounded-md bg-primaryBg">
-            <WalletCards color={colors.primary} size={18} strokeWidth={2.4} />
-          </View>
           <Text numberOfLines={1} className="text-lg font-bold text-neutral900">
             {title}
           </Text>

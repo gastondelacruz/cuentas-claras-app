@@ -31,7 +31,21 @@ export type PersonalTransactionSummaryFilters = {
 export type PersonalTransactionQueryOptions = PersonalTransactionListFilters & {
 	cursor?: string;
 	limit?: number;
+	category?: string;
+	expenseKind?: PersonalExpenseTypeFilter;
 };
+
+export type PersonalTransactionCategoryDetailRouteParams = {
+	type: PersonalTransactionType;
+	category: string;
+	range: PersonalTransactionRange;
+	from?: string;
+	to?: string;
+	expenseKind?: PersonalExpenseTypeFilter;
+};
+
+export type PersonalTransactionCategoryDetailFilters =
+	PersonalTransactionCategoryDetailRouteParams;
 
 export type PersonalTransactionChartSegment = {
 	color: string;

@@ -196,7 +196,12 @@ export function useAddPersonalTransactionForm() {
 
 	function applyCustomDate(date: Date) {
 		const normalizedDate = new Date(
-			Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12),
+			Date.UTC(
+				date.getUTCFullYear(),
+				date.getUTCMonth(),
+				date.getUTCDate(),
+				12,
+			),
 		);
 		setCustomDate(normalizedDate);
 		setSelectedDateId("custom");
@@ -204,7 +209,9 @@ export function useAddPersonalTransactionForm() {
 	}
 
 	const calendarInitialDate =
-		customDate ?? dateChips.find((chip) => chip.id === selectedDateId)?.date ?? dateChips[0].date;
+		customDate ??
+		dateChips.find((chip) => chip.id === selectedDateId)?.date ??
+		dateChips[0].date;
 
 	function deleteTransaction() {
 		if (!transactionId) return;
@@ -310,7 +317,10 @@ export function useAddPersonalTransactionForm() {
 		submit,
 		deleteTransaction,
 		submitError,
-		isSubmitting: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+		isSubmitting:
+			createMutation.isPending ||
+			updateMutation.isPending ||
+			deleteMutation.isPending,
 		isEditMode,
 	};
 }

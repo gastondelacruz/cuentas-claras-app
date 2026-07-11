@@ -60,7 +60,9 @@ async function runRefresh() {
 
 		return accessToken;
 	} catch (error) {
-		const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+		const status = axios.isAxiosError(error)
+			? error.response?.status
+			: undefined;
 		if (status === 401 || status === 403) {
 			await clearRefreshToken();
 			useAuthStore.getState().clearSession();

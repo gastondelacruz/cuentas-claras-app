@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.2...v1.1.3) (2026-07-12)
+
+
+### Bug Fixes
+
+* **tests:** stabilize form blur validation ([#75](https://github.com/gastondelacruz/cuentas-claras-app/issues/75)) ([c783e18](https://github.com/gastondelacruz/cuentas-claras-app/commit/c783e18c6849c42c7655cc4fe9c9bde20a3fc4f6))
+
 ## [1.1.2](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.1...v1.1.2) (2026-07-12)
 
 

@@ -9,7 +9,7 @@ import type { RootStackParamList } from "../../../app/navigation/types";
 import { useProtectedDataEnabled } from "../../../shared/hooks/useProtectedDataEnabled";
 import {
 	personalTransactionsCategoryDetailQueryOptions,
-	personalTransactionsFilteredTotalsQueryOptions,
+	personalTransactionsSummaryQueryOptions,
 } from "../api/personalTransactionQueryOptions";
 import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { rememberMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
@@ -104,12 +104,14 @@ export function usePersonalCategoryDetailScreen() {
 		...personalTransactionsCategoryDetailQueryOptions(queryFilters),
 		enabled: protectedDataEnabled,
 	});
-	const { category: _category, ...globalFilters } = queryFilters;
-	const globalTotalsQuery = useQuery({
-		...personalTransactionsFilteredTotalsQueryOptions(globalFilters),
-		enabled: protectedDataEnabled && route.params.type === "expense",
+	const summaryQuery = useQuery({
+		...personalTransactionsSummaryQueryOptions({
+			range: route.params.range,
+			from: route.params.from,
+			to: route.params.to,
+		}),
+		enabled: protectedDataEnabled,
 	});
-
 	const data = protectedDataEnabled ? query.data : undefined;
 	const transactions = (data?.transactions ?? []).map((transaction) => {
 		if (transaction.type !== "expense") {
@@ -148,13 +150,11 @@ export function usePersonalCategoryDetailScreen() {
 	);
 	const displayCurrency = data?.currency ?? "ARS";
 	const percentage =
-		route.params.type === "expense"
-			? globalTotalsQuery.data?.expenseTotal
-				? Math.round(
-						(displayTotal / globalTotalsQuery.data.expenseTotal) * 10000,
-					) / 100
-				: 0
-			: route.params.percentage;
+		summaryQuery.data?.breakdown.find(
+			(item) =>
+				item.type === route.params.type &&
+				item.category === route.params.category,
+		)?.percentage ?? route.params.percentage;
 	const categoryVisual = getPersonalCategoryVisual(
 		route.params.type,
 		route.params.category,
@@ -183,14 +183,24 @@ export function usePersonalCategoryDetailScreen() {
 				{
 					text: "Eliminar",
 					style: "destructive",
-					onPress: () =>
+					onPress: () => {
+						const shouldNavigateBack =
+							filteredTransactions.length === 1 &&
+							filteredTransactions[0]?.id === transactionId;
+
 						deleteMutation.mutate(transactionId, {
+							onSuccess: () => {
+								if (shouldNavigateBack) {
+									navigation.goBack?.();
+								}
+							},
 							onError: () =>
 								Alert.alert(
 									"No pudimos eliminar la transacción",
 									"Intentá de nuevo.",
 								),
-						}),
+						});
+					},
 				},
 			],
 		);
@@ -198,9 +208,13 @@ export function usePersonalCategoryDetailScreen() {
 
 	function navigateToEditTransaction(transaction: PersonalTransactionDto) {
 		rememberMockEditablePersonalTransaction(transaction);
+		const isSoleDisplayedTransaction =
+			filteredTransactions.length === 1 &&
+			filteredTransactions[0]?.id === transaction.id;
 		navigation.navigate("AddPersonalTransaction", {
 			type: transaction.type,
 			transactionId: transaction.id,
+			...(isSoleDisplayedTransaction ? { returnToPersonalExpenses: true } : {}),
 		});
 	}
 

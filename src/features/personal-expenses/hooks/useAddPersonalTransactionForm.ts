@@ -225,7 +225,16 @@ export function useAddPersonalTransactionForm() {
 					style: "destructive",
 					onPress: () =>
 						deleteMutation.mutate(transactionId, {
-							onSuccess: () => navigation.goBack(),
+							onSuccess: () => {
+								if (route.params?.returnToPersonalExpenses) {
+									navigation.navigate("Main", {
+										screen: "PersonalExpenses",
+									});
+									return;
+								}
+
+								navigation.goBack();
+							},
 							onError: () =>
 								Alert.alert(
 									"No pudimos eliminar la transacción",
@@ -266,7 +275,14 @@ export function useAddPersonalTransactionForm() {
 					note: trimmedNote ? trimmedNote : null,
 				},
 				{
-					onSuccess: () => navigation.goBack(),
+					onSuccess: () => {
+						if (route.params?.returnToPersonalExpenses) {
+							navigation.navigate("Main", { screen: "PersonalExpenses" });
+							return;
+						}
+
+						navigation.goBack();
+					},
 					onError: () =>
 						setSubmitError("No pudimos guardar los cambios. Intentá de nuevo."),
 				},

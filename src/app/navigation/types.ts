@@ -19,7 +19,11 @@ export type RootStackParamList = {
 	NewGroup: { groupId?: string } | undefined;
 	AddExpense: { groupId?: string; expenseId?: string } | undefined;
 	AddPersonalTransaction:
-		| { type?: PersonalTransactionType; transactionId?: string }
+		| {
+				type?: PersonalTransactionType;
+				transactionId?: string;
+				returnToPersonalExpenses?: boolean;
+		  }
 		| undefined;
 	PersonalCategoryDetail: PersonalTransactionCategoryDetailRouteParams;
 	SettleDebts: { groupId: string };

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor, waitForElementToBeRemoved } from '@testing-library/react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { Text } from 'react-native';
 import { z } from 'zod';
@@ -55,15 +55,17 @@ describe('form foundation', () => {
     fireEvent.changeText(getByTestId('email-input'), 'bad');
     fireEvent(getByTestId('email-input'), 'blur');
 
-    await waitFor(() => expect(getByTestId('email-value')).toHaveTextContent('bad'));
-    expect(await waitFor(() => getByText('Enter a valid email'))).toBeOnTheScreen();
+    await waitFor(() => {
+      expect(getByTestId('email-value')).toHaveTextContent('bad');
+      expect(getByText('Enter a valid email')).toBeOnTheScreen();
+    });
+
+    const errorRemoved = waitForElementToBeRemoved(() => queryByText('Enter a valid email'));
 
     fireEvent.changeText(getByTestId('email-input'), 'user@example.com');
     fireEvent(getByTestId('email-input'), 'blur');
 
-    await waitFor(() => {
-      expect(getByTestId('email-value')).toHaveTextContent('user@example.com');
-      expect(queryByText('Enter a valid email')).toBeNull();
-    });
+    await errorRemoved;
+    expect(getByTestId('email-value')).toHaveTextContent('user@example.com');
   });
 });

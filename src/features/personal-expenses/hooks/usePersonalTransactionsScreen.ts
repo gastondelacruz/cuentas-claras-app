@@ -225,26 +225,23 @@ export function usePersonalTransactionsScreen() {
 	const chartSegments = shouldUseSummary
 		? buildChartSegments(summary.breakdown, type)
 		: [];
-	const categoryRows = shouldUseSummary
-		? summary.breakdown
-				.filter(
-					(item) =>
-						item.type === type && item.amount > 0 && item.percentage > 0,
-				)
-				.map((item) => {
-					const visual = getPersonalCategoryVisual(type, item.category);
-					return {
-						category: item.category,
-						amount: item.amount,
-						percentage: item.percentage,
-						color: visual.color,
-						Icon: visual.Icon,
-						accessibilityLabel: `Ver detalle de la categoría ${item.category}`,
-						onPress: () =>
-							navigateToCategoryDetail(item.category, item.percentage),
-					};
-				})
+	const categoryBreakdown = shouldUseSummary
+		? summary.breakdown.filter((item) => item.type === type)
 		: [];
+	const categoryRows = categoryBreakdown
+		.filter((item) => item.amount > 0 && item.percentage > 0)
+		.map((item) => {
+			const visual = getPersonalCategoryVisual(type, item.category);
+			return {
+				category: item.category,
+				amount: item.amount,
+				percentage: item.percentage,
+				color: visual.color,
+				Icon: visual.Icon,
+				accessibilityLabel: `Ver detalle de la categoría ${item.category}`,
+				onPress: () => navigateToCategoryDetail(item.category, item.percentage),
+			};
+		});
 
 	return {
 		type,

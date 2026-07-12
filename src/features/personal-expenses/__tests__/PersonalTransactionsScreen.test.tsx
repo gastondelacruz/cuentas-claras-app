@@ -2,12 +2,14 @@ import { useNavigation } from "@react-navigation/native";
 import {
 	fireEvent,
 	render,
+	renderHook,
 	screen,
 	within,
 } from "@testing-library/react-native";
 
 import { PersonalTransactionsScreen } from "../screens/PersonalTransactionsScreen";
 import { usePersonalTransactions } from "../hooks/usePersonalTransactions";
+import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsScreen";
 import { usePersonalTransactionsSummary } from "../hooks/usePersonalTransactionsSummary";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { prefetchAlternatePersonalTransactions } from "../api/personalTransactionPrefetch";
@@ -106,6 +108,37 @@ describe("PersonalTransactionsScreen", () => {
 		expect(
 			screen.getByTestId("personal-tab-expense").props.accessibilityState,
 		).toMatchObject({ selected: true });
+	});
+
+	it("uses exact category amounts and percentages from the summary", () => {
+		mockUsePersonalTransactionsSummary.mockReturnValue({
+			summary: {
+				total: -5700,
+				incomeTotal: 0,
+				expenseTotal: 5700,
+				currency: "ARS",
+				breakdown: [
+					{
+						category: "Ocio",
+						type: "expense",
+						amount: 5100,
+						percentage: 89.47,
+					},
+				],
+			},
+			hasFetchedSummary: true,
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+
+		const { result } = renderHook(() => usePersonalTransactionsScreen());
+
+		expect(result.current.categoryRows[0]).toMatchObject({
+			category: "Ocio",
+			amount: 5100,
+			percentage: 89.47,
+		});
 	});
 
 	it("switches to the income tab and shows income category rows", () => {

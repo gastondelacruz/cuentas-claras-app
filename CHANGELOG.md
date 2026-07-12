@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.1...v1.1.2) (2026-07-12)
+
+
+### Bug Fixes
+
+* **personal-expenses:** keep category detail consistent ([#72](https://github.com/gastondelacruz/cuentas-claras-app/issues/72)) ([14de512](https://github.com/gastondelacruz/cuentas-claras-app/commit/14de512e529cc95e59a273bee2d24f0b780d211c))
+
 ## [1.1.1](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.0...v1.1.1) (2026-07-11)
 
 

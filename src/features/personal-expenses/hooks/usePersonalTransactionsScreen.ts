@@ -116,7 +116,7 @@ export function usePersonalTransactionsScreen() {
 	const [type, setType] = useState<PersonalTransactionType>("expense");
 	const [expenseKindFilter, setExpenseKindFilter] =
 		useState<PersonalExpenseTypeFilter>("all");
-	const [range, setRange] = useState<PersonalTransactionRange>("week");
+	const [range, setRange] = useState<PersonalTransactionRange>("month");
 	const [periodRange, setPeriodRange] = useState<PeriodRange | null>(null);
 	const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 

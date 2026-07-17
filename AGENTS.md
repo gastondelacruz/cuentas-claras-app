@@ -42,7 +42,7 @@ This is a React Native Expo app for shared expense management. All product behav
 When performing these actions, **ALWAYS** read the corresponding skill first:
 
 | Action | Skill |
-|---|---|
+| --- | --- |
 | Creating new files, features, or deciding where code lives | `project-architecture` |
 | Adding or changing accessibility behavior | `accessibility` |
 | Building or modifying mobile UI screens/components | `building-native-ui` |
@@ -83,22 +83,27 @@ When performing these actions, **ALWAYS** read the corresponding skill first:
 
 ---
 
+## Verification Policy
+
+- **NON-NEGOTIABLE:** After every implementation, run `pnpm verify`. It must pass the full test suite, TypeScript check, and high-threshold security audit before reporting completion.
+- Run `pnpm dlx expo-doctor` as the separate required Expo compatibility check.
+- The dedicated security workflow runs `pnpm security:audit` for dependency-file pull requests and weekly checks.
+
 ## Commands
 
-After code changes, run all three — all must pass before reporting done:
+Run the required implementation and compatibility checks:
 
 ```bash
-npm test -- --runInBand     # Full test suite
-npm run typecheck           # TypeScript check
-npx expo-doctor             # Expo compatibility check
+pnpm verify                 # Full tests, TypeScript, and high-threshold audit
+pnpm dlx expo-doctor        # Expo compatibility check
 ```
 
 For development:
 
 ```bash
-npx expo start              # Start dev server
-npx expo start --ios        # iOS simulator
-npx expo start --android    # Android emulator
+pnpm exec expo start        # Start dev server
+pnpm exec expo start --ios  # iOS simulator
+pnpm exec expo start --android # Android emulator
 ```
 
 ---
@@ -109,6 +114,5 @@ npx expo start --android    # Android emulator
 - [ ] Context7 was queried for live library docs before applying skill rules.
 - [ ] `project-architecture` skill was consulted before creating or moving files.
 - [ ] TDD was followed: failing test written before implementation.
-- [ ] `npm test -- --runInBand` passes (all tests green).
-- [ ] `npm run typecheck` passes with no errors.
-- [ ] `npx expo-doctor` passes with no errors.
+- [ ] `pnpm verify` passes full tests, typecheck, and the high-threshold security audit before reporting completion.
+- [ ] `pnpm dlx expo-doctor` passes with no errors.

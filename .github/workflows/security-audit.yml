@@ -1,20 +1,20 @@
-name: CI
+name: Security Audit
 
 on:
   pull_request:
-    branches: [main]
+    paths:
+      - package.json
+      - pnpm-lock.yaml
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Cancel superseded runs on the same ref to save CI minutes.
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  verify:
-    name: Test, Typecheck and Expo Doctor
+  audit:
+    name: Audit dependencies
     runs-on: ubuntu-latest
 
     steps:
@@ -35,8 +35,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests and typecheck
-        run: pnpm verify
-
-      - name: Expo Doctor
-        run: pnpm dlx expo-doctor
+      - name: Audit dependencies
+        run: pnpm security:audit

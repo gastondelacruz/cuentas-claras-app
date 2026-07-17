@@ -32,7 +32,7 @@ const mockPrefetchAlternatePersonalTransactions = jest.mocked(
 );
 
 // Pin "today" to 2026-06-29 (Monday) so the dynamic rangeLabel is deterministic.
-// Expected default week label: "29 jun – 5 jul"
+// Expected default month label: "jun 2026"
 const FAKE_NOW = new Date("2026-06-29T12:00:00.000Z");
 
 describe("PersonalTransactionsScreen", () => {
@@ -86,6 +86,20 @@ describe("PersonalTransactionsScreen", () => {
 		jest.useRealTimers();
 	});
 
+	it("defaults to the month range for controls and initial queries", () => {
+		render(<PersonalTransactionsScreen />);
+
+		expect(
+			screen.getByTestId("personal-range-month").props.accessibilityState,
+		).toMatchObject({ selected: true });
+		expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "month" }),
+		);
+		expect(mockUsePersonalTransactionsSummary).toHaveBeenLastCalledWith(
+			expect.objectContaining({ range: "month" }),
+		);
+	});
+
 	it("renders an honest expense empty state when the backend returns an empty list", () => {
 		render(<PersonalTransactionsScreen />);
 
@@ -93,8 +107,8 @@ describe("PersonalTransactionsScreen", () => {
 		expect(screen.getAllByText("Total")).toHaveLength(2);
 		expect(screen.getByText("123.629 $")).toBeTruthy();
 		expect(screen.getByText("376.371 $")).toBeTruthy();
-		// Dynamic date range label: current week (Monday 29 jun → Sunday 5 jul)
-		expect(screen.getByText("29 jun – 5 jul")).toBeTruthy();
+		// Dynamic date range label: current month
+		expect(screen.getByText("jun 2026")).toBeTruthy();
 		expect(
 			screen.getByLabelText("Ver detalle de la categoría Comida"),
 		).toBeTruthy();
@@ -156,7 +170,7 @@ describe("PersonalTransactionsScreen", () => {
 			screen.getByTestId("personal-tab-income").props.accessibilityState,
 		).toMatchObject({ selected: true });
 		expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
-			expect.objectContaining({ type: "income", range: "week" }),
+			expect.objectContaining({ type: "income", range: "month" }),
 		);
 	});
 
@@ -299,7 +313,7 @@ describe("PersonalTransactionsScreen", () => {
 		expect(rootNavigate).toHaveBeenCalledWith("PersonalCategoryDetail", {
 			type: "expense",
 			category: "Comida",
-			range: "week",
+			range: "month",
 			from: undefined,
 			to: undefined,
 			expenseKind: undefined,
@@ -342,7 +356,7 @@ describe("PersonalTransactionsScreen", () => {
 		expect(rootNavigate).toHaveBeenCalledWith("PersonalCategoryDetail", {
 			type: "income",
 			category: "Intereses",
-			range: "week",
+			range: "month",
 			from: undefined,
 			to: undefined,
 			expenseKind: undefined,
@@ -515,7 +529,7 @@ describe("PersonalTransactionsScreen", () => {
 
 		expect(mockPrefetchAlternatePersonalTransactions).toHaveBeenCalledWith({
 			type: "expense",
-			range: "week",
+			range: "month",
 			from: undefined,
 			to: undefined,
 		});
@@ -524,7 +538,7 @@ describe("PersonalTransactionsScreen", () => {
 
 		expect(mockPrefetchAlternatePersonalTransactions).toHaveBeenLastCalledWith({
 			type: "income",
-			range: "week",
+			range: "month",
 			from: undefined,
 			to: undefined,
 		});

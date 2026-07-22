@@ -1,7 +1,8 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ArrowLeft } from "lucide-react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
-import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import type { CalculatorKey } from "../calculatorEngine";
 import { useCalculator } from "../hooks/useCalculator";
@@ -27,7 +28,7 @@ const KEYS: KeyConfig[] = [
 		label: "⌫",
 		accessibilityLabel: "Borrar último carácter",
 		testId: "backspace",
-		kind: "clear",
+		kind: "operator",
 	},
 	{
 		key: "%",
@@ -157,19 +158,132 @@ const KEYS: KeyConfig[] = [
 	},
 ];
 
+const KEY_ROWS = [
+	KEYS.slice(0, 4),
+	KEYS.slice(4, 8),
+	KEYS.slice(8, 12),
+	KEYS.slice(12, 16),
+	KEYS.slice(16, 20),
+];
+
 const DARK_GREEN = "#1b4332";
 const OUTLINE = "#c1c8c2";
+const SURFACE = "#f8f9fa";
+const SURFACE_LOWEST = "#ffffff";
 const SURFACE_HIGH = "#e7e8e9";
+const ON_SURFACE = "#191c1d";
+const ERROR = "#ba1a1a";
 const ERROR_CONTAINER = "#ffdad6";
 
-function keyColors(kind: KeyConfig["kind"]) {
-	if (kind === "clear")
-		return { backgroundColor: ERROR_CONTAINER, color: colors.error };
-	if (kind === "equals")
-		return { backgroundColor: DARK_GREEN, color: colors.white };
-	if (kind === "operator")
-		return { backgroundColor: SURFACE_HIGH, color: colors.neutral900 };
-	return { backgroundColor: colors.white, color: colors.neutral900 };
+const styles = StyleSheet.create({
+	headerBack: {
+		width: 44,
+		height: 44,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 22,
+		overflow: "hidden",
+	},
+	key: {
+		flex: 1,
+		maxWidth: 64,
+		minWidth: 44,
+		height: 64,
+		minHeight: 44,
+		borderRadius: 8,
+		alignItems: "center",
+		justifyContent: "center",
+		overflow: "hidden",
+	},
+	keyClear: {
+		borderWidth: 0,
+		borderColor: OUTLINE,
+		backgroundColor: ERROR_CONTAINER,
+	},
+	keyOperator: {
+		borderWidth: 0,
+		borderColor: OUTLINE,
+		backgroundColor: SURFACE_HIGH,
+	},
+	keyNumber: {
+		borderWidth: 1,
+		borderColor: OUTLINE,
+		backgroundColor: SURFACE_LOWEST,
+	},
+	keyEquals: {
+		borderWidth: 0,
+		borderColor: OUTLINE,
+		backgroundColor: DARK_GREEN,
+	},
+	accept: {
+		width: "100%",
+		height: 54,
+		minHeight: 44,
+		marginTop: 18,
+		borderRadius: 10,
+		backgroundColor: DARK_GREEN,
+		alignItems: "center",
+		justifyContent: "center",
+		overflow: "hidden",
+	},
+});
+
+const KEY_KIND_STYLES = {
+	clear: styles.keyClear,
+	number: styles.keyNumber,
+	operator: styles.keyOperator,
+	equals: styles.keyEquals,
+} satisfies Record<KeyConfig["kind"], object>;
+
+function keyTextColor(kind: KeyConfig["kind"]) {
+	if (kind === "clear") return ERROR;
+	if (kind === "equals") return SURFACE_LOWEST;
+	return ON_SURFACE;
+}
+
+function CalculatorHeader({ onBackPress }: { onBackPress: () => void }) {
+	return (
+		<View style={{ backgroundColor: SURFACE }}>
+			<SafeAreaView edges={["top"]} style={{ backgroundColor: SURFACE }} />
+			<View
+				testID="calculator-header"
+				style={{
+					height: 56,
+					flexDirection: "row",
+					alignItems: "center",
+					paddingHorizontal: 20,
+					columnGap: 16,
+					backgroundColor: SURFACE,
+				}}
+			>
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Volver"
+					testID="calculator-header-back"
+					hitSlop={8}
+					onPress={onBackPress}
+					android_ripple={{ color: "rgba(27, 67, 50, 0.12)", borderless: true }}
+					style={styles.headerBack}
+				>
+					<ArrowLeft color={DARK_GREEN} size={24} strokeWidth={2} />
+				</Pressable>
+				<Text
+					numberOfLines={1}
+					testID="calculator-header-title"
+					style={{
+						flexShrink: 1,
+						fontSize: 24,
+						lineHeight: 32,
+						fontWeight: "700",
+						textAlign: "left",
+						color: DARK_GREEN,
+					}}
+				>
+					Calculadora
+				</Text>
+			</View>
+		</View>
+	);
 }
 
 export function CalculatorScreen() {
@@ -178,29 +292,36 @@ export function CalculatorScreen() {
 
 	return (
 		<ScreenContainer testID="calculator-screen">
-			<InternalScreenHeader title="Calculadora" onBackPress={goBack} />
+			<CalculatorHeader onBackPress={goBack} />
 			<ScrollView
+				testID="calculator-scroll"
 				contentInsetAdjustmentBehavior="automatic"
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{
 					flexGrow: 1,
-					justifyContent: "center",
+					justifyContent: "flex-start",
 					paddingHorizontal: 20,
-					paddingTop: 16,
+					paddingTop: 12,
 					paddingBottom: Math.max(bottomInset, 20),
 				}}
 			>
 				<View style={{ width: "100%", maxWidth: 440, alignSelf: "center" }}>
 					<View
+						testID="calculator-display-card"
 						style={{
 							minHeight: 88,
 							borderRadius: 12,
 							borderWidth: 1,
 							borderColor: OUTLINE,
-							backgroundColor: colors.white,
+							backgroundColor: SURFACE_LOWEST,
 							padding: 16,
 							alignItems: "flex-end",
 							justifyContent: "center",
+							shadowColor: "#000000",
+							shadowOffset: { width: 0, height: 2 },
+							shadowOpacity: 0.06,
+							shadowRadius: 8,
+							elevation: 2,
 						}}
 					>
 						<Text
@@ -209,6 +330,7 @@ export function CalculatorScreen() {
 								color: colors.neutral500,
 								fontSize: 12,
 								fontWeight: "600",
+								textAlign: "right",
 							}}
 						>
 							Monto actual
@@ -249,48 +371,42 @@ export function CalculatorScreen() {
 						) : null}
 					</View>
 
-					<View
-						style={{
-							flexDirection: "row",
-							flexWrap: "wrap",
-							justifyContent: "space-between",
-							rowGap: 10,
-						}}
-					>
-						{KEYS.map((item) => {
-							const palette = keyColors(item.kind);
-							return (
-								<Pressable
-									key={item.testId}
-									accessibilityRole="button"
-									accessibilityLabel={item.accessibilityLabel}
-									testID={`calculator-key-${item.testId}`}
-									onPress={() => pressKey(item.key)}
-									style={({ pressed }) => ({
-										width: "22%",
-										minWidth: 44,
-										height: 54,
-										borderRadius: 10,
-										borderWidth: item.kind === "number" ? 1 : 0,
-										borderColor: OUTLINE,
-										backgroundColor: palette.backgroundColor,
-										alignItems: "center",
-										justifyContent: "center",
-										opacity: pressed ? 0.72 : 1,
-									})}
-								>
-									<Text
-										style={{
-											color: palette.color,
-											fontSize: 21,
-											fontWeight: "600",
-										}}
-									>
-										{item.label}
-									</Text>
-								</Pressable>
-							);
-						})}
+					<View testID="calculator-keypad" style={{ rowGap: 16 }}>
+						{KEY_ROWS.map((row, rowIndex) => (
+							<View
+								key={`row-${rowIndex + 1}`}
+								testID={`calculator-row-${rowIndex + 1}`}
+								style={{
+									flexDirection: "row",
+									justifyContent: "center",
+									columnGap: 16,
+								}}
+							>
+								{row.map((item) => {
+									return (
+										<Pressable
+											key={item.testId}
+											accessibilityRole="button"
+											accessibilityLabel={item.accessibilityLabel}
+											testID={`calculator-key-${item.testId}`}
+											onPress={() => pressKey(item.key)}
+											android_ripple={{ color: "rgba(25, 28, 29, 0.12)" }}
+											style={[styles.key, KEY_KIND_STYLES[item.kind]]}
+										>
+											<Text
+												style={{
+													color: keyTextColor(item.kind),
+													fontSize: 21,
+													fontWeight: "600",
+												}}
+											>
+												{item.label}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						))}
 					</View>
 
 					<Pressable
@@ -298,21 +414,14 @@ export function CalculatorScreen() {
 						accessibilityLabel="Aceptar resultado"
 						testID="calculator-accept"
 						onPress={accept}
-						style={({ pressed }) => ({
-							height: 54,
-							minHeight: 44,
-							marginTop: 18,
-							borderRadius: 10,
-							backgroundColor: DARK_GREEN,
-							alignItems: "center",
-							justifyContent: "center",
-							opacity: pressed ? 0.8 : 1,
-						})}
+						android_ripple={{ color: "rgba(255, 255, 255, 0.16)" }}
+						style={styles.accept}
 					>
 						<Text
 							style={{
-								color: colors.white,
+								color: SURFACE_LOWEST,
 								fontSize: 16,
+								textAlign: "center",
 								fontWeight: "700",
 								letterSpacing: 0.8,
 							}}

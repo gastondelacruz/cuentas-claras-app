@@ -28,6 +28,7 @@ export function AddPersonalTransactionScreen() {
 		changeType,
 		amount,
 		changeAmount,
+		openCalculator,
 		note,
 		changeNote,
 		notePlaceholder,
@@ -157,7 +158,22 @@ export function AddPersonalTransactionScreen() {
 							<Text style={{ fontSize: 13, color: GRAY, fontWeight: "500" }}>
 								ARS
 							</Text>
-							<Calculator color={GRAY} size={16} strokeWidth={1.8} />
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel="Abrir calculadora"
+								accessibilityHint="Calcular el monto sin perder los datos del formulario"
+								hitSlop={4}
+								onPress={openCalculator}
+								testID="personal-transaction-calculator"
+								style={{
+									width: 44,
+									height: 44,
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								<Calculator color={GRAY} size={20} strokeWidth={1.8} />
+							</Pressable>
 						</View>
 					</View>
 

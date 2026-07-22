@@ -250,6 +250,7 @@ describe("navigation shell", () => {
 			"NewGroup",
 			"AddExpense",
 			"AddPersonalTransaction",
+			"Calculator",
 			"PersonalCategoryDetail",
 			"SettleDebts",
 			"VerifyEmail",
@@ -287,7 +288,17 @@ describe("navigation shell", () => {
 		act(() => {
 			navigationRef.navigate("AddExpense");
 		});
+		expect(await findByText("Verificá tu email")).toBeOnTheScreen();
 
+		act(() => {
+			navigationRef.navigate("Calculator", {
+				initialAmount: "100",
+				sourceParams: { type: "expense" },
+			});
+		});
+		await waitFor(() => {
+			expect(navigationRef.getCurrentRoute()?.name).toBe("Calculator");
+		});
 		expect(await findByText("Verificá tu email")).toBeOnTheScreen();
 	});
 

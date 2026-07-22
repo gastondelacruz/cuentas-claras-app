@@ -37,7 +37,11 @@ const mockGetMockEditablePersonalTransaction = jest.mocked(
 );
 
 let testClient: QueryClient;
-let navigationMock: { goBack: jest.Mock };
+let navigationMock: {
+	goBack: jest.Mock;
+	navigate: jest.Mock;
+	setParams: jest.Mock;
+};
 
 // Pin "today" to 2026-06-29 (Monday) so date-chip labels are deterministic
 const FAKE_NOW = new Date("2026-06-29T12:00:00.000Z");
@@ -64,7 +68,11 @@ describe("AddPersonalTransactionScreen", () => {
 				mutations: { retry: false, gcTime: Infinity },
 			},
 		});
-		navigationMock = { goBack: jest.fn() };
+		navigationMock = {
+			goBack: jest.fn(),
+			navigate: jest.fn(),
+			setParams: jest.fn(),
+		};
 		jest.mocked(useNavigation).mockReturnValue(navigationMock as never);
 		jest
 			.mocked(useRoute)
@@ -894,5 +902,109 @@ describe("AddPersonalTransactionScreen", () => {
 			).toBeTruthy();
 		});
 		expect(navigationMock.goBack).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		"expense",
+		"income",
+	] as const)("opens the calculator for a %s with the current amount and source params", (transactionType) => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: {
+				type: transactionType,
+				transactionId: "transaction-1",
+				returnToPersonalExpenses: true,
+			},
+		} as never);
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+		fireEvent.changeText(
+			screen.getByTestId("personal-transaction-amount-input"),
+			"12.500,25",
+		);
+		fireEvent.press(screen.getByTestId("personal-transaction-calculator"));
+
+		expect(navigationMock.navigate).toHaveBeenCalledWith("Calculator", {
+			initialAmount: "12.500,25",
+			sourceParams: {
+				type: transactionType,
+				transactionId: "transaction-1",
+				returnToPersonalExpenses: true,
+			},
+		});
+	});
+
+	it("consumes a calculator result once while preserving the rest of the form and edit mode", () => {
+		const route = {
+			params: {
+				type: "expense" as const,
+				transactionId: "ptx-edit-expense",
+				returnToPersonalExpenses: true,
+			},
+		};
+		jest.mocked(useRoute).mockImplementation(() => route as never);
+		mockGetMockEditablePersonalTransaction.mockReturnValue({
+			id: "ptx-edit-expense",
+			type: "expense",
+			expenseKind: "variable",
+			amount: 45000,
+			currency: "ARS",
+			category: "Salud",
+			accountId: "account-ars",
+			accountName: "Pesos",
+			occurredAt: "2026-06-28T12:00:00.000Z",
+			note: "Farmacia",
+			createdAt: "2026-06-28T12:00:00.000Z",
+			updatedAt: "2026-06-28T12:00:00.000Z",
+		});
+		const rendered = render(<AddPersonalTransactionScreen />, {
+			wrapper: Wrapper,
+		});
+		fireEvent.changeText(
+			screen.getByTestId("personal-note-input"),
+			"Nota intacta",
+		);
+		fireEvent.press(screen.getByTestId("personal-expense-type-fixed"));
+
+		route.params = {
+			...route.params,
+			calculatorResult: "12345.67",
+		} as typeof route.params;
+		rendered.rerender(<AddPersonalTransactionScreen />);
+
+		expect(
+			screen.getByTestId("personal-transaction-amount-input").props.value,
+		).toBe("12.345,67");
+		expect(screen.getByTestId("personal-note-input").props.value).toBe(
+			"Nota intacta",
+		);
+		expect(
+			screen.getByTestId("personal-expense-type-fixed").props
+				.accessibilityState,
+		).toMatchObject({ selected: true });
+		expect(
+			screen.getByTestId("delete-personal-transaction-button"),
+		).toBeTruthy();
+		expect(navigationMock.setParams).toHaveBeenCalledTimes(1);
+		expect(navigationMock.setParams).toHaveBeenCalledWith({
+			calculatorResult: undefined,
+		});
+	});
+
+	it("submits the calculated amount", async () => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: { type: "income", calculatorResult: "876371.25" },
+		} as never);
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		await act(async () => {
+			fireEvent.press(screen.getByTestId("submit-personal-transaction-button"));
+		});
+
+		await waitFor(() => {
+			expect(mockCreatePersonalTransaction).toHaveBeenCalledWith(
+				expect.objectContaining({ amount: 876371.25, type: "income" }),
+				expect.any(Object),
+			);
+		});
 	});
 });

@@ -11,6 +11,18 @@ export type MainTabParamList = {
 	Profile: undefined;
 };
 
+export type AddPersonalTransactionRouteParams = {
+	type?: PersonalTransactionType;
+	transactionId?: string;
+	returnToPersonalExpenses?: boolean;
+	calculatorResult?: string;
+};
+
+export type CalculatorSourceParams = Omit<
+	AddPersonalTransactionRouteParams,
+	"calculatorResult"
+>;
+
 export type RootStackParamList = {
 	Onboarding: undefined;
 	Auth: { initialTab?: "login" | "register" } | undefined;
@@ -18,13 +30,11 @@ export type RootStackParamList = {
 	GroupDetail: { groupId?: string } | undefined;
 	NewGroup: { groupId?: string } | undefined;
 	AddExpense: { groupId?: string; expenseId?: string } | undefined;
-	AddPersonalTransaction:
-		| {
-				type?: PersonalTransactionType;
-				transactionId?: string;
-				returnToPersonalExpenses?: boolean;
-		  }
-		| undefined;
+	AddPersonalTransaction: AddPersonalTransactionRouteParams | undefined;
+	Calculator: {
+		initialAmount: string;
+		sourceParams: CalculatorSourceParams;
+	};
 	PersonalCategoryDetail: PersonalTransactionCategoryDetailRouteParams;
 	SettleDebts: { groupId: string };
 	VerifyEmail: { token?: string } | undefined;
@@ -40,6 +50,7 @@ export const registeredRouteNames = [
 	"NewGroup",
 	"AddExpense",
 	"AddPersonalTransaction",
+	"Calculator",
 	"PersonalCategoryDetail",
 	"SettleDebts",
 	"VerifyEmail",

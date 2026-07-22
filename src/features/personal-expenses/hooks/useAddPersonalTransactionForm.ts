@@ -1,7 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Alert } from "react-native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
 import { maskAmountInput } from "../../expenses/utils/maskAmountInput";
@@ -173,6 +173,19 @@ export function useAddPersonalTransactionForm() {
 	);
 
 	const [submitError, setSubmitError] = useState<string | undefined>();
+	const calculatorResult = route.params?.calculatorResult;
+	useEffect(() => {
+		if (calculatorResult === undefined) return;
+
+		if (
+			/^\d+(?:\.\d{1,2})?$/.test(calculatorResult) &&
+			Number(calculatorResult) > 0
+		) {
+			setAmount(maskAmountInput(calculatorResult));
+		}
+		navigation.setParams({ calculatorResult: undefined });
+	}, [calculatorResult, navigation]);
+
 	const createMutation = useCreatePersonalTransaction();
 	const updateMutation = useUpdatePersonalTransaction();
 	const deleteMutation = useDeletePersonalTransaction();
@@ -192,6 +205,23 @@ export function useAddPersonalTransactionForm() {
 
 	function changeNote(value: string) {
 		setNote(value);
+	}
+
+	function openCalculator() {
+		navigation.navigate("Calculator", {
+			initialAmount: amount || "0",
+			sourceParams: {
+				...(route.params?.type ? { type: route.params.type } : {}),
+				...(route.params?.transactionId
+					? { transactionId: route.params.transactionId }
+					: {}),
+				...(route.params?.returnToPersonalExpenses !== undefined
+					? {
+							returnToPersonalExpenses: route.params.returnToPersonalExpenses,
+						}
+					: {}),
+			},
+		});
 	}
 
 	function applyCustomDate(date: Date) {
@@ -317,6 +347,7 @@ export function useAddPersonalTransactionForm() {
 		setExpenseKind,
 		amount,
 		changeAmount,
+		openCalculator,
 		note,
 		changeNote,
 		notePlaceholder,

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+import { CalculatorScreen } from "../../features/calculator/screens/CalculatorScreen";
 import { AddExpenseScreen } from "../../features/expenses/screens/AddExpenseScreen";
 import { SettleDebtsScreen } from "../../features/expenses/screens/SettleDebtsScreen";
 import { GroupDetailScreen } from "../../features/groups/screens/GroupDetailScreen";
@@ -66,6 +67,11 @@ export function RootNavigator() {
 		: emailVerified
 			? AddPersonalTransactionScreen
 			: EmailVerificationRequiredScreen;
+	const GatedCalculatorScreen = !isAuthenticated
+		? LoginRedirectScreen
+		: emailVerified
+			? CalculatorScreen
+			: EmailVerificationRequiredScreen;
 	const GatedPersonalCategoryDetailScreen = !isAuthenticated
 		? LoginRedirectScreen
 		: emailVerified
@@ -121,6 +127,11 @@ export function RootNavigator() {
 			<Stack.Screen
 				name="AddPersonalTransaction"
 				component={GatedAddPersonalTransactionScreen}
+				options={{ headerShown: false }}
+			/>
+			<Stack.Screen
+				name="Calculator"
+				component={GatedCalculatorScreen}
 				options={{ headerShown: false }}
 			/>
 			<Stack.Screen

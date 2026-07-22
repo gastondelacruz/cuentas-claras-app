@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.3...v1.2.0) (2026-07-22)
+
+
+### Features
+
+* add documentation for in-app transaction calculator ([#83](https://github.com/gastondelacruz/cuentas-claras-app/issues/83)) ([5f57c83](https://github.com/gastondelacruz/cuentas-claras-app/commit/5f57c835ec4442aaf2e258c1fc94219904823adc))
+
 ## [1.1.3](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.2...v1.1.3) (2026-07-12)
 
 

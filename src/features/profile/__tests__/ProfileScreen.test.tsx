@@ -103,6 +103,37 @@ function setupMocks({ isPending = false } = {}) {
 	mockedUseProfileData.mockReturnValue(makeProfileMock());
 }
 
+describe("ProfileScreen — Security biometrics", () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+		setupMocks();
+	});
+
+	it("renders the biometric security setting with an off switch", () => {
+		render(<ProfileScreen />);
+
+		expect(screen.getByText("Seguridad")).toBeTruthy();
+		expect(screen.getByText("Desbloqueo biométrico")).toBeTruthy();
+
+		const biometricSwitch = screen.getByRole("switch", {
+			name: "Desbloqueo biométrico",
+		});
+		expect(biometricSwitch.props.accessibilityState?.checked).toBe(false);
+	});
+
+	it("toggles the biometric switch locally", () => {
+		render(<ProfileScreen />);
+
+		const biometricSwitch = screen.getByRole("switch", {
+			name: "Desbloqueo biométrico",
+		});
+
+		fireEvent(biometricSwitch, "valueChange", true);
+
+		expect(biometricSwitch.props.accessibilityState?.checked).toBe(true);
+	});
+});
+
 describe("ProfileScreen — Bug 2: Cerrar sesión sin efecto", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();

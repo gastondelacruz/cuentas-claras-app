@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { ActivityIndicator } from "react-native";
 import Toast from "react-native-toast-message";
 
 import { useAuthStore } from "../../../../shared/store/authStore";
@@ -141,6 +142,33 @@ describe("AuthScreen", () => {
 
 		fireEvent.press(screen.getByText("Registrarse"));
 		expect(screen.queryByTestId("biometric-login-button")).toBeNull();
+	});
+
+	it("shows a screen-level loading overlay while biometric login is pending", () => {
+		mockedUseBiometricAuth.mockReturnValue({
+			enabled: true,
+			isAvailable: true,
+			isPending: true,
+			enable: jest.fn(),
+			disable: jest.fn(),
+			unlock: jest.fn(),
+		});
+
+		renderAuth("login");
+
+		const loadingOverlay = screen.getByTestId("auth-loading-overlay");
+		const biometricLabel = screen.getByText("Iniciar con huella digital");
+
+		expect(loadingOverlay.findByType(ActivityIndicator)).toBeTruthy();
+		expect(loadingOverlay.props.accessibilityRole).toBe("progressbar");
+		expect(loadingOverlay.props.accessibilityLabel).toBe("Autenticando");
+		expect(loadingOverlay.props.accessibilityState).toEqual({ busy: true });
+		expect(loadingOverlay.props.className).toContain("absolute");
+		expect(loadingOverlay.props.className).toContain("inset-0");
+		expect(loadingOverlay.props.pointerEvents).toBe("auto");
+		expect(
+			biometricLabel.parent?.findAllByType(ActivityIndicator),
+		).toHaveLength(0);
 	});
 
 	it("places Google and biometric actions together above the login fields", () => {

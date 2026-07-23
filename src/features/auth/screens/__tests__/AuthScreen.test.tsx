@@ -88,6 +88,57 @@ describe("AuthScreen", () => {
 		);
 	});
 
+	it("renders an accessible Google button on both auth tabs", () => {
+		renderAuth("login");
+
+		let googleButton = screen.getByTestId("google-button");
+		expect(googleButton.props.accessibilityRole).toBe("button");
+		expect(googleButton.props.accessibilityLabel).toBe("Continuar con Google");
+
+		fireEvent.press(screen.getByText("Registrarse"));
+		googleButton = screen.getByTestId("google-button");
+		expect(googleButton.props.accessibilityRole).toBe("button");
+		expect(googleButton.props.accessibilityLabel).toBe("Continuar con Google");
+	});
+
+	it("renders the biometric login button only on the login tab", () => {
+		renderAuth("login");
+		expect(screen.getByTestId("biometric-login-button")).toBeTruthy();
+		expect(
+			screen.getByTestId("biometric-login-button").props.accessibilityRole,
+		).toBe("button");
+		expect(
+			screen.getByTestId("biometric-login-button").props.accessibilityLabel,
+		).toBe("Iniciar sesión con huella digital");
+
+		fireEvent.press(screen.getByText("Registrarse"));
+		expect(screen.queryByTestId("biometric-login-button")).toBeNull();
+	});
+
+	it("places Google and biometric actions together above the login fields", () => {
+		const { toJSON } = renderAuth("login");
+		const serialized = JSON.stringify(toJSON());
+
+		expect(serialized.indexOf('testID":"google-button')).toBeLessThan(
+			serialized.indexOf('testID":"biometric-login-button'),
+		);
+		expect(serialized.indexOf('testID":"biometric-login-button')).toBeLessThan(
+			serialized.indexOf('testID":"email-label'),
+		);
+		expect(screen.queryByText("o continuar con")).toBeNull();
+	});
+
+	it("uses the official SVG Google logo instead of a text G", () => {
+		renderAuth("login");
+
+		const googleButton = screen.getByTestId("google-button");
+		const logo = googleButton.findByProps({ testID: "google-logo" });
+		expect(logo.props.testID).toBe("google-logo");
+		expect(logo.props.viewBox).toBe("0 0 24 24");
+		expect(logo.props.accessible).toBe(false);
+		expect(screen.queryByText("G")).toBeNull();
+	});
+
 	it('tapping "Registrarse" tab shows "Crear Cuenta" heading', () => {
 		renderAuth("login");
 		fireEvent.press(screen.getByText("Registrarse"));

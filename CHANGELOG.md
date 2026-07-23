@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.2.0...v1.3.0) (2026-07-23)
+
+
+### Features
+
+* **auth:** add biometric authentication and session restoration ([fc1475a](https://github.com/gastondelacruz/cuentas-claras-app/commit/fc1475a603c100e9e1aee303fc66a40f0f590199))
+
 ## [1.2.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.1.3...v1.2.0) (2026-07-22)
 
 

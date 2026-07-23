@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.3.0...v1.4.0) (2026-07-23)
+
+
+### Features
+
+* **auth:** add loading overlay for biometric login pending state ([#87](https://github.com/gastondelacruz/cuentas-claras-app/issues/87)) ([2d22d22](https://github.com/gastondelacruz/cuentas-claras-app/commit/2d22d2272fcc9a5d9dad02d147f04bcb3b5ea26f))
+
 ## [1.3.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.2.0...v1.3.0) (2026-07-23)
 
 

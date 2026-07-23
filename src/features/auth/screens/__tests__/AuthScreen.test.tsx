@@ -3,6 +3,7 @@ import Toast from "react-native-toast-message";
 
 import { useAuthStore } from "../../../../shared/store/authStore";
 import { setRefreshToken } from "../../../../shared/api/tokenStorage";
+import { useBiometricAuth } from "../../hooks/useBiometricAuth";
 import { useLogin } from "../../hooks/useLogin";
 import { useRegister } from "../../hooks/useRegister";
 import { KeyboardAwareScrollView } from "../../../../shared/ui/KeyboardAwareScrollView";
@@ -14,6 +15,11 @@ jest.mock("../../../../shared/store/authStore", () => ({
 
 jest.mock("../../../../shared/api/tokenStorage", () => ({
 	setRefreshToken: jest.fn(),
+	setUserMetadata: jest.fn(),
+}));
+
+jest.mock("../../hooks/useBiometricAuth", () => ({
+	useBiometricAuth: jest.fn(),
 }));
 
 jest.mock("../../hooks/useLogin", () => ({
@@ -33,6 +39,7 @@ jest.mock("../../../../shared/ui/KeyboardAwareScrollView", () => ({
 }));
 
 const mockedUseAuthStore = jest.mocked(useAuthStore);
+const mockedUseBiometricAuth = jest.mocked(useBiometricAuth);
 const mockedUseLogin = jest.mocked(useLogin);
 const mockedUseRegister = jest.mocked(useRegister);
 const mockedToast = jest.mocked(Toast);
@@ -51,6 +58,14 @@ beforeEach(() => {
 		(selector) =>
 			(selector as (s: unknown) => unknown)({ setSession }) as never,
 	);
+	mockedUseBiometricAuth.mockReturnValue({
+		enabled: true,
+		isAvailable: true,
+		isPending: false,
+		enable: jest.fn(),
+		disable: jest.fn(),
+		unlock: jest.fn(),
+	});
 	mockedUseLogin.mockReturnValue({
 		mutate: jest.fn(),
 		isPending: false,
@@ -99,6 +114,19 @@ describe("AuthScreen", () => {
 		googleButton = screen.getByTestId("google-button");
 		expect(googleButton.props.accessibilityRole).toBe("button");
 		expect(googleButton.props.accessibilityLabel).toBe("Continuar con Google");
+	});
+
+	it("hides biometric login when the preference or device availability is missing", () => {
+		mockedUseBiometricAuth.mockReturnValue({
+			enabled: false,
+			isAvailable: false,
+			isPending: false,
+			enable: jest.fn(),
+			disable: jest.fn(),
+			unlock: jest.fn(),
+		});
+		renderAuth("login");
+		expect(screen.queryByTestId("biometric-login-button")).toBeNull();
 	});
 
 	it("renders the biometric login button only on the login tab", () => {

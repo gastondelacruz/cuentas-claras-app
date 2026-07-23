@@ -2,7 +2,10 @@ import { useState } from "react";
 import Toast from "react-native-toast-message";
 
 import { useAuthStore } from "../../../shared/store/authStore";
-import { setRefreshToken } from "../../../shared/api/tokenStorage";
+import {
+	setRefreshToken,
+	setUserMetadata,
+} from "../../../shared/api/tokenStorage";
 import { registerSchema, RegisterFormValues } from "../schemas/registerSchema";
 import { useRegister } from "./useRegister";
 
@@ -43,6 +46,7 @@ export function useRegisterForm() {
 				onSuccess: async (response) => {
 					const { accessToken, refreshToken, user } = response.data;
 					await setRefreshToken(refreshToken);
+					await setUserMetadata(user);
 					setSession(user, accessToken);
 				},
 				onError: () => {

@@ -16,6 +16,7 @@
     "expo-crypto": "~15.0.9",
     "expo-font": "~14.0.12",
     "expo-image-picker": "~17.0.11",
+    "expo-local-authentication": "~17.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
@@ -51,7 +52,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@expo/metro-config>postcss": "8.5.10",
+      "@expo/metro-config>postcss": "8.5.12",
       "xcode>uuid": "11.1.1",
       "tar@7.5.16": "7.5.21",
       "shell-quote@1.8.4": "1.10.0",

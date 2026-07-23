@@ -5,7 +5,9 @@ import axios, {
 } from "axios";
 
 import {
+	clearBiometricEnabled,
 	clearRefreshToken,
+	clearUserMetadata,
 	getRefreshToken,
 	setRefreshToken,
 } from "./tokenStorage";
@@ -41,6 +43,7 @@ function setAuthorizationHeader(
 async function runRefresh() {
 	const refreshToken = await getRefreshToken();
 	if (!refreshToken) {
+		await Promise.all([clearUserMetadata(), clearBiometricEnabled()]);
 		useAuthStore.getState().clearSession();
 		emitAuthLogout();
 		throw new Error("Refresh token is missing");
@@ -64,7 +67,11 @@ async function runRefresh() {
 			? error.response?.status
 			: undefined;
 		if (status === 401 || status === 403) {
-			await clearRefreshToken();
+			await Promise.all([
+				clearRefreshToken(),
+				clearUserMetadata(),
+				clearBiometricEnabled(),
+			]);
 			useAuthStore.getState().clearSession();
 			emitAuthLogout();
 		}

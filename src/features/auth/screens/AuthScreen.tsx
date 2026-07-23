@@ -13,6 +13,7 @@ import Svg, { Path } from "react-native-svg";
 import { RootStackParamList } from "../../../app/navigation/types";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { KeyboardAwareScrollView } from "../../../shared/ui/KeyboardAwareScrollView";
+import { useBiometricAuth } from "../hooks/useBiometricAuth";
 import { useLoginForm } from "../hooks/useLoginForm";
 import { useRegisterForm } from "../hooks/useRegisterForm";
 
@@ -59,6 +60,13 @@ export function AuthScreen({ route }: Props) {
 			setActiveTab(route.params.initialTab);
 		}
 	}, [route.params?.initialTab]);
+
+	const {
+		enabled: biometricEnabled,
+		isAvailable: biometricAvailable,
+		isPending: isBiometricPending,
+		unlock,
+	} = useBiometricAuth();
 
 	const {
 		email: loginEmail,
@@ -163,17 +171,21 @@ export function AuthScreen({ route }: Props) {
 									</Text>
 								</TouchableOpacity>
 
-								<TouchableOpacity
-									accessibilityRole="button"
-									accessibilityLabel="Iniciar sesión con huella digital"
-									testID="biometric-login-button"
-									className="flex-row items-center justify-center border border-[#006d37] rounded-full py-3 mt-3"
-								>
-									<Fingerprint size={20} color="#006d37" />
-									<Text className="text-[#006d37] font-medium ml-2">
-										Iniciar con huella digital
-									</Text>
-								</TouchableOpacity>
+								{biometricEnabled && biometricAvailable ? (
+									<TouchableOpacity
+										accessibilityRole="button"
+										accessibilityLabel="Iniciar sesión con huella digital"
+										testID="biometric-login-button"
+										onPress={() => void unlock()}
+										disabled={isBiometricPending}
+										className="flex-row items-center justify-center border border-[#006d37] rounded-full py-3 mt-3"
+									>
+										<Fingerprint size={20} color="#006d37" />
+										<Text className="text-[#006d37] font-medium ml-2">
+											Iniciar con huella digital
+										</Text>
+									</TouchableOpacity>
+								) : null}
 							</View>
 
 							{/* Email */}

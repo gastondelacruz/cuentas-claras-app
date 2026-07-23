@@ -1,12 +1,12 @@
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Fingerprint, LogOut } from "lucide-react-native";
-import { useState } from "react";
 
 import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import packageJson from "../../../../package.json";
+import { useBiometricAuth } from "../../auth/hooks/useBiometricAuth";
 import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 
@@ -53,8 +53,13 @@ function ProfileCard({ profile }: { profile: ProfileUser }) {
 export function ProfileScreen() {
 	const { user } = useProfileData();
 	const logout = useLogout();
+	const {
+		enabled: biometricEnabled,
+		isPending: biometricPending,
+		enable,
+		disable,
+	} = useBiometricAuth();
 	const version = packageJson.version;
-	const [biometricEnabled, setBiometricEnabled] = useState(false);
 
 	return (
 		<ScreenContainer>
@@ -78,7 +83,10 @@ export function ProfileScreen() {
 								accessibilityRole="switch"
 								accessibilityState={{ checked: biometricEnabled }}
 								ios_backgroundColor={colors.neutral200}
-								onValueChange={setBiometricEnabled}
+								onValueChange={(value) => {
+									void (value ? enable() : disable());
+								}}
+								disabled={biometricPending}
 								thumbColor={colors.white}
 								trackColor={{ false: colors.neutral200, true: colors.primary }}
 								value={biometricEnabled}

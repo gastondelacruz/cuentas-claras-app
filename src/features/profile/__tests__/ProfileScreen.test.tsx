@@ -21,6 +21,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import fc from "fast-check";
 
 import packageJson from "../../../../package.json";
+import { useBiometricAuth } from "../../auth/hooks/useBiometricAuth";
 import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 import { ProfileScreen } from "../screens/ProfileScreen";
@@ -30,12 +31,17 @@ jest.mock("../../auth/hooks/useLogout", () => ({
 	useLogout: jest.fn(),
 }));
 
+jest.mock("../../auth/hooks/useBiometricAuth", () => ({
+	useBiometricAuth: jest.fn(),
+}));
+
 // Mock useProfileData to avoid hitting real hooks/stores in render tests
 jest.mock("../hooks/useProfileData", () => ({
 	useProfileData: jest.fn(),
 }));
 
 const mockedUseLogout = jest.mocked(useLogout);
+const mockedUseBiometricAuth = jest.mocked(useBiometricAuth);
 const mockedUseProfileData = jest.mocked(useProfileData);
 
 const mockMutate = jest.fn();
@@ -100,6 +106,14 @@ function makeProfileMock({
 
 function setupMocks({ isPending = false } = {}) {
 	mockedUseLogout.mockReturnValue(makeLogoutMock({ isPending }));
+	mockedUseBiometricAuth.mockReturnValue({
+		enabled: false,
+		isAvailable: false,
+		isPending: false,
+		enable: jest.fn().mockResolvedValue(true),
+		disable: jest.fn().mockResolvedValue(true),
+		unlock: jest.fn().mockResolvedValue(true),
+	});
 	mockedUseProfileData.mockReturnValue(makeProfileMock());
 }
 
@@ -121,7 +135,7 @@ describe("ProfileScreen — Security biometrics", () => {
 		expect(biometricSwitch.props.accessibilityState?.checked).toBe(false);
 	});
 
-	it("toggles the biometric switch locally", () => {
+	it("requests biometric authentication before enabling the switch", () => {
 		render(<ProfileScreen />);
 
 		const biometricSwitch = screen.getByRole("switch", {
@@ -130,7 +144,9 @@ describe("ProfileScreen — Security biometrics", () => {
 
 		fireEvent(biometricSwitch, "valueChange", true);
 
-		expect(biometricSwitch.props.accessibilityState?.checked).toBe(true);
+		expect(
+			mockedUseBiometricAuth.mock.results[0].value.enable,
+		).toHaveBeenCalledTimes(1);
 	});
 });
 

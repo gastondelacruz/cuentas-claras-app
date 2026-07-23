@@ -1,3 +1,4 @@
+import { ActivityIndicator, Text, View } from "react-native";
 import { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
@@ -14,6 +15,7 @@ import { AuthScreen } from "../../features/auth/screens/AuthScreen";
 import { OnboardingScreen } from "../../features/auth/screens/OnboardingScreen";
 import { AcceptGroupInvitationScreen } from "../../features/groups/screens/AcceptGroupInvitationScreen";
 import { useEmailVerificationStatus } from "../../features/auth/hooks/useEmailVerification";
+import { useSessionRestore } from "../../features/auth/hooks/useSessionRestore";
 import { onAuthLogout } from "../../shared/api/authEvents";
 import { useAuthStore } from "../../shared/store/authStore";
 import { MainTabs } from "./MainTabs";
@@ -39,12 +41,30 @@ export function RootNavigator() {
 		(state) => state.pendingGroupInvitationToken,
 	);
 	useEmailVerificationStatus();
+	useSessionRestore();
+	const isRestoringSession = useAuthStore((state) => state.isRestoringSession);
+	const biometricUnlockRequired = useAuthStore(
+		(state) => state.biometricUnlockRequired,
+	);
 
 	useEffect(() => {
 		return onAuthLogout(() => {
 			useAuthStore.getState().clearSession();
 		});
 	}, []);
+
+	if (isRestoringSession) {
+		return (
+			<View className="flex-1 items-center justify-center bg-[#f0f0f3]">
+				<ActivityIndicator color="#006d37" />
+				<Text className="mt-3 text-[#1a1c1e]">Restaurando tu sesión…</Text>
+			</View>
+		);
+	}
+
+	if (biometricUnlockRequired && !isAuthenticated) {
+		return <LoginRedirectScreen />;
+	}
 
 	const GatedMainScreen = isAuthenticated ? MainTabs : LoginRedirectScreen;
 	const GatedGroupDetailScreen = !isAuthenticated

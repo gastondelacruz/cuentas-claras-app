@@ -1,7 +1,17 @@
 import { client } from "../../../shared/api/client";
 import {
+	clearBiometricEnabled,
+	clearRefreshToken,
+	clearUserMetadata,
+	setBiometricEnabled,
+	setRefreshToken,
+	setUserMetadata,
+} from "../../../shared/api/tokenStorage";
+import { useAuthStore } from "../../../shared/store/authStore";
+import {
 	getEmailVerificationStatus,
 	getMeSummary,
+	refreshSession,
 	resendEmailVerification,
 	verifyEmail,
 } from "../api/authApi";
@@ -12,6 +22,41 @@ jest.mock("../../../shared/api/client", () => ({
 
 const mockGet = jest.mocked(client.get);
 const mockPost = jest.mocked(client.post);
+
+describe("authApi.refreshSession", () => {
+	beforeEach(async () => {
+		jest.clearAllMocks();
+		useAuthStore.getState().clearSession();
+		await Promise.all([
+			clearRefreshToken(),
+			clearUserMetadata(),
+			clearBiometricEnabled(),
+		]);
+	});
+
+	it("restores the session from persisted user metadata when refresh has no user", async () => {
+		const user = { id: "user-1", name: "Ana", email: "ana@example.com" };
+		await setRefreshToken("refresh-token");
+		await setUserMetadata(user);
+		await setBiometricEnabled(true);
+		mockPost.mockResolvedValueOnce({
+			data: {
+				data: { accessToken: "access-token", refreshToken: "rotated-token" },
+			},
+		});
+
+		await refreshSession();
+
+		expect(mockPost).toHaveBeenCalledWith("/auth/refresh", {
+			refreshToken: "refresh-token",
+		});
+		expect(useAuthStore.getState()).toMatchObject({
+			user,
+			accessToken: "access-token",
+			isAuthenticated: true,
+		});
+	});
+});
 
 describe("authApi.getMeSummary", () => {
 	beforeEach(() => {

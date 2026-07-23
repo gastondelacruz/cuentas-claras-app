@@ -21,6 +21,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import fc from "fast-check";
 
 import packageJson from "../../../../package.json";
+import { useBiometricAuth } from "../../auth/hooks/useBiometricAuth";
 import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 import { ProfileScreen } from "../screens/ProfileScreen";
@@ -30,12 +31,17 @@ jest.mock("../../auth/hooks/useLogout", () => ({
 	useLogout: jest.fn(),
 }));
 
+jest.mock("../../auth/hooks/useBiometricAuth", () => ({
+	useBiometricAuth: jest.fn(),
+}));
+
 // Mock useProfileData to avoid hitting real hooks/stores in render tests
 jest.mock("../hooks/useProfileData", () => ({
 	useProfileData: jest.fn(),
 }));
 
 const mockedUseLogout = jest.mocked(useLogout);
+const mockedUseBiometricAuth = jest.mocked(useBiometricAuth);
 const mockedUseProfileData = jest.mocked(useProfileData);
 
 const mockMutate = jest.fn();
@@ -100,8 +106,49 @@ function makeProfileMock({
 
 function setupMocks({ isPending = false } = {}) {
 	mockedUseLogout.mockReturnValue(makeLogoutMock({ isPending }));
+	mockedUseBiometricAuth.mockReturnValue({
+		enabled: false,
+		isAvailable: false,
+		isPending: false,
+		enable: jest.fn().mockResolvedValue(true),
+		disable: jest.fn().mockResolvedValue(true),
+		unlock: jest.fn().mockResolvedValue(true),
+	});
 	mockedUseProfileData.mockReturnValue(makeProfileMock());
 }
+
+describe("ProfileScreen — Security biometrics", () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+		setupMocks();
+	});
+
+	it("renders the biometric security setting with an off switch", () => {
+		render(<ProfileScreen />);
+
+		expect(screen.getByText("Seguridad")).toBeTruthy();
+		expect(screen.getByText("Desbloqueo biométrico")).toBeTruthy();
+
+		const biometricSwitch = screen.getByRole("switch", {
+			name: "Desbloqueo biométrico",
+		});
+		expect(biometricSwitch.props.accessibilityState?.checked).toBe(false);
+	});
+
+	it("requests biometric authentication before enabling the switch", () => {
+		render(<ProfileScreen />);
+
+		const biometricSwitch = screen.getByRole("switch", {
+			name: "Desbloqueo biométrico",
+		});
+
+		fireEvent(biometricSwitch, "valueChange", true);
+
+		expect(
+			mockedUseBiometricAuth.mock.results[0].value.enable,
+		).toHaveBeenCalledTimes(1);
+	});
+});
 
 describe("ProfileScreen — Bug 2: Cerrar sesión sin efecto", () => {
 	beforeEach(() => {

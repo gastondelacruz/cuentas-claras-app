@@ -1,9 +1,17 @@
+import axios from "axios";
+
 import { client } from "../../../shared/api/client";
 import { parseOrThrow } from "../../../shared/api/errors";
 import {
+	clearBiometricEnabled,
 	clearRefreshToken,
+	clearUserMetadata,
 	getRefreshToken,
+	getUserMetadata,
+	setRefreshToken,
+	setUserMetadata,
 } from "../../../shared/api/tokenStorage";
+import { useAuthStore } from "../../../shared/store/authStore";
 import {
 	accountSummarySchema,
 	AccountSummaryDto,
@@ -22,6 +30,14 @@ export type AuthResponse = {
 			name: string;
 			email: string;
 		};
+	};
+};
+
+type RefreshResponse = {
+	data: {
+		accessToken: string;
+		refreshToken: string;
+		user?: AuthResponse["data"]["user"];
 	};
 };
 
@@ -51,11 +67,55 @@ export async function registerUser(
 	return response.data;
 }
 
+export async function refreshSession(): Promise<void> {
+	const refreshToken = await getRefreshToken();
+	if (!refreshToken) throw new Error("Refresh token is missing");
+
+	try {
+		const response = await client.post<RefreshResponse>("/auth/refresh", {
+			refreshToken,
+		});
+		const {
+			accessToken,
+			refreshToken: rotatedRefreshToken,
+			user,
+		} = response.data.data;
+		if (useAuthStore.getState().isLogoutInProgress) {
+			throw new Error("Session restore cancelled by logout");
+		}
+		await setRefreshToken(rotatedRefreshToken);
+		const currentUser =
+			user ?? useAuthStore.getState().user ?? (await getUserMetadata());
+		if (!currentUser) throw new Error("Session user is missing");
+		await setUserMetadata(currentUser);
+		useAuthStore.getState().setSession(currentUser, accessToken);
+	} catch (error) {
+		if (
+			axios.isAxiosError(error) &&
+			[401, 403].includes(error.response?.status ?? 0)
+		) {
+			await Promise.all([
+				clearRefreshToken(),
+				clearUserMetadata(),
+				clearBiometricEnabled(),
+			]);
+			useAuthStore.getState().clearSession();
+		}
+		throw error;
+	}
+}
+
 export async function logoutUser(): Promise<void> {
 	const refreshToken = await getRefreshToken();
-
-	await client.post("/auth/logout", { refreshToken });
-	await clearRefreshToken();
+	try {
+		await client.post("/auth/logout", { refreshToken });
+	} finally {
+		await Promise.all([
+			clearRefreshToken(),
+			clearBiometricEnabled(),
+			clearUserMetadata(),
+		]);
+	}
 }
 
 export async function getMeSummary(): Promise<AccountSummaryDto> {

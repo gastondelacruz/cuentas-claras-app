@@ -1,11 +1,12 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { LogOut } from "lucide-react-native";
+import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Fingerprint, LogOut } from "lucide-react-native";
 
 import { colors } from "../../../shared/theme/colors";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import packageJson from "../../../../package.json";
+import { useBiometricAuth } from "../../auth/hooks/useBiometricAuth";
 import { useLogout } from "../../auth/hooks/useLogout";
 import { useProfileData } from "../hooks/useProfileData";
 
@@ -52,6 +53,12 @@ function ProfileCard({ profile }: { profile: ProfileUser }) {
 export function ProfileScreen() {
 	const { user } = useProfileData();
 	const logout = useLogout();
+	const {
+		enabled: biometricEnabled,
+		isPending: biometricPending,
+		enable,
+		disable,
+	} = useBiometricAuth();
 	const version = packageJson.version;
 
 	return (
@@ -63,6 +70,29 @@ export function ProfileScreen() {
 			>
 				<View className="gap-8 px-5">
 					<ProfileCard profile={user} />
+
+					<View className="gap-4">
+						<Text className="text-xl font-bold text-neutral900">Seguridad</Text>
+						<View className="flex-row items-center rounded-lg bg-white px-5 py-4 shadow-sm">
+							<Fingerprint color={colors.primary} size={24} strokeWidth={2.2} />
+							<Text className="ml-4 flex-1 text-lg text-neutral900">
+								Desbloqueo biométrico
+							</Text>
+							<Switch
+								accessibilityLabel="Desbloqueo biométrico"
+								accessibilityRole="switch"
+								accessibilityState={{ checked: biometricEnabled }}
+								ios_backgroundColor={colors.neutral200}
+								onValueChange={(value) => {
+									void (value ? enable() : disable());
+								}}
+								disabled={biometricPending}
+								thumbColor={colors.white}
+								trackColor={{ false: colors.neutral200, true: colors.primary }}
+								value={biometricEnabled}
+							/>
+						</View>
+					</View>
 
 					<Pressable
 						accessibilityRole="button"

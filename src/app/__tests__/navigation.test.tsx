@@ -15,6 +15,7 @@ import { useGroupsStore } from "../../features/groups/store/groupsStore";
 import { acceptGroupInvitation } from "../../features/groups/api/groupsApi";
 import { useAuthStore } from "../../shared/store/authStore";
 import { emitAuthLogout } from "../../shared/api/authEvents";
+import { clearRefreshToken } from "../../shared/api/tokenStorage";
 import { useGroupDetail } from "../../features/groups/hooks/useGroupDetail";
 import { useGroupDetailActions } from "../../features/groups/hooks/useGroupDetailActions";
 import { useAccountSummary } from "../../features/account/hooks/useAccountSummary";
@@ -128,7 +129,8 @@ function createGroup(name: string, invitedEmails: string[]) {
 describe("navigation shell", () => {
 	let groupId: string;
 
-	beforeEach(() => {
+	beforeEach(async () => {
+		await clearRefreshToken();
 		useAuthStore.getState().clearSession();
 		useGroupsStore.getState().reset();
 		mockAcceptGroupInvitation.mockReset();

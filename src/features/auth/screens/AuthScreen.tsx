@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { Fingerprint } from "lucide-react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import Svg, { Path } from "react-native-svg";
 
 import { RootStackParamList } from "../../../app/navigation/types";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
@@ -19,37 +18,6 @@ import { useLoginForm } from "../hooks/useLoginForm";
 import { useRegisterForm } from "../hooks/useRegisterForm";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Auth">;
-
-function GoogleLogo() {
-	return (
-		<Svg
-			testID="google-logo"
-			width={20}
-			height={20}
-			viewBox="0 0 24 24"
-			accessible={false}
-			accessibilityElementsHidden
-			importantForAccessibility="no"
-		>
-			<Path
-				fill="#4285F4"
-				d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v3h3.87c2.27-2.09 3.57-5.17 3.57-8.64Z"
-			/>
-			<Path
-				fill="#34A853"
-				d="M12 24c3.24 0 5.95-1.07 7.93-2.9l-3.87-3A7.16 7.16 0 0 1 12 19.23a7.16 7.16 0 0 1-6.74-4.98H1.26v3.1A12 12 0 0 0 12 24Z"
-			/>
-			<Path
-				fill="#FBBC05"
-				d="M5.26 14.25A7.2 7.2 0 0 1 4.88 12c0-.78.14-1.54.38-2.25v-3.1H1.26A12 12 0 0 0 0 12c0 1.93.46 3.75 1.26 5.35l4-3.1Z"
-			/>
-			<Path
-				fill="#EA4335"
-				d="M12 4.77c1.77 0 3.36.61 4.61 1.81l3.45-3.45C17.94 1.03 15.24 0 12 0A12 12 0 0 0 1.26 6.65l4 3.1A7.16 7.16 0 0 1 12 4.77Z"
-			/>
-		</Svg>
-	);
-}
 
 export function AuthScreen({ route }: Props) {
 	const [activeTab, setActiveTab] = useState<"login" | "register">(
@@ -162,20 +130,8 @@ export function AuthScreen({ route }: Props) {
 									</Text>
 								</View>
 
-								{/* Google and biometric login actions */}
+								{/* Biometric login action */}
 								<View className="mb-6">
-									<TouchableOpacity
-										accessibilityRole="button"
-										accessibilityLabel="Continuar con Google"
-										testID="google-button"
-										className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3 bg-white"
-									>
-										<GoogleLogo />
-										<Text className="text-[#1a1c1e] font-medium ml-2">
-											Continuar con Google
-										</Text>
-									</TouchableOpacity>
-
 									{biometricEnabled && biometricAvailable ? (
 										<TouchableOpacity
 											accessibilityRole="button"
@@ -437,34 +393,8 @@ export function AuthScreen({ route }: Props) {
 									testID="register-button"
 									disabled={isRegisterPending}
 								>
-									{isRegisterPending ? (
-										<ActivityIndicator color="white" />
-									) : (
-										<Text className="text-white font-semibold text-base">
-											Registrarse
-										</Text>
-									)}
-								</TouchableOpacity>
-
-								{/* Divider */}
-								<View className="flex-row items-center mb-5">
-									<View className="flex-1 h-px bg-gray-200" />
-									<Text className="text-gray-400 mx-3 text-sm">
-										o continuar con
-									</Text>
-									<View className="flex-1 h-px bg-gray-200" />
-								</View>
-
-								{/* Google */}
-								<TouchableOpacity
-									accessibilityRole="button"
-									accessibilityLabel="Continuar con Google"
-									testID="google-button"
-									className="flex-row items-center justify-center border border-[#6c7b6d] rounded-full py-3 bg-white"
-								>
-									<GoogleLogo />
-									<Text className="text-[#1a1c1e] font-medium ml-2">
-										Continuar con Google
+									<Text className="text-white font-semibold text-base">
+										Registrarse
 									</Text>
 								</TouchableOpacity>
 							</>

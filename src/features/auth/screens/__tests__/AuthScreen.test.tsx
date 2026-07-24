@@ -104,17 +104,15 @@ describe("AuthScreen", () => {
 		);
 	});
 
-	it("renders an accessible Google button on both auth tabs", () => {
+	it("hides the unimplemented Google login action on both auth tabs", () => {
 		renderAuth("login");
-
-		let googleButton = screen.getByTestId("google-button");
-		expect(googleButton.props.accessibilityRole).toBe("button");
-		expect(googleButton.props.accessibilityLabel).toBe("Continuar con Google");
+		expect(screen.queryByTestId("google-button")).toBeNull();
+		expect(screen.queryByText("Continuar con Google")).toBeNull();
 
 		fireEvent.press(screen.getByText("Registrarse"));
-		googleButton = screen.getByTestId("google-button");
-		expect(googleButton.props.accessibilityRole).toBe("button");
-		expect(googleButton.props.accessibilityLabel).toBe("Continuar con Google");
+		expect(screen.queryByTestId("google-button")).toBeNull();
+		expect(screen.queryByText("Continuar con Google")).toBeNull();
+		expect(screen.queryByText("o continuar con")).toBeNull();
 	});
 
 	it("hides biometric login when the preference or device availability is missing", () => {
@@ -144,6 +142,23 @@ describe("AuthScreen", () => {
 		expect(screen.queryByTestId("biometric-login-button")).toBeNull();
 	});
 
+	it("shows only the screen-level loading overlay while registration is pending", () => {
+		mockedUseRegister.mockReturnValue({
+			mutate: jest.fn(),
+			isPending: true,
+			error: null,
+		} as never);
+
+		renderAuth("register");
+
+		const loadingOverlay = screen.getByTestId("auth-loading-overlay");
+		const registerButton = screen.getByTestId("register-button");
+
+		expect(loadingOverlay.findByType(ActivityIndicator)).toBeTruthy();
+		expect(registerButton.findAllByType(ActivityIndicator)).toHaveLength(0);
+		expect(screen.getAllByText("Registrarse")).toHaveLength(2);
+	});
+
 	it("shows a screen-level loading overlay while biometric login is pending", () => {
 		mockedUseBiometricAuth.mockReturnValue({
 			enabled: true,
@@ -171,28 +186,13 @@ describe("AuthScreen", () => {
 		).toHaveLength(0);
 	});
 
-	it("places Google and biometric actions together above the login fields", () => {
+	it("places biometric login above the login fields", () => {
 		const { toJSON } = renderAuth("login");
 		const serialized = JSON.stringify(toJSON());
 
-		expect(serialized.indexOf('testID":"google-button')).toBeLessThan(
-			serialized.indexOf('testID":"biometric-login-button'),
-		);
 		expect(serialized.indexOf('testID":"biometric-login-button')).toBeLessThan(
 			serialized.indexOf('testID":"email-label'),
 		);
-		expect(screen.queryByText("o continuar con")).toBeNull();
-	});
-
-	it("uses the official SVG Google logo instead of a text G", () => {
-		renderAuth("login");
-
-		const googleButton = screen.getByTestId("google-button");
-		const logo = googleButton.findByProps({ testID: "google-logo" });
-		expect(logo.props.testID).toBe("google-logo");
-		expect(logo.props.viewBox).toBe("0 0 24 24");
-		expect(logo.props.accessible).toBe(false);
-		expect(screen.queryByText("G")).toBeNull();
 	});
 
 	it('tapping "Registrarse" tab shows "Crear Cuenta" heading', () => {

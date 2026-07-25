@@ -9,6 +9,8 @@ import { GroupDetailScreen } from "../../features/groups/screens/GroupDetailScre
 import { NewGroupScreen } from "../../features/groups/screens/NewGroupScreen";
 import { AddPersonalTransactionScreen } from "../../features/personal-expenses/screens/AddPersonalTransactionScreen";
 import { PersonalCategoryDetailScreen } from "../../features/personal-expenses/screens/PersonalCategoryDetailScreen";
+import { PersonalTransactionCategoriesScreen } from "../../features/personal-expenses/screens/PersonalTransactionCategoriesScreen";
+import { CreatePersonalTransactionCategoryScreen } from "../../features/personal-expenses/screens/CreatePersonalTransactionCategoryScreen";
 import { EmailVerificationRequiredScreen } from "../../features/auth/screens/EmailVerificationRequiredScreen";
 import { VerifyEmailScreen } from "../../features/auth/screens/VerifyEmailScreen";
 import { AuthScreen } from "../../features/auth/screens/AuthScreen";
@@ -102,6 +104,16 @@ export function RootNavigator() {
 		: emailVerified
 			? SettleDebtsScreen
 			: EmailVerificationRequiredScreen;
+	const GatedPersonalTransactionCategoriesScreen = !isAuthenticated
+		? LoginRedirectScreen
+		: emailVerified
+			? PersonalTransactionCategoriesScreen
+			: EmailVerificationRequiredScreen;
+	const GatedCreatePersonalTransactionCategoryScreen = !isAuthenticated
+		? LoginRedirectScreen
+		: emailVerified
+			? CreatePersonalTransactionCategoryScreen
+			: EmailVerificationRequiredScreen;
 
 	const initialRouteName = isAuthenticated
 		? pendingGroupInvitationToken
@@ -157,6 +169,16 @@ export function RootNavigator() {
 			<Stack.Screen
 				name="PersonalCategoryDetail"
 				component={GatedPersonalCategoryDetailScreen}
+				options={{ headerShown: false }}
+			/>
+			<Stack.Screen
+				name="PersonalTransactionCategories"
+				component={GatedPersonalTransactionCategoriesScreen}
+				options={{ headerShown: false }}
+			/>
+			<Stack.Screen
+				name="CreatePersonalTransactionCategory"
+				component={GatedCreatePersonalTransactionCategoryScreen}
 				options={{ headerShown: false }}
 			/>
 			<Stack.Screen

@@ -4,6 +4,7 @@ import * as ReactNavigation from "@react-navigation/native";
 import { Alert } from "react-native";
 
 import { queryKeys } from "../../../shared/api/queryKeys";
+import { PERSONAL_CATEGORY_ICON_COMPONENTS } from "../constants/personalTransactionCategoryVisuals";
 import { useAuthStore } from "../../../shared/store/authStore";
 import {
 	deletePersonalTransaction,
@@ -11,6 +12,11 @@ import {
 	getPersonalTransactionsSummary,
 } from "../api/personalTransactionsApi";
 import { usePersonalCategoryDetailScreen } from "../hooks/usePersonalCategoryDetailScreen";
+import { usePersonalCategories } from "../hooks/usePersonalCategories";
+
+jest.mock("../hooks/usePersonalCategories", () => ({
+	usePersonalCategories: jest.fn(),
+}));
 
 jest.mock("../api/personalTransactionsApi", () => ({
 	deletePersonalTransaction: jest.fn(),
@@ -33,6 +39,7 @@ const mockGetPersonalTransactionsSummary = jest.mocked(
 	getPersonalTransactionsSummary,
 );
 const mockUseRoute = jest.mocked(ReactNavigation.useRoute);
+const mockUsePersonalCategories = jest.mocked(usePersonalCategories);
 const mockUseNavigation = jest.mocked(ReactNavigation.useNavigation);
 
 let testClient: QueryClient;
@@ -57,6 +64,12 @@ describe("usePersonalCategoryDetailScreen", () => {
 				`header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`,
 			);
 		mockUseNavigation.mockReturnValue({ navigate: jest.fn() } as never);
+		mockUsePersonalCategories.mockReturnValue({
+			categories: [],
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
 		mockUseRoute.mockReturnValue({
 			params: {
 				type: "expense",
@@ -107,6 +120,77 @@ describe("usePersonalCategoryDetailScreen", () => {
 	afterEach(() => {
 		testClient.clear();
 		jest.useRealTimers();
+	});
+
+	it("uses backend icons for the category summary and transaction rows", async () => {
+		mockUseRoute.mockReturnValue({
+			params: {
+				type: "expense",
+				category: "Custom Backend",
+				range: "week",
+				percentage: 100,
+			},
+		} as never);
+		mockUsePersonalCategories.mockReturnValue({
+			categories: [
+				{
+					id: "backend-first",
+					name: "Backend First",
+					type: "expense",
+					icon: "Heart",
+					color: "#22c55e",
+					isDefault: true,
+				},
+				{
+					id: "custom-backend",
+					name: "Custom Backend",
+					type: "expense",
+					icon: "Gift",
+					color: "#22c55e",
+					isDefault: false,
+				},
+			],
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+		mockGetPersonalTransactions.mockResolvedValue({
+			transactions: [
+				{
+					id: "custom-transaction",
+					type: "expense",
+					expenseKind: "variable",
+					amount: 100,
+					currency: "ARS",
+					category: "Custom Backend",
+					accountId: "account-ars",
+					accountName: "Pesos",
+					occurredAt: "2026-06-27T12:00:00.000Z",
+					note: null,
+				},
+			],
+			nextCursor: null,
+			total: 100,
+			incomeTotal: 0,
+			expenseTotal: 100,
+			currency: "ARS",
+		});
+
+		const { result } = renderHook(() => usePersonalCategoryDetailScreen(), {
+			wrapper: Wrapper,
+		});
+
+		await waitFor(() => expect(result.current.transactions).toHaveLength(1));
+
+		expect(result.current.categoryVisual.Icon).toBe(
+			result.current.getCategoryVisual("expense", "Custom Backend").Icon,
+		);
+		expect(
+			result.current.getCategoryVisual("expense", "Custom Backend"),
+		).toMatchObject({
+			color: "#22c55e",
+			Icon: PERSONAL_CATEGORY_ICON_COMPONENTS.Gift,
+		});
 	});
 
 	it("shows Ocio's exact percentage from the matching summary breakdown", async () => {

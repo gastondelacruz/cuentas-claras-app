@@ -3,28 +3,76 @@ import { MoreHorizontal } from "lucide-react-native";
 import {
 	PERSONAL_CATEGORY_CONFIGS,
 	PERSONAL_CATEGORY_FALLBACK_VISUAL,
+	PERSONAL_CATEGORY_ICON_COMPONENTS,
 	getPersonalCategoryVisual,
 } from "../constants/personalTransactionCategoryVisuals";
 import { PERSONAL_INCOME_CATEGORIES } from "../constants/personalTransactionCategories";
 
 describe("personalTransactionCategoryVisuals", () => {
+	it("maps every Swagger response icon, including legacy PawPrint", () => {
+		expect(Object.keys(PERSONAL_CATEGORY_ICON_COMPONENTS)).toHaveLength(31);
+		for (const icon of [
+			"Heart",
+			"Tv",
+			"Building2",
+			"Coffee",
+			"BookOpen",
+			"Gift",
+			"Bus",
+			"MoreHorizontal",
+			"Wrench",
+			"CreditCard",
+			"Car",
+			"Shirt",
+			"ShoppingBasket",
+			"Banknote",
+			"TrendingUp",
+			"BriefcaseBusiness",
+			"Dumbbell",
+			"House",
+			"Landmark",
+			"Laptop",
+			"Plane",
+			"WalletCards",
+			"CardSim",
+			"Utensils",
+			"ShoppingCart",
+			"Gamepad2",
+			"GraduationCap",
+			"PiggyBank",
+			"Stethoscope",
+			"Baby",
+			"PawPrint",
+		]) {
+			expect(
+				PERSONAL_CATEGORY_ICON_COMPONENTS[
+					icon as keyof typeof PERSONAL_CATEGORY_ICON_COMPONENTS
+				],
+			).toBeDefined();
+		}
+	});
+
 	it("matches the backend-supported expense category catalog in order", () => {
 		expect(
 			PERSONAL_CATEGORY_CONFIGS.expense.map((config) => config.name),
 		).toEqual([
 			"Salud",
 			"Ocio",
-			"Departament",
+			"Departamento",
 			"Café",
 			"Educación",
 			"Regalos",
+			"Alimentación",
 			"Transporte",
 			"Otros",
 			"Servicio",
 			"Tarjetas",
 			"Auto",
 			"Ropa",
-			"Alimentación",
+			"Mascotas",
+			"Viajes",
+			"Deporte",
+			"Hogar",
 		]);
 	});
 
@@ -53,6 +101,76 @@ describe("personalTransactionCategoryVisuals", () => {
 	it("returns the configured visual for a known category", () => {
 		const salud = getPersonalCategoryVisual("expense", "Salud");
 		expect(salud.color).toBe("#ef4444");
+	});
+
+	it("uses the backend icon for a default category absent from the local catalog", () => {
+		const visual = getPersonalCategoryVisual(
+			"expense",
+			"Backend Default",
+			{
+				id: "default-backend",
+				name: "Backend Default",
+				type: "expense",
+				icon: "Car",
+				isDefault: true,
+			},
+			[
+				{
+					id: "backend-first",
+					name: "Backend First",
+					type: "expense",
+					icon: "Heart",
+					color: "#111111",
+					isDefault: true,
+				},
+				{
+					id: "default-backend",
+					name: "Backend Default",
+					type: "expense",
+					icon: "Car",
+					color: "#ABCDEF",
+					isDefault: true,
+				},
+			],
+		);
+
+		expect(visual.color).toBe("#22c55e");
+		expect(visual.Icon).toBe(PERSONAL_CATEGORY_ICON_COMPONENTS.Car);
+	});
+
+	it("uses the backend icon for a custom category with a mismatched local name", () => {
+		const visual = getPersonalCategoryVisual(
+			"expense",
+			"Custom Backend",
+			{
+				id: "custom-backend",
+				name: "Custom Backend",
+				type: "expense",
+				icon: "Gift",
+				isDefault: false,
+			},
+			[
+				{
+					id: "backend-first",
+					name: "Backend First",
+					type: "expense",
+					icon: "Heart",
+					color: "#111111",
+					isDefault: true,
+				},
+				{
+					id: "custom-backend",
+					name: "Custom Backend",
+					type: "expense",
+					icon: "Gift",
+					color: "#123456",
+					isDefault: false,
+				},
+			],
+		);
+
+		expect(visual.color).toBe("#22c55e");
+		expect(visual.Icon).toBe(PERSONAL_CATEGORY_ICON_COMPONENTS.Gift);
 	});
 
 	it("falls back to a neutral visual for an unknown backend category", () => {

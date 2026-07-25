@@ -2,7 +2,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Alert } from "react-native";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
@@ -12,6 +12,7 @@ import {
 	personalTransactionsSummaryQueryOptions,
 } from "../api/personalTransactionQueryOptions";
 import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
+import { usePersonalCategories } from "./usePersonalCategories";
 import { rememberMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
 import { useDeletePersonalTransaction } from "./useDeletePersonalTransaction";
 import { computeDateRange } from "../utils/computeDateRange";
@@ -75,6 +76,20 @@ export function usePersonalCategoryDetailScreen() {
 	const navigation = useNavigation<PersonalCategoryDetailNavigation>();
 	const protectedDataEnabled = useProtectedDataEnabled();
 	const deleteMutation = useDeletePersonalTransaction();
+	const { categories } = usePersonalCategories();
+	const getCategoryVisual = useCallback(
+		(categoryType: PersonalTransactionDto["type"], categoryName: string) =>
+			getPersonalCategoryVisual(
+				categoryType,
+				categoryName,
+				categories.find(
+					(category) =>
+						category.type === categoryType && category.name === categoryName,
+				),
+				categories,
+			),
+		[categories],
+	);
 	const [expenseKindFilter, setExpenseKindFilter] =
 		useState<PersonalExpenseTypeFilter>(route.params.expenseKind ?? "all");
 
@@ -155,7 +170,7 @@ export function usePersonalCategoryDetailScreen() {
 				item.type === route.params.type &&
 				item.category === route.params.category,
 		)?.percentage ?? route.params.percentage;
-	const categoryVisual = getPersonalCategoryVisual(
+	const categoryVisual = getCategoryVisual(
 		route.params.type,
 		route.params.category,
 	);
@@ -225,6 +240,7 @@ export function usePersonalCategoryDetailScreen() {
 		expenseKindFilter,
 		setExpenseKindFilter,
 		categoryVisual,
+		getCategoryVisual,
 		transactions: filteredTransactions,
 		displayTotal,
 		displayCurrency,

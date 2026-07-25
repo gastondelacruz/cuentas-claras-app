@@ -1,16 +1,31 @@
-import { Calculator, CalendarDays, Check, Trash2 } from "lucide-react-native";
-import { Pressable, Text, TextInput, View } from "react-native";
+import {
+	Calculator,
+	CalendarDays,
+	Check,
+	Plus,
+	Trash2,
+} from "lucide-react-native";
+import {
+	ActivityIndicator,
+	Pressable,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "../../../shared/theme/colors";
 import { InternalScreenHeader } from "../../../shared/ui/InternalScreenHeader";
 import { KeyboardAwareScrollView } from "../../../shared/ui/KeyboardAwareScrollView";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
-import { PERSONAL_CATEGORY_CONFIGS } from "../constants/personalTransactionCategoryVisuals";
 import { PersonalExpenseTypeSelector } from "../components/PersonalExpenseTypeSelector";
 import { SingleDateSelectionModal } from "../components/SingleDateSelectionModal";
 import { useAddPersonalTransactionForm } from "../hooks/useAddPersonalTransactionForm";
 import type { PersonalTransactionType } from "../types";
+import type { RootStackParamList } from "../../../app/navigation/types";
 
 const FORM_TABS: Array<{ value: PersonalTransactionType; label: string }> = [
 	{ value: "expense", label: "GASTOS" },
@@ -48,9 +63,15 @@ export function AddPersonalTransactionScreen() {
 		submitError,
 		isSubmitting,
 		isEditMode,
+		categoryConfigs,
+		categoriesLoading,
+		categoriesError,
 	} = useAddPersonalTransactionForm();
 
-	const categoryConfigs = PERSONAL_CATEGORY_CONFIGS[type];
+	const navigation =
+		useNavigation<
+			NativeStackNavigationProp<RootStackParamList, "AddPersonalTransaction">
+		>();
 	const insets = useSafeAreaInsets();
 
 	return (
@@ -254,6 +275,14 @@ export function AddPersonalTransactionScreen() {
 					>
 						Categorías
 					</Text>
+					{categoriesLoading ? (
+						<ActivityIndicator testID="personal-categories-loading" />
+					) : null}
+					{categoriesError ? (
+						<Text accessibilityRole="alert">
+							No pudimos cargar tus categorías. Intentá de nuevo.
+						</Text>
+					) : null}
 
 					{/* 4-column grid */}
 					<View
@@ -309,6 +338,40 @@ export function AddPersonalTransactionScreen() {
 								</Pressable>
 							);
 						})}
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel="Crear nueva categoría"
+							onPress={() =>
+								navigation.navigate("PersonalTransactionCategories", {
+									type,
+									returnToAddPersonalTransaction: true,
+								})
+							}
+							testID="personal-category-create-button"
+							style={{
+								width: "23%",
+								alignItems: "center",
+								gap: 6,
+								padding: 8,
+							}}
+						>
+							<View
+								style={{
+									width: 52,
+									height: 52,
+									borderRadius: 26,
+									borderWidth: 1,
+									borderColor: "#d1d5db",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								<Plus color={GRAY} size={22} strokeWidth={1.8} />
+							</View>
+							<Text style={{ fontSize: 11, color: DARK, textAlign: "center" }}>
+								Más
+							</Text>
+						</Pressable>
 					</View>
 				</View>
 

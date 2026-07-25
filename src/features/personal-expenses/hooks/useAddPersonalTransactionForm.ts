@@ -5,13 +5,23 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
 import { maskAmountInput } from "../../expenses/utils/maskAmountInput";
-import { getPersonalTransactionCategories } from "../constants/personalTransactionCategories";
+import {
+	personalCategoryToConfig,
+	type PersonalCategoryConfig,
+} from "../constants/personalTransactionCategoryVisuals";
+import {
+	getSelectedPersonalCategory,
+	getVisiblePersonalCategoryConfigs,
+	selectPersonalCategory,
+	setPersonalCategoryCatalog,
+} from "../constants/personalTransactionCategoryVisibility";
 import type { PersonalExpenseType, PersonalTransactionType } from "../types";
 import { getMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
 import { DEFAULT_PERSONAL_EXPENSE_TYPE } from "../utils/personalExpenseType";
 import { useCreatePersonalTransaction } from "./useCreatePersonalTransaction";
 import { useUpdatePersonalTransaction } from "./useUpdatePersonalTransaction";
 import { useDeletePersonalTransaction } from "./useDeletePersonalTransaction";
+import { usePersonalCategories } from "./usePersonalCategories";
 
 type AddPersonalTransactionNavigation = NativeStackNavigationProp<
 	RootStackParamList,
@@ -134,13 +144,33 @@ export function useAddPersonalTransactionForm() {
 	const [expenseKind, setExpenseKind] = useState<PersonalExpenseType>(
 		editableTransaction?.expenseKind ?? DEFAULT_PERSONAL_EXPENSE_TYPE,
 	);
-	const categories = useMemo(
+	const {
+		categories: backendCategories,
+		isLoading: categoriesLoading,
+		isError: categoriesError,
+		error: categoriesQueryError,
+	} = usePersonalCategories();
+	const backendCategorySignature = backendCategories
+		.map(
+			(category) =>
+				`${category.id}:${category.name}:${category.type}:${category.icon}`,
+		)
+		.join("|");
+	const backendConfigs = useMemo(
 		() =>
-			getPersonalTransactionCategories(type).filter(
-				(category) => category !== "Más",
-			),
-		[type],
+			backendCategories
+				.filter((category) => category.type === type)
+				.map((category, index) => personalCategoryToConfig(category, index)),
+		[backendCategorySignature, type],
 	);
+	const [categoryConfigs, setCategoryConfigs] = useState<
+		PersonalCategoryConfig[]
+	>([]);
+	useEffect(() => {
+		setPersonalCategoryCatalog(type, backendConfigs);
+		setCategoryConfigs(getVisiblePersonalCategoryConfigs(type));
+	}, [backendCategorySignature, backendConfigs, type]);
+	const categories = backendConfigs.map(({ name }) => name);
 	const [selectedCategory, setSelectedCategory] = useState<string>(() => {
 		if (
 			editableTransaction &&
@@ -149,8 +179,16 @@ export function useAddPersonalTransactionForm() {
 			return editableTransaction.category;
 		}
 
-		return categories[0];
+		return getSelectedPersonalCategory(type) ?? categories[0];
 	});
+	useEffect(() => {
+		if (categories.length === 0) return;
+		setSelectedCategory((current) =>
+			current && categories.includes(current)
+				? current
+				: (getSelectedPersonalCategory(type) ?? categories[0]),
+		);
+	}, [backendCategorySignature, type]);
 	const [amount, setAmount] = useState(() =>
 		editableTransaction ? formatAmountInput(editableTransaction.amount) : "",
 	);
@@ -192,12 +230,24 @@ export function useAddPersonalTransactionForm() {
 
 	function changeType(nextType: PersonalTransactionType) {
 		setType(nextType);
+		const nextCategories = backendCategories
+			.filter((category) => category.type === nextType)
+			.map(({ name }) => name);
 		setSelectedCategory(
-			getPersonalTransactionCategories(nextType).filter(
-				(category) => category !== "Más",
-			)[0],
+			getSelectedPersonalCategory(nextType) ?? nextCategories[0],
 		);
 	}
+
+	useEffect(() => {
+		const refreshSelectedCategory = () => {
+			setCategoryConfigs(getVisiblePersonalCategoryConfigs(type));
+			const selected = getSelectedPersonalCategory(type);
+			if (selected) setSelectedCategory(selected);
+		};
+		refreshSelectedCategory();
+		if (typeof navigation?.addListener !== "function") return;
+		return navigation.addListener("focus", refreshSelectedCategory);
+	}, [navigation, type]);
 
 	function changeAmount(value: string) {
 		setAmount(maskAmountInput(value));
@@ -352,7 +402,15 @@ export function useAddPersonalTransactionForm() {
 		changeNote,
 		notePlaceholder,
 		selectedCategory,
-		setSelectedCategory,
+		categoryConfigs,
+		categoriesLoading,
+		categoriesError,
+		categoriesQueryError,
+		setSelectedCategory: (category: string) => {
+			selectPersonalCategory(type, category);
+			setSelectedCategory(category);
+			setCategoryConfigs(getVisiblePersonalCategoryConfigs(type));
+		},
 		dateChips,
 		selectedDateId,
 		setSelectedDateId,

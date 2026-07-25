@@ -11,6 +11,42 @@ export type MainTabParamList = {
 	Profile: undefined;
 };
 
+export type PersonalTransactionCategoryPreview = {
+	name: string;
+	color: string;
+	iconKey:
+		| "banknote"
+		| "wallet"
+		| "coins"
+		| "circle-dollar-sign"
+		| "credit-card"
+		| "landmark"
+		| "piggy-bank"
+		| "trending-up"
+		| "hand-coins"
+		| "receipt"
+		| "briefcase-business"
+		| "shopping-bag"
+		| "shopping-cart"
+		| "store"
+		| "utensils"
+		| "coffee"
+		| "cake-slice"
+		| "house"
+		| "building-2"
+		| "car"
+		| "bus"
+		| "bike"
+		| "plane"
+		| "heart-pulse"
+		| "dumbbell"
+		| "graduation-cap"
+		| "gift"
+		| "wrench"
+		| "wallet-cards"
+		| "card-sim";
+};
+
 export type AddPersonalTransactionRouteParams = {
 	type?: PersonalTransactionType;
 	transactionId?: string;
@@ -36,6 +72,17 @@ export type RootStackParamList = {
 		sourceParams: CalculatorSourceParams;
 	};
 	PersonalCategoryDetail: PersonalTransactionCategoryDetailRouteParams;
+	PersonalTransactionCategories:
+		| {
+				type?: PersonalTransactionType;
+				returnToAddPersonalTransaction?: boolean;
+				previewCategory?: PersonalTransactionCategoryPreview;
+		  }
+		| undefined;
+	CreatePersonalTransactionCategory: {
+		type: PersonalTransactionType;
+		returnToAddPersonalTransaction?: boolean;
+	};
 	SettleDebts: { groupId: string };
 	VerifyEmail: { token?: string } | undefined;
 	AcceptGroupInvitation: { token?: string } | undefined;
@@ -52,6 +99,8 @@ export const registeredRouteNames = [
 	"AddPersonalTransaction",
 	"Calculator",
 	"PersonalCategoryDetail",
+	"PersonalTransactionCategories",
+	"CreatePersonalTransactionCategory",
 	"SettleDebts",
 	"VerifyEmail",
 	"AcceptGroupInvitation",

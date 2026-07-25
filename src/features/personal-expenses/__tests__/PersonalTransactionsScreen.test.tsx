@@ -13,11 +13,16 @@ import { usePersonalTransactionsScreen } from "../hooks/usePersonalTransactionsS
 import { usePersonalTransactionsSummary } from "../hooks/usePersonalTransactionsSummary";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { prefetchAlternatePersonalTransactions } from "../api/personalTransactionPrefetch";
+import { usePersonalCategories } from "../hooks/usePersonalCategories";
+import { PERSONAL_CATEGORY_ICON_COMPONENTS } from "../constants/personalTransactionCategoryVisuals";
 
 jest.mock("../hooks/usePersonalTransactions");
 jest.mock("../hooks/usePersonalTransactionsSummary");
 jest.mock("../../../shared/feature-flags/initialLoadingFlags");
 jest.mock("../api/personalTransactionPrefetch");
+jest.mock("../hooks/usePersonalCategories", () => ({
+	usePersonalCategories: jest.fn(),
+}));
 
 const mockUseNavigation = jest.mocked(useNavigation);
 const mockUsePersonalTransactions = jest.mocked(usePersonalTransactions);
@@ -30,6 +35,7 @@ const mockIsEnhancedInitialLoadingEnabled = jest.mocked(
 const mockPrefetchAlternatePersonalTransactions = jest.mocked(
 	prefetchAlternatePersonalTransactions,
 );
+const mockUsePersonalCategories = jest.mocked(usePersonalCategories);
 
 // Pin "today" to 2026-06-29 (Monday) so the dynamic rangeLabel is deterministic.
 // Expected default month label: "jun 2026"
@@ -40,6 +46,12 @@ describe("PersonalTransactionsScreen", () => {
 		jest.useFakeTimers({ now: FAKE_NOW });
 		jest.clearAllMocks();
 		mockIsEnhancedInitialLoadingEnabled.mockReturnValue(false);
+		mockUsePersonalCategories.mockReturnValue({
+			categories: [],
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
 		mockUseNavigation.mockReturnValue({
 			getParent: () => ({ navigate: jest.fn() }),
 		} as never);
@@ -122,6 +134,60 @@ describe("PersonalTransactionsScreen", () => {
 		expect(
 			screen.getByTestId("personal-tab-expense").props.accessibilityState,
 		).toMatchObject({ selected: true });
+	});
+
+	it("uses the backend icon for a default category absent from the local catalog", () => {
+		mockUsePersonalCategories.mockReturnValue({
+			categories: [
+				{
+					id: "backend-first",
+					name: "Backend First",
+					type: "expense",
+					icon: "Heart",
+					color: "#22c55e",
+					isDefault: true,
+				},
+				{
+					id: "default-backend",
+					name: "Backend Default",
+					type: "expense",
+					icon: "Car",
+					color: "#22c55e",
+					isDefault: true,
+				},
+			],
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+		mockUsePersonalTransactionsSummary.mockReturnValue({
+			summary: {
+				total: 100,
+				incomeTotal: 0,
+				expenseTotal: 100,
+				currency: "ARS",
+				breakdown: [
+					{
+						category: "Backend Default",
+						type: "expense",
+						amount: 100,
+						percentage: 100,
+					},
+				],
+			},
+			hasFetchedSummary: true,
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+
+		const { result } = renderHook(() => usePersonalTransactionsScreen());
+
+		expect(result.current.categoryRows[0]).toMatchObject({
+			color: "#22c55e",
+			Icon: PERSONAL_CATEGORY_ICON_COMPONENTS.Car,
+		});
+		expect(result.current.chartSegments[0]?.color).toBe("#22c55e");
 	});
 
 	it("uses exact category amounts and percentages from the summary", () => {

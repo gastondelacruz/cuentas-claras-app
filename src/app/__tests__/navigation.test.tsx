@@ -254,6 +254,8 @@ describe("navigation shell", () => {
 			"AddPersonalTransaction",
 			"Calculator",
 			"PersonalCategoryDetail",
+			"PersonalTransactionCategories",
+			"CreatePersonalTransactionCategory",
 			"SettleDebts",
 			"VerifyEmail",
 			"AcceptGroupInvitation",

@@ -857,6 +857,141 @@
         "tags": ["expenses"]
       }
     },
+    "/api/v1/me/categories": {
+      "get": {
+        "operationId": "MeController_listCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "items": {
+                            "$ref": "#/components/schemas/PersonalCategoryResponseDto"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      },
+      "post": {
+        "operationId": "MeController_createCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonalCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PersonalCategoryResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
+    },
+    "/api/v1/me/categories/{categoryId}": {
+      "patch": {
+        "operationId": "MeController_updateCategory",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonalCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponseEnvelopeDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PersonalCategoryResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["me"]
+      }
+    },
     "/api/v1/me/summary": {
       "get": {
         "operationId": "MeController_getSummary",
@@ -2070,6 +2205,187 @@
         },
         "required": ["id", "deletedAt"]
       },
+      "PersonalCategoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["expense", "income"]
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "Heart",
+              "Tv",
+              "Building2",
+              "Coffee",
+              "BookOpen",
+              "Gift",
+              "Bus",
+              "MoreHorizontal",
+              "Wrench",
+              "CreditCard",
+              "Car",
+              "Shirt",
+              "ShoppingBasket",
+              "Banknote",
+              "TrendingUp",
+              "BriefcaseBusiness",
+              "Dumbbell",
+              "House",
+              "Landmark",
+              "Laptop",
+              "Plane",
+              "WalletCards",
+              "CardSim",
+              "Utensils",
+              "ShoppingCart",
+              "Gamepad2",
+              "GraduationCap",
+              "PiggyBank",
+              "Stethoscope",
+              "Baby",
+              "PawPrint"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "icon",
+          "color",
+          "isDefault",
+          "userId",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreatePersonalCategoryRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["expense", "income"]
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "Heart",
+              "Tv",
+              "Building2",
+              "Coffee",
+              "BookOpen",
+              "Gift",
+              "Bus",
+              "MoreHorizontal",
+              "Wrench",
+              "CreditCard",
+              "Car",
+              "Shirt",
+              "ShoppingBasket",
+              "Banknote",
+              "TrendingUp",
+              "BriefcaseBusiness",
+              "Dumbbell",
+              "House",
+              "Landmark",
+              "Laptop",
+              "Plane",
+              "WalletCards",
+              "CardSim",
+              "Utensils",
+              "ShoppingCart",
+              "Gamepad2",
+              "GraduationCap",
+              "PiggyBank",
+              "Stethoscope",
+              "Baby"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        },
+        "required": ["name", "type", "icon", "color"]
+      },
+      "UpdatePersonalCategoryRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "Heart",
+              "Tv",
+              "Building2",
+              "Coffee",
+              "BookOpen",
+              "Gift",
+              "Bus",
+              "MoreHorizontal",
+              "Wrench",
+              "CreditCard",
+              "Car",
+              "Shirt",
+              "ShoppingBasket",
+              "Banknote",
+              "TrendingUp",
+              "BriefcaseBusiness",
+              "Dumbbell",
+              "House",
+              "Landmark",
+              "Laptop",
+              "Plane",
+              "WalletCards",
+              "CardSim",
+              "Utensils",
+              "ShoppingCart",
+              "Gamepad2",
+              "GraduationCap",
+              "PiggyBank",
+              "Stethoscope",
+              "Baby"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        }
+      },
       "MeSummaryCurrencyTotalsResponseDto": {
         "type": "object",
         "properties": {
@@ -2172,8 +2488,7 @@
             "example": "expense"
           },
           "expenseKind": {
-            "type": "string",
-            "enum": ["fixed", "variable"],
+            "type": "object",
             "example": "variable",
             "nullable": true
           },
@@ -2202,7 +2517,7 @@
             "example": "2026-06-29T00:00:00.000Z"
           },
           "note": {
-            "type": "string",
+            "type": "object",
             "example": "Farmacia",
             "nullable": true
           },
@@ -2240,7 +2555,7 @@
             }
           },
           "nextCursor": {
-            "type": "string",
+            "type": "object",
             "example": "eyJpZCI6MTAwfQ==",
             "nullable": true
           },
@@ -2342,8 +2657,7 @@
             "example": "expense"
           },
           "expenseKind": {
-            "type": "string",
-            "enum": ["fixed", "variable"],
+            "type": "object",
             "example": "variable",
             "nullable": true
           },
@@ -2372,7 +2686,7 @@
             "example": "2026-06-29T00:00:00.000Z"
           },
           "note": {
-            "type": "string",
+            "type": "object",
             "example": "Farmacia",
             "nullable": true
           },
@@ -2436,19 +2750,28 @@
             "enum": [
               "Salud",
               "Ocio",
-              "Departament",
+              "Departamento",
               "Café",
               "Educación",
               "Regalos",
+              "Alimentación",
               "Transporte",
               "Otros",
               "Servicio",
               "Tarjetas",
               "Auto",
               "Ropa",
-              "Alimentación",
+              "Mascotas",
+              "Viajes",
+              "Deporte",
+              "Hogar",
               "Salario",
-              "Intereses"
+              "Intereses",
+              "Freelance",
+              "Bonos",
+              "Ventas",
+              "Inversiones",
+              "Propiedades"
             ],
             "example": "Alimentación"
           },
@@ -2497,19 +2820,28 @@
             "enum": [
               "Salud",
               "Ocio",
-              "Departament",
+              "Departamento",
               "Café",
               "Educación",
               "Regalos",
+              "Alimentación",
               "Transporte",
               "Otros",
               "Servicio",
               "Tarjetas",
               "Auto",
               "Ropa",
-              "Alimentación",
+              "Mascotas",
+              "Viajes",
+              "Deporte",
+              "Hogar",
               "Salario",
-              "Intereses"
+              "Intereses",
+              "Freelance",
+              "Bonos",
+              "Ventas",
+              "Inversiones",
+              "Propiedades"
             ],
             "example": "Alimentación"
           },

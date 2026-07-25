@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
 	MainTabParamList,
@@ -9,6 +9,7 @@ import type {
 } from "../../../app/navigation/types";
 import { isEnhancedInitialLoadingEnabled } from "../../../shared/feature-flags/initialLoadingFlags";
 import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
+import { usePersonalCategories } from "./usePersonalCategories";
 import type { PersonalTransactionSummaryResponseDto } from "../schemas/personalTransactionSchema";
 import { computeDateRange } from "../utils/computeDateRange";
 import { rememberMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
@@ -39,6 +40,10 @@ function formatDashValue(value: number) {
 function buildChartSegments(
 	breakdown: PersonalTransactionSummaryResponseDto["breakdown"],
 	type: PersonalTransactionType,
+	getCategoryVisual: (
+		type: PersonalTransactionType,
+		categoryName: string,
+	) => ReturnType<typeof getPersonalCategoryVisual>,
 ): PersonalTransactionChartSegment[] {
 	let offset = 0;
 
@@ -50,7 +55,7 @@ function buildChartSegments(
 			const length =
 				(DONUT_CIRCUMFERENCE * Math.min(item.percentage, 100)) / 100;
 			const segment = {
-				color: getPersonalCategoryVisual(type, item.category).color,
+				color: getCategoryVisual(type, item.category).color,
 				dasharray: `${formatDashValue(length)} ${formatDashValue(DONUT_CIRCUMFERENCE - length)}`,
 				...(offset > 0 ? { dashoffset: `-${formatDashValue(offset)}` } : {}),
 			};
@@ -116,6 +121,20 @@ export function usePersonalTransactionsScreen() {
 	const [type, setType] = useState<PersonalTransactionType>("expense");
 	const [expenseKindFilter, setExpenseKindFilter] =
 		useState<PersonalExpenseTypeFilter>("all");
+	const { categories } = usePersonalCategories();
+	const getCategoryVisual = useCallback(
+		(categoryType: PersonalTransactionType, categoryName: string) =>
+			getPersonalCategoryVisual(
+				categoryType,
+				categoryName,
+				categories.find(
+					(category) =>
+						category.type === categoryType && category.name === categoryName,
+				),
+				categories,
+			),
+		[categories],
+	);
 	const [range, setRange] = useState<PersonalTransactionRange>("month");
 	const [periodRange, setPeriodRange] = useState<PeriodRange | null>(null);
 	const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
@@ -223,7 +242,7 @@ export function usePersonalTransactionsScreen() {
 	const displaySummaryCurrency = shouldUseSummary ? summary.currency : "ARS";
 	const displayCurrency = shouldUseSummary ? summary.currency : "ARS";
 	const chartSegments = shouldUseSummary
-		? buildChartSegments(summary.breakdown, type)
+		? buildChartSegments(summary.breakdown, type, getCategoryVisual)
 		: [];
 	const categoryBreakdown = shouldUseSummary
 		? summary.breakdown.filter((item) => item.type === type)
@@ -231,7 +250,7 @@ export function usePersonalTransactionsScreen() {
 	const categoryRows = categoryBreakdown
 		.filter((item) => item.amount > 0 && item.percentage > 0)
 		.map((item) => {
-			const visual = getPersonalCategoryVisual(type, item.category);
+			const visual = getCategoryVisual(type, item.category);
 			return {
 				category: item.category,
 				amount: item.amount,

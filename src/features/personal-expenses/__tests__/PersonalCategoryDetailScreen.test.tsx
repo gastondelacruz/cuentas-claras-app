@@ -25,6 +25,10 @@ const baseReturnValue = {
 		color: "#f59e0b",
 		Icon: (() => null) as never,
 	},
+	getCategoryVisual: () => ({
+		color: "#f59e0b",
+		Icon: (() => null) as never,
+	}),
 	transactions: [
 		{
 			id: "ptx-1",

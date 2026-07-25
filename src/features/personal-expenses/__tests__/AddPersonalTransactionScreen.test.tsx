@@ -11,6 +11,7 @@ import { StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AddPersonalTransactionScreen } from "../screens/AddPersonalTransactionScreen";
+import { usePersonalCategories } from "../hooks/usePersonalCategories";
 import {
 	createPersonalTransaction,
 	updatePersonalTransaction,
@@ -18,6 +19,39 @@ import {
 } from "../api/personalTransactionsApi";
 import { PERSONAL_CATEGORY_CONFIGS } from "../constants/personalTransactionCategoryVisuals";
 import { getMockEditablePersonalTransaction } from "../mocks/personalTransactionEditMock";
+import {
+	resetPersonalCategoryVisibility,
+	selectPersonalCategory,
+} from "../constants/personalTransactionCategoryVisibility";
+
+const mockBackendCategories = [
+	"Salud",
+	"Ocio",
+	"Departamento",
+	"Café",
+	"Educación",
+	"Regalos",
+	"Alimentación",
+	"Transporte",
+	"Otros",
+	"Servicio",
+	"Tarjetas",
+	"Auto",
+	"Ropa",
+	"Salario",
+	"Intereses",
+	"Freelance",
+	"Bonos",
+].map((name, index) => ({
+	id: String(index),
+	name,
+	type: ["Salario", "Intereses", "Freelance", "Bonos"].includes(name)
+		? ("income" as const)
+		: ("expense" as const),
+	icon: "Heart" as const,
+	color: "#22c55e",
+	isDefault: true,
+}));
 
 jest.mock("../api/personalTransactionsApi", () => ({
 	createPersonalTransaction: jest.fn(),
@@ -29,6 +63,16 @@ jest.mock("../mocks/personalTransactionEditMock", () => ({
 	getMockEditablePersonalTransaction: jest.fn(),
 }));
 
+jest.mock("../hooks/usePersonalCategories", () => ({
+	usePersonalCategories: jest.fn(() => ({
+		categories: mockBackendCategories,
+		isLoading: false,
+		isError: false,
+		error: null,
+	})),
+	useCreatePersonalCategory: jest.fn(),
+}));
+
 const mockCreatePersonalTransaction = jest.mocked(createPersonalTransaction);
 const mockUpdatePersonalTransaction = jest.mocked(updatePersonalTransaction);
 const mockDeletePersonalTransaction = jest.mocked(deletePersonalTransaction);
@@ -37,10 +81,12 @@ const mockGetMockEditablePersonalTransaction = jest.mocked(
 );
 
 let testClient: QueryClient;
+let focusListener: (() => void) | undefined;
 let navigationMock: {
 	goBack: jest.Mock;
 	navigate: jest.Mock;
 	setParams: jest.Mock;
+	addListener: jest.Mock;
 };
 
 // Pin "today" to 2026-06-29 (Monday) so date-chip labels are deterministic
@@ -56,6 +102,12 @@ describe("AddPersonalTransactionScreen", () => {
 	beforeEach(() => {
 		jest.useFakeTimers({ now: FAKE_NOW });
 		jest.clearAllMocks();
+		jest.mocked(usePersonalCategories).mockReturnValue({
+			categories: mockBackendCategories,
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
 		jest.mocked(useSafeAreaInsets).mockReturnValue({
 			top: 0,
 			right: 0,
@@ -68,15 +120,21 @@ describe("AddPersonalTransactionScreen", () => {
 				mutations: { retry: false, gcTime: Infinity },
 			},
 		});
+		focusListener = undefined;
 		navigationMock = {
 			goBack: jest.fn(),
 			navigate: jest.fn(),
 			setParams: jest.fn(),
+			addListener: jest.fn((_event, listener: () => void) => {
+				focusListener = listener;
+				return jest.fn();
+			}),
 		};
 		jest.mocked(useNavigation).mockReturnValue(navigationMock as never);
 		jest
 			.mocked(useRoute)
 			.mockReturnValue({ params: { type: "expense" } } as never);
+		resetPersonalCategoryVisibility();
 		mockCreatePersonalTransaction.mockResolvedValue({
 			id: "ptx-1",
 			type: "expense",
@@ -114,6 +172,97 @@ describe("AddPersonalTransactionScreen", () => {
 		testClient.clear();
 	});
 
+	it("does not render local categories while backend categories are loading", () => {
+		jest.mocked(usePersonalCategories).mockImplementation(() => ({
+			categories: [],
+			isLoading: true,
+			isError: false,
+			error: null,
+		}));
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		expect(screen.queryByTestId("personal-category-Salud")).toBeNull();
+		expect(screen.getByTestId("personal-categories-loading")).toBeTruthy();
+	});
+
+	it("renders and selects a backend-only category", () => {
+		jest.mocked(usePersonalCategories).mockImplementation(() => ({
+			categories: [
+				{
+					id: "backend-only",
+					name: "Backend Only",
+					type: "expense",
+					icon: "Heart",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-2",
+					name: "Backend Expense 2",
+					type: "expense",
+					icon: "Coffee",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-3",
+					name: "Backend Expense 3",
+					type: "expense",
+					icon: "Gift",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-4",
+					name: "Backend Expense 4",
+					type: "expense",
+					icon: "Bus",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-5",
+					name: "Backend Expense 5",
+					type: "expense",
+					icon: "Car",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-6",
+					name: "Backend Expense 6",
+					type: "expense",
+					icon: "Shirt",
+					color: "#22c55e",
+					isDefault: false,
+				},
+				{
+					id: "backend-expense-7",
+					name: "Backend Expense 7",
+					type: "expense",
+					icon: "Wrench",
+					color: "#22c55e",
+					isDefault: false,
+				},
+			],
+			isLoading: false,
+			isError: false,
+			error: null,
+		}));
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		const backendOnlyCategory = screen.getByTestId(
+			"personal-category-Backend Only",
+		);
+		expect(backendOnlyCategory).toBeTruthy();
+		fireEvent.press(backendOnlyCategory);
+		expect(backendOnlyCategory.props.accessibilityState).toMatchObject({
+			selected: true,
+		});
+	});
+
 	it("renders the add expense form with Stitch categories, expense type selector, account, and date chips", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
@@ -122,10 +271,12 @@ describe("AddPersonalTransactionScreen", () => {
 		// Account section: label + value as separate elements
 		expect(screen.getByText("Cuenta")).toBeTruthy();
 		expect(screen.getByText("Pesos")).toBeTruthy();
-		// Expense categories
-		for (const category of PERSONAL_CATEGORY_CONFIGS.expense) {
+		// Seven visible categories plus the always-visible Más tile.
+		for (const category of PERSONAL_CATEGORY_CONFIGS.expense.slice(0, 7)) {
 			expect(screen.getByText(category.name)).toBeTruthy();
 		}
+		expect(screen.getByText("Más")).toBeTruthy();
+		expect(screen.getByTestId("personal-category-create-button")).toBeTruthy();
 		// Expense-only type selector
 		expect(screen.getByTestId("personal-expense-type-selector")).toBeTruthy();
 		expect(screen.getByText("Tipo de Gasto")).toBeTruthy();
@@ -232,8 +383,8 @@ describe("AddPersonalTransactionScreen", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
 		expect(screen.getByText("Salario")).toBeTruthy();
-		expect(screen.getByText("Regalos")).toBeTruthy();
 		expect(screen.getByText("Intereses")).toBeTruthy();
+		expect(screen.queryByTestId("personal-category-Regalos")).toBeNull();
 		// Bug 3: the "Otros" category must not exist on the income form.
 		expect(screen.queryByText("Otros")).toBeNull();
 		expect(screen.queryByTestId("personal-category-Otros")).toBeNull();
@@ -324,6 +475,65 @@ describe("AddPersonalTransactionScreen", () => {
 
 	// ── Fix 2 regression tests: category selection state ─────────────────────────
 
+	it("shows a category selected after returning from the full category screen", () => {
+		selectPersonalCategory("expense", "Transporte");
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		expect(
+			screen.getByTestId("personal-category-Transporte").props
+				.accessibilityState,
+		).toMatchObject({
+			selected: true,
+		});
+		expect(screen.getByTestId("personal-category-create-button")).toBeTruthy();
+	});
+
+	it("preserves the selected category when the backend catalog refreshes", () => {
+		const rendered = render(<AddPersonalTransactionScreen />, {
+			wrapper: Wrapper,
+		});
+		selectPersonalCategory("expense", "Transporte");
+		act(() => focusListener?.());
+
+		jest.mocked(usePersonalCategories).mockReturnValue({
+			categories: [
+				...mockBackendCategories,
+				{
+					id: "new-category",
+					name: "Nueva categoría",
+					type: "expense",
+					icon: "Heart",
+					color: "#22c55e",
+					isDefault: false,
+				},
+			],
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+		rendered.rerender(<AddPersonalTransactionScreen />);
+
+		expect(
+			screen.getByTestId("personal-category-Transporte").props
+				.accessibilityState,
+		).toMatchObject({ selected: true });
+	});
+
+	it("renders the category selected on the full screen after returning with focus", () => {
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		// The full category screen promotes hidden categories before popTo returns
+		// to this already-mounted form.
+		selectPersonalCategory("expense", "Transporte");
+		act(() => focusListener?.());
+
+		expect(
+			screen.getByTestId("personal-category-Transporte").props
+				.accessibilityState,
+		).toMatchObject({ selected: true });
+	});
+
 	it("marks the tapped category as selected", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
@@ -359,7 +569,7 @@ describe("AddPersonalTransactionScreen", () => {
 
 		const saludCell = screen.getByTestId("personal-category-Salud");
 		expect(saludCell.props.style).toMatchObject({
-			backgroundColor: "#ef4444",
+			backgroundColor: "#22c55e",
 			borderRadius: 16,
 		});
 	});
@@ -388,21 +598,21 @@ describe("AddPersonalTransactionScreen", () => {
 		});
 	});
 
-	it('does not render the "Más" category', () => {
+	it('renders the always-visible "Más" tile', () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
-		expect(screen.queryByText("Más")).toBeNull();
-		expect(screen.queryByTestId("personal-category-Más")).toBeNull();
+		expect(screen.getByText("Más")).toBeTruthy();
+		expect(screen.getByTestId("personal-category-create-button")).toBeTruthy();
 	});
 
-	it("keeps Otros available only for expenses", () => {
+	it("keeps the seven-category visible set separate from the full catalog", () => {
 		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
 
-		expect(screen.getByTestId("personal-category-Otros")).toBeTruthy();
+		expect(screen.queryByTestId("personal-category-Transporte")).toBeNull();
 
 		fireEvent.press(screen.getByTestId("personal-form-tab-income"));
 
-		expect(screen.queryByTestId("personal-category-Otros")).toBeNull();
+		expect(screen.queryByTestId("personal-category-Transporte")).toBeNull();
 	});
 
 	it("selects the first income category automatically when switching from expense to income", () => {

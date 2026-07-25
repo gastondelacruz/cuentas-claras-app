@@ -13,7 +13,6 @@ import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
 import { colors } from "../../../shared/theme/colors";
 import { PersonalExpenseTypeBadge } from "../components/PersonalExpenseTypeBadge";
 import { PersonalExpenseTypeFilterChips } from "../components/PersonalExpenseTypeFilterChips";
-import { getPersonalCategoryVisual } from "../constants/personalTransactionCategoryVisuals";
 import { usePersonalCategoryDetailScreen } from "../hooks/usePersonalCategoryDetailScreen";
 
 const PRIMARY = colors.primary;
@@ -44,6 +43,7 @@ export function PersonalCategoryDetailScreen() {
 		expenseKindFilter,
 		setExpenseKindFilter,
 		categoryVisual,
+		getCategoryVisual,
 		transactions,
 		displayTotalLabel,
 		displayShareLabel,
@@ -238,7 +238,7 @@ export function PersonalCategoryDetailScreen() {
 					) : (
 						<View style={{ gap: 8 }}>
 							{transactions.map((transaction) => {
-								const transactionVisual = getPersonalCategoryVisual(
+								const transactionVisual = getCategoryVisual(
 									transaction.type,
 									transaction.category,
 								);

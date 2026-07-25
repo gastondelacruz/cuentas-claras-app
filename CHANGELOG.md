@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.4.0...v1.5.0) (2026-07-25)
+
+
+### Features
+
+* **personal-categories:** integrate backend icons and colors ([#90](https://github.com/gastondelacruz/cuentas-claras-app/issues/90)) ([2268096](https://github.com/gastondelacruz/cuentas-claras-app/commit/22680968f622f0f221e127b26888379a6a2a64c4))
+
 ## [1.4.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.3.0...v1.4.0) (2026-07-23)
 
 

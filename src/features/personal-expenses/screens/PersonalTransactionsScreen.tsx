@@ -184,6 +184,10 @@ export function PersonalTransactionsScreen() {
 		range,
 		selectRange,
 		rangeLabel,
+		isCurrentPeriod,
+		navigateToPreviousPeriod,
+		navigateToNextPeriod,
+		navigateToCurrentPeriod,
 		periodRange,
 		isPeriodModalOpen,
 		applyPeriod,
@@ -368,12 +372,21 @@ export function PersonalTransactionsScreen() {
 								position: "relative",
 							}}
 						>
-							<ChevronLeft
-								color={GRAY}
-								size={24}
-								strokeWidth={2}
-								style={{ position: "absolute", left: 0 }}
-							/>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel="Período anterior"
+								accessibilityState={{ disabled: range === "period" }}
+								disabled={range === "period"}
+								onPress={navigateToPreviousPeriod}
+								testID="personal-period-previous"
+								style={{ position: "absolute", left: 0, padding: 8 }}
+							>
+								<ChevronLeft
+									color={range === "period" ? STITCH_SURFACE_VARIANT : GRAY}
+									size={24}
+									strokeWidth={2}
+								/>
+							</Pressable>
 							<Text
 								style={{
 									fontSize: 14,
@@ -383,13 +396,40 @@ export function PersonalTransactionsScreen() {
 							>
 								{rangeLabel}
 							</Text>
-							<ChevronRight
-								color={GRAY}
-								opacity={0.3}
-								size={24}
-								strokeWidth={2}
-								style={{ position: "absolute", right: 0 }}
-							/>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel="Período siguiente"
+								accessibilityState={{
+									disabled: range === "period" || isCurrentPeriod,
+								}}
+								disabled={range === "period" || isCurrentPeriod}
+								onPress={navigateToNextPeriod}
+								testID="personal-period-next"
+								style={{ position: "absolute", right: 0, padding: 8 }}
+							>
+								<ChevronRight
+									color={
+										range === "period" || isCurrentPeriod
+											? STITCH_SURFACE_VARIANT
+											: GRAY
+									}
+									size={24}
+									strokeWidth={2}
+								/>
+							</Pressable>
+							{range !== "period" && !isCurrentPeriod ? (
+								<Pressable
+									accessibilityRole="button"
+									accessibilityLabel="Volver al período actual"
+									onPress={navigateToCurrentPeriod}
+									testID="personal-period-current"
+									style={{ position: "absolute", right: 40, padding: 8 }}
+								>
+									<Text style={{ color: STITCH_PRIMARY, fontSize: 12 }}>
+										Hoy
+									</Text>
+								</Pressable>
+							) : null}
 						</View>
 
 						<View>

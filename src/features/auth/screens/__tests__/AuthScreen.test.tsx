@@ -159,6 +159,24 @@ describe("AuthScreen", () => {
 		expect(screen.getAllByText("Registrarse")).toHaveLength(2);
 	});
 
+	it("shows only the screen-level loading overlay while login is pending", () => {
+		mockedUseLogin.mockReturnValue({
+			mutate: jest.fn(),
+			isPending: true,
+			error: null,
+		} as never);
+
+		renderAuth("login");
+
+		const loadingOverlay = screen.getByTestId("auth-loading-overlay");
+		const loginButton = screen.getByTestId("login-button");
+
+		expect(loadingOverlay.findByType(ActivityIndicator)).toBeTruthy();
+		expect(loginButton.findAllByType(ActivityIndicator)).toHaveLength(0);
+		expect(screen.getAllByText("Iniciar Sesión")).toHaveLength(2);
+		expect(loginButton.props.accessibilityState).toEqual({ disabled: true });
+	});
+
 	it("shows a screen-level loading overlay while biometric login is pending", () => {
 		mockedUseBiometricAuth.mockReturnValue({
 			enabled: true,

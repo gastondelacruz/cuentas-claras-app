@@ -137,20 +137,79 @@ export function usePersonalTransactionsScreen() {
 	);
 	const [range, setRange] = useState<PersonalTransactionRange>("month");
 	const [periodRange, setPeriodRange] = useState<PeriodRange | null>(null);
+	const [periodCursor, setPeriodCursor] = useState<Date | null>(null);
 	const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
 	const isPeriod = range === "period";
+	const navigationRange = isPeriod ? "month" : range;
+	const now = new Date();
+	const currentRange = computeDateRange(navigationRange, now);
+	const selectedRange = computeDateRange(navigationRange, periodCursor ?? now);
+	const isCurrentPeriod =
+		!isPeriod &&
+		selectedRange.from === currentRange.from &&
+		selectedRange.to === currentRange.to;
+
+	const shiftPeriodCursor = useCallback(
+		(direction: -1 | 1) => {
+			if (isPeriod || (direction === 1 && isCurrentPeriod)) return;
+			const cursor = periodCursor ?? now;
+			const amount =
+				direction * (range === "day" ? 1 : range === "week" ? 7 : 1);
+			const nextCursor =
+				range === "month"
+					? new Date(
+							Date.UTC(
+								cursor.getUTCFullYear(),
+								cursor.getUTCMonth() + amount,
+								15,
+							),
+						)
+					: range === "year"
+						? new Date(Date.UTC(cursor.getUTCFullYear() + amount, 6, 15))
+						: new Date(
+								Date.UTC(
+									cursor.getUTCFullYear(),
+									cursor.getUTCMonth(),
+									cursor.getUTCDate() + amount,
+								),
+							);
+			setPeriodCursor(nextCursor);
+		},
+		[isCurrentPeriod, isPeriod, now, periodCursor, range],
+	);
+
+	function navigateToPreviousPeriod() {
+		shiftPeriodCursor(-1);
+	}
+
+	function navigateToNextPeriod() {
+		shiftPeriodCursor(1);
+	}
+
+	function navigateToCurrentPeriod() {
+		if (!isPeriod) setPeriodCursor(null);
+	}
 
 	const from =
-		isPeriod && periodRange ? startOfDayIso(periodRange.from) : undefined;
-	const to = isPeriod && periodRange ? endOfDayIso(periodRange.to) : undefined;
+		isPeriod && periodRange
+			? startOfDayIso(periodRange.from)
+			: periodCursor && selectedRange.from
+				? `${selectedRange.from}T00:00:00.000Z`
+				: undefined;
+	const to =
+		isPeriod && periodRange
+			? endOfDayIso(periodRange.to)
+			: periodCursor && selectedRange.to
+				? `${selectedRange.to}T23:59:59.999Z`
+				: undefined;
 
 	const rangeLabel = useMemo(() => {
 		if (isPeriod && periodRange) {
 			return formatPeriodLabel(periodRange.from, periodRange.to);
 		}
-		return computeDateRange(range).rangeLabel;
-	}, [isPeriod, periodRange, range]);
+		return selectedRange.rangeLabel;
+	}, [isPeriod, periodRange, selectedRange]);
 
 	const transactionQuery = usePersonalTransactions({
 		type,
@@ -175,6 +234,7 @@ export function usePersonalTransactionsScreen() {
 			setIsPeriodModalOpen(true);
 			return;
 		}
+		setPeriodCursor(null);
 		setRange(nextRange);
 	}
 
@@ -270,6 +330,10 @@ export function usePersonalTransactionsScreen() {
 		range,
 		selectRange,
 		rangeLabel,
+		isCurrentPeriod,
+		navigateToPreviousPeriod,
+		navigateToNextPeriod,
+		navigateToCurrentPeriod,
 		periodRange,
 		isPeriodModalOpen,
 		applyPeriod,

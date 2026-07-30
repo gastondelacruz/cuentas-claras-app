@@ -447,6 +447,74 @@ describe("PersonalTransactionsScreen", () => {
 		).toBeTruthy();
 	});
 
+	it("navigates between standard periods and disables forward navigation at present", () => {
+		render(<PersonalTransactionsScreen />);
+
+		const previous = screen.getByTestId("personal-period-previous");
+		const next = screen.getByTestId("personal-period-next");
+		const current = screen.queryByTestId("personal-period-current");
+
+		expect(next.props.accessibilityState).toMatchObject({ disabled: true });
+		expect(current).toBeNull();
+
+		fireEvent.press(previous);
+
+		expect(screen.getByText("may 2026")).toBeTruthy();
+		expect(
+			screen.getByTestId("personal-period-next").props.accessibilityState,
+		).toMatchObject({ disabled: false });
+		expect(screen.getByTestId("personal-period-current")).toBeTruthy();
+
+		fireEvent.press(screen.getByTestId("personal-period-current"));
+
+		expect(screen.getByText("jun 2026")).toBeTruthy();
+		expect(screen.queryByTestId("personal-period-current")).toBeNull();
+		expect(
+			screen.getByTestId("personal-period-next").props.accessibilityState,
+		).toMatchObject({ disabled: true });
+	});
+
+	it("navigates day, week, month, and year ranges with their period size", () => {
+		render(<PersonalTransactionsScreen />);
+
+		fireEvent.press(screen.getByTestId("personal-range-day"));
+		fireEvent.press(screen.getByTestId("personal-period-previous"));
+		expect(screen.getByText("28 jun")).toBeTruthy();
+		expect(mockUsePersonalTransactions).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				range: "day",
+				from: "2026-06-28T00:00:00.000Z",
+				to: "2026-06-28T23:59:59.999Z",
+			}),
+		);
+
+		fireEvent.press(screen.getByTestId("personal-range-week"));
+		fireEvent.press(screen.getByTestId("personal-period-previous"));
+		expect(screen.getByText("22 jun – 28 jun")).toBeTruthy();
+
+		fireEvent.press(screen.getByTestId("personal-range-month"));
+		fireEvent.press(screen.getByTestId("personal-period-previous"));
+		expect(screen.getByText("may 2026")).toBeTruthy();
+
+		fireEvent.press(screen.getByTestId("personal-range-year"));
+		fireEvent.press(screen.getByTestId("personal-period-previous"));
+		expect(screen.getByText("2025")).toBeTruthy();
+	});
+
+	it("does not navigate custom periods", () => {
+		render(<PersonalTransactionsScreen />);
+
+		fireEvent.press(screen.getByTestId("personal-range-period"));
+		fireEvent.press(screen.getByTestId("period-apply-button"));
+
+		expect(
+			screen.getByTestId("personal-period-previous").props.accessibilityState,
+		).toMatchObject({ disabled: true });
+		expect(
+			screen.getByTestId("personal-period-next").props.accessibilityState,
+		).toMatchObject({ disabled: true });
+	});
+
 	it("queries the backend day range without custom from/to dates", () => {
 		render(<PersonalTransactionsScreen />);
 

@@ -226,14 +226,11 @@ export function AuthScreen({ route }: Props) {
 									onPress={handleLogin}
 									testID="login-button"
 									disabled={isLoginPending}
+									accessibilityState={{ disabled: isLoginPending }}
 								>
-									{isLoginPending ? (
-										<ActivityIndicator color="white" />
-									) : (
-										<Text className="text-white font-semibold text-base">
-											Iniciar Sesión
-										</Text>
-									)}
+									<Text className="text-white font-semibold text-base">
+										Iniciar Sesión
+									</Text>
 								</TouchableOpacity>
 							</>
 						) : (

@@ -595,7 +595,10 @@ describe("PersonalTransactionsScreen", () => {
 		render(<PersonalTransactionsScreen />);
 		expect(screen.getByText("Cargando movimientos...")).toBeTruthy();
 		expect(screen.queryByText("123.629 $")).toBeNull();
-		expect(screen.queryByTestId("personal-transactions-total")).toBeNull();
+		expect(screen.getByTestId("personal-transactions-total")).toBeTruthy();
+		expect(
+			within(screen.getByTestId("personal-transactions-total")).getByText("0 $"),
+		).toBeTruthy();
 
 		mockUsePersonalTransactionsSummary.mockReturnValueOnce({
 			summary: undefined,
@@ -649,6 +652,10 @@ describe("PersonalTransactionsScreen", () => {
 			screen.getByTestId("personal-transactions-loading-skeleton"),
 		).toBeTruthy();
 		expect(screen.getByTestId("personal-transactions-total")).toBeTruthy();
+		expect(
+			within(screen.getByTestId("personal-transactions-total")).getByText("0 $"),
+		).toBeTruthy();
+		expect(screen.queryByTestId("personal-transactions-total-skeleton")).toBeNull();
 		expect(screen.queryByText("Gastos Recientes")).toBeNull();
 		expect(
 			screen.getByLabelText("Cargando transacciones personales"),

@@ -1,0 +1,35 @@
+project: cuentas-claras-app
+mode: hybrid
+strict_tdd: true
+context:
+  - Expo React Native app for shared expense management.
+  - Product code lives in src/features/<domain>/.
+  - Shared infra lives in src/shared/.
+  - App shell and navigation live in src/app/.
+  - Repo uses strict TypeScript and Jest-based tests.
+  - CI runs pnpm verify and expo-doctor.
+testing:
+  test_runner:
+    command: pnpm test
+    framework: jest
+  coverage:
+    available: true
+    command: pnpm test --coverage
+  layers:
+    unit: true
+    integration: true
+    e2e: false
+  quality:
+    linter: false
+    type_checker:
+      available: true
+      command: pnpm run typecheck
+    formatter: false
+phase_rules:
+  proposal: "Start with scope and impact."
+  spec: "Write requirements and scenarios before implementation."
+  design: "Keep behavior in hooks and placement in feature folders."
+  tasks: "Break work into test-first units."
+  apply: "Implement against failing tests first."
+  verify: "Run pnpm verify for full tests, typecheck, and the high-threshold security audit; then run pnpm dlx expo-doctor for Expo compatibility."
+  archive: "Summarize completed work and update specs."

@@ -2,6 +2,40 @@
 
 This is a React Native Expo app for shared expense management. All product behavior lives in `src/features/<domain>/`; shared infrastructure lives in `src/shared/`; navigation and app shell live in `src/app/`.
 
+## Development Workflow
+
+Use this lifecycle for every non-trivial change:
+
+```text
+DEFINE → PLAN → BUILD → VERIFY → REVIEW → SHIP
+```
+
+OpenSpec is the source of truth for requirements and implementation decisions. For each active change, keep these artifacts together under `openspec/changes/<change-name>/`:
+
+- `proposal.md` — objective, scope, and success criteria
+- `design.md` — approved technical approach and decisions
+- `tasks.md` — ordered, testable implementation tasks
+- `verify-report.md` — verification evidence and known limitations
+
+### Skill selection and precedence
+
+- Project-owned technical skills live under `skills/` and are indexed by `skills-lock.json`.
+- Portable workflow skills live under `.agents/skills/<name>/SKILL.md` and are pinned in `skills-lock.json`.
+- Select the smallest relevant skill set for the task and read the exact `SKILL.md` files before working.
+- This file and OpenSpec take precedence over generic workflow skills when guidance conflicts.
+- Do not create a second instruction system or rely on environment-specific registries.
+
+### Lifecycle gates
+
+- **DEFINE:** agree on objective, scope, constraints, and acceptance criteria in `proposal.md`.
+- **PLAN:** obtain approval for `design.md` and `tasks.md` before implementation.
+- **BUILD:** implement one approved task or vertical slice at a time, test-first for behavior changes.
+- **VERIFY:** run focused checks plus the repository gates documented below; record evidence in `verify-report.md`.
+- **REVIEW:** inspect correctness, readability, architecture, security, and performance, including the complete diff.
+- **SHIP:** commit approved logical units and obtain explicit approval before push, merge, deployment, or PR.
+
+Stop and ask for clarification on ambiguity, failing tests, or high-risk irreversible work. Keep each increment tested, compilable, and revertible.
+
 ## API Contract Source of Truth
 
 - `swagger-spec.json` is the source of truth for backend endpoints, request bodies, response envelopes, and DTO shapes.
@@ -110,7 +144,7 @@ pnpm exec expo start --android # Android emulator
 
 ## QA Checklist
 
-- [ ] Relevant skill files were read before implementation.
+- [ ] Relevant project and workflow skill files were read before implementation.
 - [ ] Context7 was queried for live library docs before applying skill rules.
 - [ ] `project-architecture` skill was consulted before creating or moving files.
 - [ ] TDD was followed: failing test written before implementation.

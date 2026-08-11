@@ -246,6 +246,8 @@ describe("navigation shell", () => {
 		expect(registeredRouteNames).toEqual([
 			"Onboarding",
 			"Auth",
+			"ForgotPassword",
+			"ResetPassword",
 			"GroupsList",
 			"PersonalExpenses",
 			"GroupDetail",

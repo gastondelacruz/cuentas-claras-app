@@ -47,9 +47,11 @@ const mockedToast = jest.mocked(Toast);
 const mockedSetRefreshToken = jest.mocked(setRefreshToken);
 const setSession = jest.fn();
 
-function renderAuth(initialTab?: "login" | "register") {
+function renderAuth(
+	initialTab?: "login" | "register",
+	navigation = {} as never,
+) {
 	const route = { params: initialTab ? { initialTab } : undefined } as never;
-	const navigation = {} as never;
 	return render(<AuthScreen route={route} navigation={navigation} />);
 }
 
@@ -89,6 +91,13 @@ describe("AuthScreen", () => {
 	it('shows "Iniciar Sesión" heading when initialTab="login" (default)', () => {
 		renderAuth("login");
 		expect(screen.getAllByText("Iniciar Sesión").length).toBeGreaterThan(0);
+	});
+
+	it("navigates to password recovery from the login link", () => {
+		const navigate = jest.fn();
+		renderAuth("login", { navigate } as never);
+		fireEvent.press(screen.getByTestId("forgot-password-link"));
+		expect(navigate).toHaveBeenCalledWith("ForgotPassword");
 	});
 
 	it('shows "Crear Cuenta" heading when initialTab="register"', () => {

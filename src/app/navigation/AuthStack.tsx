@@ -1,16 +1,23 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import { AuthScreen } from '../../features/auth/screens/AuthScreen';
-import { OnboardingScreen } from '../../features/auth/screens/OnboardingScreen';
-import { RootStackParamList } from './types';
+import { AuthScreen } from "../../features/auth/screens/AuthScreen";
+import { OnboardingScreen } from "../../features/auth/screens/OnboardingScreen";
+import { ForgotPasswordScreen } from "../../features/auth/screens/ForgotPasswordScreen";
+import { ResetPasswordScreen } from "../../features/auth/screens/ResetPasswordScreen";
+import { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function AuthStack() {
-  return (
-    <Stack.Navigator initialRouteName="Auth" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Auth" component={AuthScreen} />
-    </Stack.Navigator>
-  );
+	return (
+		<Stack.Navigator
+			initialRouteName="Auth"
+			screenOptions={{ headerShown: false }}
+		>
+			<Stack.Screen name="Onboarding" component={OnboardingScreen} />
+			<Stack.Screen name="Auth" component={AuthScreen} />
+			<Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+			<Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+		</Stack.Navigator>
+	);
 }

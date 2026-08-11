@@ -35,10 +35,17 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Fetch pull request base
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch --no-tags origin \
+            "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+
       - name: Validate workflow artifacts
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: pnpm run workflow:validate -- --base="$BASE_REF"
+        run: pnpm run workflow:validate -- --base="origin/$BASE_REF"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

@@ -11,15 +11,45 @@
       "sourceType": "autoskills-registry",
       "computedHash": "5bfac6ea4750cb2bf6d2b703ebb8d524d447c80f9e7bf9b5a55f6f7544e6c246"
     },
+    "ci-cd-and-automation": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ci-cd-and-automation/SKILL.md",
+      "computedHash": "578b098a7d2352ccdac8b8abdc40eb6803538e81cf8382f138da6188a655087c"
+    },
+    "code-review-and-quality": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-review-and-quality/SKILL.md",
+      "computedHash": "6231479cc74c7ed70a5618b81b3f94034d9806c0319a1a23d15f9b94a368c581"
+    },
     "composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "autoskills-registry",
       "computedHash": "c124390cc3441844903ada94cb5820b23d922f2d0ad34e01e029e410197c8a32"
     },
+    "debugging-and-error-recovery": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging-and-error-recovery/SKILL.md",
+      "computedHash": "1a119d27e8f1d27ed6317adf3115826336491346780dcb7d7a7a7f79fe3ffe10"
+    },
     "design-mobile-apps": {
       "source": "sleekdotdesign/agent-skills",
       "sourceType": "autoskills-registry",
       "computedHash": "8ad96e3ae91f09355837322681a0bcb01ab6caadb7a6db663b47bf7185c72ea3"
+    },
+    "documentation-and-adrs": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/documentation-and-adrs/SKILL.md",
+      "computedHash": "7464fd2950b99fb00bbf65cab27653e0a049eef00c98927713ffdfe232a9daa9"
+    },
+    "doubt-driven-development": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/doubt-driven-development/SKILL.md",
+      "computedHash": "880332887b731e34509974dd6b62c8ae3943367f3b8ca0dd1bbb4479f474f73e"
     },
     "expo-api-routes": {
       "source": "expo/skills",
@@ -51,6 +81,18 @@
       "sourceType": "autoskills-registry",
       "computedHash": "82fb11a63fb1e35ee2469516ed02d54695f783115b1540c0e783197af4240a3a"
     },
+    "git-workflow-and-versioning": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/git-workflow-and-versioning/SKILL.md",
+      "computedHash": "8b53153892a21c3a486831bf608970b040ad0e9da698505af58c659242cf835c"
+    },
+    "incremental-implementation": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/incremental-implementation/SKILL.md",
+      "computedHash": "bd40e91eac68b83ba0204dd57b4bd35511cb900f937a7127b79f2396b2bb305d"
+    },
     "native-data-fetching": {
       "source": "expo/skills",
       "sourceType": "autoskills-registry",
@@ -65,6 +107,12 @@
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "autoskills-registry",
       "computedHash": "7361ab02fb6b09913e3bdd9cf61c629ed6c17de9485e6a781054e5d437ccfc29"
+    },
+    "planning-and-task-breakdown": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/planning-and-task-breakdown/SKILL.md",
+      "computedHash": "77bfed82bec2d4583de001648182bd64f24f86d8d0819a477f08073a3b671b26"
     },
     "react-best-practices": {
       "source": "vercel-labs/agent-skills",
@@ -81,10 +129,28 @@
       "sourceType": "autoskills-registry",
       "computedHash": "c184da724d1c61ad077f27418ea8e7e88fd54bcdf98165e18be7e4681cbd5e20"
     },
+    "shipping-and-launch": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/shipping-and-launch/SKILL.md",
+      "computedHash": "47c62d418e9f3f395092864e6080b5c4b84fe3ef8abbbb6a3397ed655dda0ba8"
+    },
+    "spec-driven-development": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/spec-driven-development/SKILL.md",
+      "computedHash": "2dee9aa940633b7b5e0f45be34839ab31c0de98d482e16772c5cd350f4b91b4b"
+    },
     "tailwind-css-patterns": {
       "source": "giuseppe-trisciuoglio/developer-kit",
       "sourceType": "autoskills-registry",
       "computedHash": "8fd534b64b3f305ade80c207e2f9ba4338d5e409e355af9f724c36764b6709c1"
+    },
+    "test-driven-development": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/test-driven-development/SKILL.md",
+      "computedHash": "a8fef2b010af8402fd2979bdb2e5e39e5baa1ca14b5cdec366ee75df5e1dec68"
     },
     "typescript-advanced-types": {
       "source": "wshobson/agents",
@@ -100,6 +166,12 @@
       "source": "expo/skills",
       "sourceType": "autoskills-registry",
       "computedHash": "77b56e964db680ac3efc8e11bba139d199285b08ecc5d94a6c433069537251d3"
+    },
+    "using-agent-skills": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/using-agent-skills/SKILL.md",
+      "computedHash": "636ae59f809148bcb82b5f8dc5ae5204fba0724f1a34d7cd75890f1ad60990a2"
     },
     "zod": {
       "source": "pproenca/dot-skills",

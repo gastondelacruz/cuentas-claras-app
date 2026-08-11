@@ -101,6 +101,22 @@ EXPO_PUBLIC_ENHANCED_INITIAL_LOADING=false
 
 When frontend code and the Swagger specification disagree, update the frontend to match `swagger-spec.json`.
 
+## Development workflow
+
+The repository follows:
+
+```text
+DEFINE → PLAN → BUILD → VERIFY → REVIEW → SHIP
+```
+
+Read [`docs/development-workflow.md`](docs/development-workflow.md) for the complete process. Requirements and implementation decisions live in OpenSpec under `openspec/changes/<change-name>/`; reusable templates are under `openspec/templates/`. Project and workflow rules are defined in [`AGENTS.md`](AGENTS.md), and pull requests use [`.github/pull_request_template.md`](.github/pull_request_template.md).
+
+For relevant application, dependency, migration, or CI changes, validate the OpenSpec artifacts with:
+
+```bash
+pnpm workflow:validate
+```
+
 ## Testing and verification
 
 Run the complete verification pipeline before reporting an implementation as complete:

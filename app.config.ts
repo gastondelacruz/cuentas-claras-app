@@ -5,6 +5,7 @@ import packageJson from "./package.json";
 export default ({ config }: ConfigContext): ExpoConfig =>
 	({
 		...config,
+		plugins: [...(config.plugins ?? []), "expo-status-bar"],
 		version: packageJson.version,
 		ios: {
 			...config.ios,

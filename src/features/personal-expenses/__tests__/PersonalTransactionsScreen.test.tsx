@@ -543,6 +543,61 @@ describe("PersonalTransactionsScreen", () => {
 		});
 	});
 
+	it("passes the occurredAt date from the latest created or modified transaction", () => {
+		const rootNavigate = jest.fn();
+		mockUseNavigation.mockReturnValue({
+			getParent: () => ({ navigate: rootNavigate }),
+		} as never);
+		mockUsePersonalTransactions.mockReturnValue({
+			transactions: [
+				{
+					id: "older",
+					type: "expense",
+					expenseKind: "variable",
+					amount: 100,
+					currency: "ARS",
+					category: "Comida",
+					accountId: "account-1",
+					accountName: "Pesos",
+					occurredAt: "2026-06-28T12:00:00.000Z",
+					note: null,
+					createdAt: "2026-06-28T12:00:00.000Z",
+					updatedAt: "2026-06-30T12:00:00.000Z",
+				},
+				{
+					id: "newer",
+					type: "expense",
+					expenseKind: "variable",
+					amount: 200,
+					currency: "ARS",
+					category: "Comida",
+					accountId: "account-1",
+					accountName: "Pesos",
+					occurredAt: "2026-06-27T12:00:00.000Z",
+					note: null,
+					createdAt: "2026-06-29T12:00:00.000Z",
+					updatedAt: "2026-06-29T12:00:00.000Z",
+				},
+			],
+			total: 300,
+			incomeTotal: 0,
+			expenseTotal: 300,
+			currency: "ARS",
+			hasFetchedTransactions: true,
+			isLoading: false,
+			isError: false,
+			error: null,
+		});
+
+		render(<PersonalTransactionsScreen />);
+		fireEvent.press(screen.getByTestId("add-personal-transaction-fab"));
+
+		expect(rootNavigate).toHaveBeenCalledWith("AddPersonalTransaction", {
+			type: "expense",
+			latestTransactionDate: "2026-06-28T12:00:00.000Z",
+		});
+	});
+
 	it("renders the white card that wraps tabs, filters, date nav and content", () => {
 		render(<PersonalTransactionsScreen />);
 
@@ -597,7 +652,9 @@ describe("PersonalTransactionsScreen", () => {
 		expect(screen.queryByText("123.629 $")).toBeNull();
 		expect(screen.getByTestId("personal-transactions-total")).toBeTruthy();
 		expect(
-			within(screen.getByTestId("personal-transactions-total")).getByText("0 $"),
+			within(screen.getByTestId("personal-transactions-total")).getByText(
+				"0 $",
+			),
 		).toBeTruthy();
 
 		mockUsePersonalTransactionsSummary.mockReturnValueOnce({
@@ -653,9 +710,13 @@ describe("PersonalTransactionsScreen", () => {
 		).toBeTruthy();
 		expect(screen.getByTestId("personal-transactions-total")).toBeTruthy();
 		expect(
-			within(screen.getByTestId("personal-transactions-total")).getByText("0 $"),
+			within(screen.getByTestId("personal-transactions-total")).getByText(
+				"0 $",
+			),
 		).toBeTruthy();
-		expect(screen.queryByTestId("personal-transactions-total-skeleton")).toBeNull();
+		expect(
+			screen.queryByTestId("personal-transactions-total-skeleton"),
+		).toBeNull();
 		expect(screen.queryByText("Gastos Recientes")).toBeNull();
 		expect(
 			screen.getByLabelText("Cargando transacciones personales"),

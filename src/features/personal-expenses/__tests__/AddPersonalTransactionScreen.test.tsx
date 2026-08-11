@@ -291,9 +291,23 @@ describe("AddPersonalTransactionScreen", () => {
 		// Dynamic date chip labels derived from FAKE_NOW (2026-06-29)
 		expect(screen.getByText("29/6 hoy")).toBeTruthy();
 		expect(screen.getByText("28/6 ayer")).toBeTruthy();
-		expect(screen.getByText("14/9 último")).toBeTruthy();
+		expect(screen.getByText("29/6 último")).toBeTruthy();
 		// Submit button copy for expense
 		expect(screen.getByText("Añadir")).toBeTruthy();
+	});
+
+	it("uses the latest loaded transaction date for the last chip", () => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: {
+				type: "expense",
+				latestTransactionDate: "2026-06-25T18:45:00.000Z",
+			},
+		} as never);
+
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		expect(screen.getByText("25/6 último")).toBeTruthy();
+		expect(screen.queryByText("14/9 último")).toBeNull();
 	});
 
 	it("updates the expense type selector when tapping fixed", () => {
@@ -447,6 +461,33 @@ describe("AddPersonalTransactionScreen", () => {
 		await waitFor(() => {
 			expect(mockCreatePersonalTransaction).toHaveBeenCalledWith(
 				expect.objectContaining({ occurredAt: "2026-06-29T12:00:00.000Z" }),
+				expect.any(Object),
+			);
+		});
+	});
+
+	it('tapping "último" selects the latest loaded date at noon UTC', async () => {
+		jest.mocked(useRoute).mockReturnValue({
+			params: {
+				type: "expense",
+				latestTransactionDate: "2026-06-25T18:45:00.000Z",
+			},
+		} as never);
+		render(<AddPersonalTransactionScreen />, { wrapper: Wrapper });
+
+		fireEvent.changeText(
+			screen.getByTestId("personal-transaction-amount-input"),
+			"100",
+		);
+		fireEvent.press(screen.getByTestId("personal-date-last"));
+
+		await act(async () => {
+			fireEvent.press(screen.getByTestId("submit-personal-transaction-button"));
+		});
+
+		await waitFor(() => {
+			expect(mockCreatePersonalTransaction).toHaveBeenCalledWith(
+				expect.objectContaining({ occurredAt: "2026-06-25T12:00:00.000Z" }),
 				expect.any(Object),
 			);
 		});

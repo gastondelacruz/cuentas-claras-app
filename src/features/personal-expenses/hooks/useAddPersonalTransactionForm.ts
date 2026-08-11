@@ -51,7 +51,11 @@ function formatShortDate(date: Date) {
  * Builds the date chip options relative to `now`.
  * All dates use noon UTC so they remain unambiguous across timezones.
  */
-function getDateChips(now: Date, customDate: Date | null): DateChip[] {
+function getDateChips(
+	now: Date,
+	customDate: Date | null,
+	latestTransactionDate: Date | null,
+): DateChip[] {
 	const todayNoon = new Date(
 		Date.UTC(
 			now.getUTCFullYear(),
@@ -79,12 +83,10 @@ function getDateChips(now: Date, customDate: Date | null): DateChip[] {
 	const chips: DateChip[] = [
 		{ id: "today", label: todayLabel, date: todayNoon },
 		{ id: "yesterday", label: yesterdayLabel, date: yesterdayNoon },
-		// "último" is a static placeholder for the most-recent past transaction date.
-		// TODO: derive from the user's transaction history once the API supports it.
 		{
 			id: "last",
-			label: "14/9 último",
-			date: new Date("2025-09-14T12:00:00.000Z"),
+			label: `${formatShortDate(latestTransactionDate ?? todayNoon)} último`,
+			date: latestTransactionDate ?? todayNoon,
 		},
 	];
 
@@ -202,9 +204,25 @@ export function useAddPersonalTransactionForm() {
 		editableTransaction ? new Date(editableTransaction.occurredAt) : null,
 	);
 	const [showDatePicker, setShowDatePicker] = useState(false);
+	const latestTransactionDate = useMemo(() => {
+		const value = route.params?.latestTransactionDate;
+		if (!value) return null;
+
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) return null;
+
+		return new Date(
+			Date.UTC(
+				parsed.getUTCFullYear(),
+				parsed.getUTCMonth(),
+				parsed.getUTCDate(),
+				12,
+			),
+		);
+	}, [route.params?.latestTransactionDate]);
 	const dateChips = useMemo(
-		() => getDateChips(now, customDate),
-		[now, customDate],
+		() => getDateChips(now, customDate, latestTransactionDate),
+		[now, customDate, latestTransactionDate],
 	);
 	const [selectedDateId, setSelectedDateId] = useState<DateChipId>(
 		editableTransaction ? "custom" : "today",

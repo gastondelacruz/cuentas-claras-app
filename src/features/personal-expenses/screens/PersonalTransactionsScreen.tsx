@@ -206,9 +206,9 @@ export function PersonalTransactionsScreen() {
 
 	const useSkeletonLoading = isEnhancedInitialLoadingEnabled();
 	const showLoadingSkeleton = isLoading && useSkeletonLoading && !isError;
-	const totalLabel = formatTotal(displaySummaryTotal, displaySummaryCurrency);
+	const totalLabel = formatTotal(isLoading ? 0 : displaySummaryTotal, displaySummaryCurrency);
 	const chartTotalLabel = formatTotal(displayTotal, displayCurrency);
-	const showFinancialSummary = (!isLoading || showLoadingSkeleton) && !isError;
+	const showFinancialSummary = !isError;
 
 	return (
 		<ScreenContainer style={{ backgroundColor: STITCH_BACKGROUND }}>
@@ -236,29 +236,17 @@ export function PersonalTransactionsScreen() {
 							<Text style={{ fontSize: 14, color: GRAY }}>Total</Text>
 							<Text style={{ fontSize: 16, color: GRAY }}>⌄</Text>
 						</View>
-						{showLoadingSkeleton ? (
-							<View
-								accessibilityElementsHidden
-								importantForAccessibility="no-hide-descendants"
-								style={{ alignItems: "center", paddingTop: 8 }}
-							>
-								<SkeletonBlock
-									style={{ width: 160, height: 32, borderRadius: 999 }}
-								/>
-							</View>
-						) : (
-							<Text
-								selectable
-								style={{
-									fontSize: 28,
-									fontWeight: "700",
-									color: STITCH_PRIMARY,
-									fontVariant: ["tabular-nums"],
-								}}
-							>
-								{totalLabel}
-							</Text>
-						)}
+						<Text
+							selectable
+							style={{
+								fontSize: 28,
+								fontWeight: "700",
+								color: STITCH_PRIMARY,
+								fontVariant: ["tabular-nums"],
+							}}
+						>
+							{totalLabel}
+						</Text>
 					</View>
 				) : null}
 

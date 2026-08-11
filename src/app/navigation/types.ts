@@ -50,6 +50,7 @@ export type PersonalTransactionCategoryPreview = {
 export type AddPersonalTransactionRouteParams = {
 	type?: PersonalTransactionType;
 	transactionId?: string;
+	latestTransactionDate?: string;
 	returnToPersonalExpenses?: boolean;
 	calculatorResult?: string;
 };

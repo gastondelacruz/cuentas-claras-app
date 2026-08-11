@@ -107,6 +107,43 @@ function endOfDayIso(date: Date) {
 	).toISOString();
 }
 
+function getLatestLoadedTransactionOccurredAt(
+	transactions: PersonalTransactionDto[],
+) {
+	const latestActivity = transactions.reduce<
+		| {
+				transaction: PersonalTransactionDto;
+				activityAt: number;
+		  }
+		| undefined
+	>((latest, transaction) => {
+		const activityAt = [transaction.createdAt, transaction.updatedAt]
+			.map((value) => (value ? new Date(value).getTime() : Number.NaN))
+			.filter(Number.isFinite)
+			.reduce(
+				(mostRecent, value) => Math.max(mostRecent, value),
+				Number.NEGATIVE_INFINITY,
+			);
+		if (!Number.isFinite(activityAt)) return latest;
+		if (!latest || activityAt > latest.activityAt) {
+			return { transaction, activityAt };
+		}
+		return latest;
+	}, undefined);
+
+	if (latestActivity) {
+		return latestActivity.transaction.occurredAt;
+	}
+
+	return transactions.reduce<string | undefined>((latest, transaction) => {
+		if (!latest) return transaction.occurredAt;
+		return new Date(transaction.occurredAt).getTime() >
+			new Date(latest).getTime()
+			? transaction.occurredAt
+			: latest;
+	}, undefined);
+}
+
 function formatPeriodLabel(from: Date, to: Date) {
 	const label = (d: Date) =>
 		`${d.getUTCDate()} ${MONTHS_ES_SHORT[d.getUTCMonth()]}`;
@@ -252,8 +289,15 @@ export function usePersonalTransactionsScreen() {
 		setIsPeriodModalOpen(false);
 	}
 
+	const latestTransactionDate = transactionQuery.hasFetchedTransactions
+		? getLatestLoadedTransactionOccurredAt(transactionQuery.transactions)
+		: undefined;
+
 	function navigateToAddTransaction() {
-		rootNavigation?.navigate("AddPersonalTransaction", { type });
+		rootNavigation?.navigate("AddPersonalTransaction", {
+			type,
+			...(latestTransactionDate ? { latestTransactionDate } : {}),
+		});
 	}
 
 	function navigateToEditTransaction(transaction: PersonalTransactionDto) {

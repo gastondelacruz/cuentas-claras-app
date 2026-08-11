@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.5.0...v1.5.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **app:** latest transaction date and Expo upgrade ([#93](https://github.com/gastondelacruz/cuentas-claras-app/issues/93)) ([873567a](https://github.com/gastondelacruz/cuentas-claras-app/commit/873567aab80447357f2646df837779045eb9591d))
+
 ## [1.5.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.4.0...v1.5.0) (2026-07-25)
 
 

@@ -80,6 +80,7 @@
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "security:audit": "pnpm audit --audit-level=high",
+    "workflow:validate": "node scripts/workflow-validate.js",
     "verify": "pnpm test --runInBand && pnpm typecheck && pnpm security:audit"
   },
   "private": true

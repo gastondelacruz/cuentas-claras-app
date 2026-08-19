@@ -12,8 +12,16 @@ import { useForgotPasswordForm } from "../hooks/useForgotPasswordForm";
 type Props = NativeStackScreenProps<RootStackParamList, "ForgotPassword">;
 
 export function ForgotPasswordScreen({ navigation }: Props) {
-	const { email, setEmail, errors, isSubmitted, handleSubmit } =
-		useForgotPasswordForm();
+	const {
+		email,
+		setEmail,
+		errors,
+		isSubmitted,
+		isPending,
+		cooldownSeconds,
+		requestError,
+		handleSubmit,
+	} = useForgotPasswordForm();
 
 	return (
 		<View className="flex-1 bg-[#f7f7fa]">
@@ -65,13 +73,26 @@ export function ForgotPasswordScreen({ navigation }: Props) {
 							accessibilityRole="button"
 							accessibilityLabel="Enviar enlace de recuperación"
 							testID="forgot-password-submit"
-							onPress={handleSubmit}
+							onPress={() => void handleSubmit()}
+							disabled={isPending || cooldownSeconds > 0}
 							className="mt-5 items-center rounded-full bg-[#006d37] py-3"
 						>
 							<Text className="text-sm font-semibold text-white">
-								Enviar Enlace
+								{isPending
+									? "Enviando…"
+									: cooldownSeconds > 0
+										? `Reenviar en ${cooldownSeconds}s`
+										: "Enviar Enlace"}
 							</Text>
 						</Pressable>
+						{requestError ? (
+							<Text
+								accessibilityRole="alert"
+								className="mt-3 text-center text-sm text-red-600"
+							>
+								{requestError}
+							</Text>
+						) : null}
 						{isSubmitted ? (
 							<View
 								accessibilityRole="alert"

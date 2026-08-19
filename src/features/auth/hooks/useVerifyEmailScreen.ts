@@ -60,6 +60,7 @@ export function useVerifyEmailScreen() {
 		isPending: verifyMutation.isPending,
 		isSuccess: verifyMutation.isSuccess,
 		isError: verifyMutation.isError,
+		error: verifyMutation.error,
 		retryVerification: verifyToken,
 	};
 }

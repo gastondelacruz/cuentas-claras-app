@@ -3,11 +3,14 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { colors } from "../../../shared/theme/colors";
 import { Button } from "../../../shared/ui/Button";
 import { ScreenContainer } from "../../../shared/ui/ScreenContainer";
+import { getEmailVerificationErrorKind } from "../api/authApi";
 import { useVerifyEmailScreen } from "../hooks/useVerifyEmailScreen";
 
 export function VerifyEmailScreen() {
-	const { hasToken, isPending, isSuccess, isError, retryVerification } =
+	const { hasToken, isPending, isSuccess, isError, error, retryVerification } =
 		useVerifyEmailScreen();
+	const isConnectionError =
+		isError && getEmailVerificationErrorKind(error) === "connection";
 
 	return (
 		<ScreenContainer>
@@ -28,11 +31,13 @@ export function VerifyEmailScreen() {
 								: "Verificando email..."}
 				</Text>
 				<Text className="text-center text-base leading-6 text-neutral600">
-					{!hasToken || isError
+					{!hasToken || (isError && !isConnectionError)
 						? "El enlace puede estar vencido o ya fue usado. Reenviá el email de verificación e intentá nuevamente."
-						: isSuccess
-							? "Ya podés usar todas las funciones de Cuentas Claras."
-							: "Esto puede tardar unos segundos."}
+						: isConnectionError
+							? "No pudimos conectar con el servidor. Revisá tu conexión e intentá nuevamente."
+							: isSuccess
+								? "Ya podés usar todas las funciones de Cuentas Claras."
+								: "Esto puede tardar unos segundos."}
 				</Text>
 				{hasToken && isError ? (
 					<Button

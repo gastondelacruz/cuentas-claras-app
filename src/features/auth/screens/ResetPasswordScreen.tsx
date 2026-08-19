@@ -1,6 +1,13 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import Toast from "react-native-toast-message";
 import { Eye, EyeOff, KeyRound } from "lucide-react-native";
-import { Pressable, Text, TextInput, View } from "react-native";
+import {
+	ActivityIndicator,
+	Pressable,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 
 import type { RootStackParamList } from "../../../app/navigation/types";
 import { AuthFooter } from "../../../shared/ui/AuthFooter";
@@ -10,7 +17,7 @@ import { useResetPasswordForm } from "../hooks/useResetPasswordForm";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ResetPassword">;
 
-export function ResetPasswordScreen({}: Props) {
+export function ResetPasswordScreen({ navigation, route }: Props) {
 	const {
 		password,
 		setPassword,
@@ -22,8 +29,20 @@ export function ResetPasswordScreen({}: Props) {
 		setShowConfirmPassword,
 		errors,
 		isSubmitted,
+		requestError,
+		isPending,
 		handleSubmit,
-	} = useResetPasswordForm();
+	} = useResetPasswordForm(route.params?.token, () => {
+		Toast.show({
+			type: "success",
+			text1: "Contraseña actualizada",
+			text2: "Iniciá sesión nuevamente para continuar.",
+		});
+		navigation.reset({
+			index: 0,
+			routes: [{ name: "Auth", params: { initialTab: "login" } }],
+		});
+	});
 
 	return (
 		<View className="flex-1 bg-[#f7f7fa]">
@@ -60,6 +79,7 @@ export function ResetPasswordScreen({}: Props) {
 							onToggle={() => setShowPassword((value) => !value)}
 							error={errors.password}
 							testID="new-password-input"
+							disabled={isPending}
 						/>
 						<PasswordField
 							label="Confirmar Contraseña"
@@ -69,6 +89,7 @@ export function ResetPasswordScreen({}: Props) {
 							onToggle={() => setShowConfirmPassword((value) => !value)}
 							error={errors.confirmPassword}
 							testID="confirm-password-input"
+							disabled={isPending}
 						/>
 						<View className="mt-1 rounded-lg bg-[#f0f2f1] p-3">
 							<Text className="text-xs font-medium text-[#435047]">
@@ -78,14 +99,25 @@ export function ResetPasswordScreen({}: Props) {
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel="Actualizar contraseña"
+							accessibilityState={{ disabled: isPending, busy: isPending }}
 							testID="reset-password-submit"
-							onPress={handleSubmit}
-							className="mt-4 items-center rounded-lg bg-[#006d37] py-3"
+							onPress={() => void handleSubmit()}
+							disabled={isPending}
+							className="mt-4 flex-row items-center justify-center gap-2 rounded-lg bg-[#006d37] py-3"
 						>
+							{isPending ? <ActivityIndicator color="#ffffff" /> : null}
 							<Text className="text-base font-semibold text-white">
-								Actualizar Contraseña
+								{isPending ? "Actualizando…" : "Actualizar Contraseña"}
 							</Text>
 						</Pressable>
+						{requestError ? (
+							<Text
+								accessibilityRole="alert"
+								className="mt-3 text-center text-sm text-red-600"
+							>
+								{requestError}
+							</Text>
+						) : null}
 						{isSubmitted ? (
 							<Text
 								accessibilityRole="alert"
@@ -110,6 +142,7 @@ type PasswordFieldProps = {
 	onToggle: () => void;
 	error?: string;
 	testID: string;
+	disabled?: boolean;
 };
 
 function PasswordField({
@@ -120,6 +153,7 @@ function PasswordField({
 	onToggle,
 	error,
 	testID,
+	disabled = false,
 }: PasswordFieldProps) {
 	const Icon = visible ? Eye : EyeOff;
 	return (
@@ -140,6 +174,7 @@ function PasswordField({
 					secureTextEntry={!visible}
 					value={value}
 					onChangeText={onChangeText}
+					editable={!disabled}
 					accessibilityLabel={label}
 				/>
 				<Pressable
@@ -150,14 +185,13 @@ function PasswordField({
 							: `Mostrar ${label.toLowerCase()}`
 					}
 					onPress={onToggle}
+					disabled={disabled}
 					className="px-3"
 				>
 					<Icon size={20} color="#78847a" />
 				</Pressable>
 			</View>
-			{error ? (
-				<Text className="mt-1 text-xs text-red-500">{error}</Text>
-			) : null}
+			{error ? <Text className="mt-1 text-xs text-red-500">{error}</Text> : null}
 		</View>
 	);
 }

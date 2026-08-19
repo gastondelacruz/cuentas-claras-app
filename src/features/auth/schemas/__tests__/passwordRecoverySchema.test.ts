@@ -14,7 +14,13 @@ describe("password recovery schemas", () => {
 		).toBe(false);
 	});
 
-	it("requires a strong matching password", () => {
+	it("uses the same minimum password rule as registration", () => {
+		expect(
+			resetPasswordSchema.safeParse({
+				password: "validpassword",
+				confirmPassword: "validpassword",
+			}).success,
+		).toBe(true);
 		expect(
 			resetPasswordSchema.safeParse({
 				password: "secure123",

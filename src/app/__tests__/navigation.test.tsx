@@ -207,9 +207,7 @@ describe("navigation shell", () => {
 		jest
 			.mocked(useNavigation)
 			.mockImplementation(actualNavigation.useNavigation as never);
-		jest
-			.mocked(useRoute)
-			.mockImplementation(actualNavigation.useRoute as never);
+		jest.mocked(useRoute).mockImplementation(actualNavigation.useRoute as never);
 
 		jest.mocked(useGroupDetail).mockImplementation((id?: string) => {
 			const group = useGroupsStore.getState().groups.find((g) => g.id === id);
@@ -402,10 +400,7 @@ describe("navigation shell", () => {
 			getAllByPlaceholderText("juan@ejemplo.com")[0],
 			"ada@example.com",
 		);
-		fireEvent.changeText(
-			getAllByPlaceholderText("••••••••")[0],
-			"Password123!",
-		);
+		fireEvent.changeText(getAllByPlaceholderText("••••••••")[0], "Password123!");
 		fireEvent.press(getByTestId("login-button"));
 
 		await waitFor(() => {
@@ -519,6 +514,44 @@ describe("navigation shell", () => {
 
 		expect((await findAllByText("Iniciar Sesión")).length).toBeGreaterThan(0);
 		expect(queryByText("Viaje a la costa")).toBeNull();
+	});
+
+	it("returns to the main stack after reset-password clears auth and login succeeds", async () => {
+		const navigationRef = createNavigationContainerRef<RootStackParamList>();
+		testClient = createTestQueryClient();
+		const { findAllByText, findByText } = render(
+			<QueryClientProvider client={testClient}>
+				<NavigationContainer ref={navigationRef}>
+					<RootNavigator />
+				</NavigationContainer>
+			</QueryClientProvider>,
+		);
+
+		expect((await findAllByText("Iniciar Sesión")).length).toBeGreaterThan(0);
+		await waitFor(() => expect(navigationRef.isReady()).toBe(true));
+
+		act(() => {
+			navigationRef.reset({
+				index: 0,
+				routes: [{ name: "Auth", params: { initialTab: "login" } }],
+			});
+			useAuthStore.getState().clearSession();
+		});
+
+		act(() => {
+			useAuthStore
+				.getState()
+				.setSession(
+					{ id: "user-1", email: "user@example.com" },
+					`header.${btoa(JSON.stringify({ emailVerified: true }))}.signature`,
+				);
+		});
+
+		await waitFor(() => {
+			expect(useAuthStore.getState().isAuthenticated).toBe(true);
+			expect(navigationRef.getCurrentRoute()?.name).toBe("GroupsList");
+		});
+		await expect(findByText("Balance Neto Total")).resolves.toBeOnTheScreen();
 	});
 
 	it("resets to the auth stack when auth:logout is emitted", async () => {

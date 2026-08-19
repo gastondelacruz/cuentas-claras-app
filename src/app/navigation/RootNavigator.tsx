@@ -1,5 +1,5 @@
 import { ActivityIndicator, Text, View } from "react-native";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigation } from "@react-navigation/native";
 import {
 	createNativeStackNavigator,
@@ -46,7 +46,10 @@ function LoginRedirectScreen() {
 }
 
 export function RootNavigator() {
+	const navigation =
+		useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const wasAuthenticated = useRef(isAuthenticated);
 	const emailVerified = useAuthStore((state) => state.emailVerified);
 	const pendingGroupInvitationToken = useAuthStore(
 		(state) => state.pendingGroupInvitationToken,
@@ -60,6 +63,13 @@ export function RootNavigator() {
 			useAuthStore.getState().clearSession();
 		});
 	}, []);
+
+	useEffect(() => {
+		if (isAuthenticated && !wasAuthenticated.current) {
+			navigation.reset({ index: 0, routes: [{ name: "Main" }] });
+		}
+		wasAuthenticated.current = isAuthenticated;
+	}, [isAuthenticated, navigation]);
 
 	if (isRestoringSession) {
 		return (

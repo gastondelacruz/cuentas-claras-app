@@ -21,11 +21,14 @@ jest.mock("../../../shared/api/tokenStorage", () => ({
 
 const mockUseLogin = jest.mocked(useLogin);
 const mockSetRefreshToken = jest.mocked(setRefreshToken);
+const mockSetUserMetadata = jest.mocked(setUserMetadata);
 const mockPrefetchInitialAppData = jest.mocked(prefetchInitialAppData);
 
 describe("useLoginForm", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		mockSetRefreshToken.mockReset().mockResolvedValue(undefined);
+		mockSetUserMetadata.mockReset().mockResolvedValue(undefined);
 		useAuthStore.getState().clearSession();
 		mockUseLogin.mockReturnValue({
 			isPending: false,
@@ -43,6 +46,52 @@ describe("useLoginForm", () => {
 				} as never);
 			}),
 		} as never);
+	});
+
+	it("commits the session only after auth persistence finishes", async () => {
+		let resolveRefreshToken!: () => void;
+		let resolveUserMetadata!: () => void;
+		mockSetRefreshToken.mockImplementation(
+			() =>
+				new Promise<void>((resolve) => {
+					resolveRefreshToken = resolve;
+				}),
+		);
+		mockSetUserMetadata.mockImplementation(
+			() =>
+				new Promise<void>((resolve) => {
+					resolveUserMetadata = resolve;
+				}),
+		);
+
+		const { result } = renderHook(() => useLoginForm());
+		act(() => {
+			result.current.setEmail("ada@example.com");
+			result.current.setPassword("Password123!");
+		});
+		act(() => {
+			result.current.handleLogin();
+		});
+
+		await waitFor(() =>
+			expect(mockSetRefreshToken).toHaveBeenCalledWith("refresh-token-1"),
+		);
+		expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+		resolveRefreshToken();
+		await waitFor(() =>
+			expect(mockSetUserMetadata).toHaveBeenCalledWith({
+				id: "user-1",
+				name: "Ada Lovelace",
+				email: "ada@example.com",
+			}),
+		);
+		resolveUserMetadata();
+
+		await waitFor(() => {
+			expect(useAuthStore.getState().isAuthenticated).toBe(true);
+		});
+		expect(useAuthStore.getState().accessToken).toBe("access-token-1");
 	});
 
 	it("starts initial app data prefetch after successful login without delaying the auth session", async () => {

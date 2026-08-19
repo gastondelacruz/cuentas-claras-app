@@ -34,6 +34,14 @@ Tasks are completed test-first where behavior changes. Keep each task small enou
 - [ ] Verify: `pnpm verify` y `pnpm dlx expo-doctor`.
 - Dependencies: Tasks 2-3
 
+## Task 5: Configurar Android App Links y contratos de runtime
+
+- [x] Acceptance: los enlaces HTTPS de verificación y reset se resuelven en React Navigation.
+- [x] Implementation: `android.intentFilters`, prefijo HTTPS, estados de API y documentación de `assetlinks.json`.
+- [x] Verify: tests de linking/configuración y typecheck.
+- [ ] Pending external setup: publicar `assetlinks.json` en el dominio con el fingerprint real de firma.
+- Dependencies: Task 4
+
 ## Checkpoints
 
 - [ ] Después de Tasks 1-3: tests focalizados y typecheck pasan; revisión visual en Expo Go.

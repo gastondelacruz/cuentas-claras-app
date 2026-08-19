@@ -145,10 +145,11 @@ The repository includes an `android/` native project and an EAS profile named `r
 This uses the same EAS profile configured for a distributable APK, but runs the build on your computer instead of EAS servers:
 
 ```bash
-pnpm dlx eas-cli@latest build \
-  --platform android \
-  --profile release-apk \
-  --local
+ EXPO_PUBLIC_API_URL=https://api.cuentas-claras-app.com \
+   pnpm dlx eas-cli@latest build \
+     --platform android \
+     --profile preview \
+     --local
 ```
 
 The command may request or configure Android signing credentials. Keep the generated keystore safe; it is required for future updates of the same Android application.
@@ -185,20 +186,20 @@ This option consumes the Android build quota of the Expo account. If the Free pl
 
 `eas.json` currently defines:
 
-| Profile | Purpose | Android output |
-| --- | --- | --- |
-| `development` | Development client | Internal build |
-| `preview` | Internal testing | APK |
-| `release-apk` | Installable release APK | APK |
-| `production` | Store submission | Android App Bundle (`.aab`) |
+| Profile       | Purpose                 | Android output              |
+| ------------- | ----------------------- | --------------------------- |
+| `development` | Development client      | Internal build              |
+| `preview`     | Internal testing        | APK                         |
+| `release-apk` | Installable release APK | APK                         |
+| `production`  | Store submission        | Android App Bundle (`.aab`) |
 
 ## Application identity
 
-| Platform | Identifier |
-| --- | --- |
-| Android | `com.cuentasclaras.app` |
-| iOS | `com.cuentasclaras.app` |
-| Expo project | `cuentas-claras-app` |
+| Platform     | Identifier              |
+| ------------ | ----------------------- |
+| Android      | `com.cuentasclaras.app` |
+| iOS          | `com.cuentasclaras.app` |
+| Expo project | `cuentas-claras-app`    |
 
 ## Contribution checklist
 

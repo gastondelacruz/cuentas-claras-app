@@ -2,7 +2,7 @@
 
 ## Objective
 
-Agregar el flujo visual de recuperación de contraseña en la app móvil, manteniendo el lenguaje visual actual de Cuentas Claras y sin integrar todavía endpoints del backend.
+Implementar el flujo completo de recuperación y restablecimiento de contraseña en la app móvil, conectado al backend y manteniendo el lenguaje visual actual de Cuentas Claras.
 
 ## Scope
 
@@ -12,22 +12,25 @@ Agregar el flujo visual de recuperación de contraseña en la app móvil, manten
 - Crear la pantalla `ForgotPassword` para ingresar el correo electrónico.
 - Crear la pantalla `ResetPassword` para ingresar y confirmar la nueva contraseña.
 - Registrar ambas pantallas en la navegación de autenticación.
-- Implementar validaciones y estados locales de formulario necesarios para probar la UI.
+- Implementar validaciones, llamadas al backend y estados de formulario.
+- Leer el token desde los deep links HTTPS `/verify-email?token=TOKEN` y `/reset-password?token=TOKEN`.
+- Configurar Android App Links para `cuentas-claras-app.com`, conservando `cuentasclaras://` como fallback.
+- Integrar verificación de email y recuperación de contraseña contra la API existente.
+- Limpiar la sesión local y volver al login tras un reset exitoso.
 - Cubrir navegación, renderizado e interacciones principales con tests.
 
 ### Out of scope
 
-- Llamadas a endpoints de recuperación o actualización de contraseña.
-- Envío real de emails, tokens, deep links o sesiones.
-- Cambios al contrato Swagger o al cliente API.
-- Persistencia de contraseñas.
+- Modificar el backend, la expiración de tokens o su consumo.
+- Persistir contraseñas o tokens en el dispositivo.
 
 ## Success criteria
 
 - Desde Login se puede abrir la pantalla de recuperación mediante el enlace visible.
 - La pantalla de recuperación respeta la referencia visual: encabezado, tarjeta, email, CTA y retorno a login.
 - La pantalla de nueva contraseña respeta la referencia visual: icono, dos campos, visibilidad de contraseña, regla mínima y CTA.
-- Los formularios muestran validaciones locales sin hacer requests.
+- Los formularios validan datos y llaman a los endpoints de recuperación/reset.
+- Los errores de token inválido, vencido y consumido se muestran en la pantalla.
 - `pnpm verify` y `pnpm dlx expo-doctor` pasan.
 
 ## Acceptance scenarios

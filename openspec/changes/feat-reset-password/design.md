@@ -4,7 +4,7 @@
 
 La autenticación vive en `src/features/auth/` y usa un `NativeStackNavigator` central en `src/app/navigation/`. `AuthScreen` combina login y registro y usa NativeWind con los tokens visuales existentes: fondo `#f0f0f3`, tarjetas blancas, verde de acción `#006d37`, bordes suaves y `AppTopBar`.
 
-Las referencias recibidas muestran dos pantallas independientes, con barra superior de Cuentas Claras, tarjeta blanca, tipografía oscura, CTA verde y footer legal. La primera fase queda explícitamente limitada al front.
+Las referencias recibidas muestran dos pantallas independientes, con barra superior de Cuentas Claras, tarjeta blanca, tipografía oscura, CTA verde y footer legal. La implementación conecta la UI existente con los endpoints de recuperación definidos por producto.
 
 ## Proposed approach
 
@@ -14,7 +14,16 @@ Las referencias recibidas muestran dos pantallas independientes, con barra super
 - Registrar rutas públicas `ForgotPassword` y `ResetPassword` en `RootStackParamList`, `AuthStack` y `RootNavigator`.
 - Añadir el enlace en `AuthScreen` usando la navegación existente.
 - Reutilizar `AppTopBar`, `KeyboardAwareScrollView`, colores y patrones de inputs/CTA existentes.
-- Dejar callbacks de submit locales y sin API; el comportamiento final del enlace/submit se decidirá antes de implementar.
+- Implementar `forgotPassword` y `resetPassword` en `authApi.ts`, aceptando respuestas 204.
+- Extraer códigos de error de token desde los envelopes de error conocidos.
+- Limpiar SecureStore, Zustand y React Query tras reset exitoso y navegar al login.
+
+## Android App Links
+
+- `app.json` conserva `android.package` como `com.cuentasclaras.app` y el scheme `cuentasclaras` existente.
+- Se agregan dos `android.intentFilters` con `autoVerify` para `https://cuentas-claras-app.com/verify-email` y `https://cuentas-claras-app.com/reset-password`.
+- `src/app/navigation/linking.ts` admite el dominio HTTPS además del scheme custom y mantiene el mapeo de `token` a ambas rutas.
+- El dominio debe publicar `/.well-known/assetlinks.json` con el fingerprint real del certificado que firma la APK. La plantilla y el procedimiento están en `docs/deployment/`.
 
 ## Architecture and file placement
 
@@ -32,7 +41,7 @@ Las referencias recibidas muestran dos pantallas independientes, con barra super
 
 ## Contracts and data flow
 
-No se agrega contrato HTTP en esta fase. Los submits solo validan estado local y dejan preparada la superficie para conectar posteriormente con Swagger/API. `ResetPassword` podrá recibir un token opcional en la ruta cuando se defina el deep link.
+Se agregan los callers HTTP para `/auth/password/forgot` y `/auth/password/reset`; el cliente ya aplica el prefijo `/api/v1`. `ResetPassword` recibe `token` como query param mediante el linking config.
 
 ## Alternatives considered
 
@@ -51,7 +60,7 @@ No se agrega contrato HTTP en esta fase. Los submits solo validan estado local y
 ## Testing strategy
 
 - Unit/integration: schemas y hooks; render, validaciones, toggles de visibilidad y acciones de navegación de ambas pantallas.
-- E2E: N/A en esta fase; se hará revisión manual en Expo Go y se cubrirá la navegación con tests de componentes.
+- E2E: N/A; se cubre la navegación HTTPS, tokens faltantes, respuestas de API inválidas, éxito y errores de conexión con tests de componentes/API.
 - Verification: `pnpm verify`, `pnpm dlx expo-doctor`.
 
 ## Security, performance, and rollback
@@ -62,5 +71,6 @@ No se agrega contrato HTTP en esta fase. Los submits solo validan estado local y
 
 ## Approved decisions
 
-- Usuario aprobó implementar el alcance front-only y el plan.
-- `Enviar enlace` mostrará un estado local de enlace enviado; no navegará a ResetPassword hasta existir el deep link real.
+- El backend responde 204 para ambas operaciones exitosas.
+- El mensaje de forgot es genérico para no revelar si el email existe.
+- El reset exitoso limpia la sesión y vuelve al login con aviso de iniciar sesión nuevamente.

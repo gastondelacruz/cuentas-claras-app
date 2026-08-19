@@ -9,6 +9,7 @@ import {
 	CalculatorKey,
 	createCalculatorState,
 	evaluateExpression,
+	formatCalculatorDisplay,
 	pressCalculatorKey,
 } from "../calculatorEngine";
 
@@ -63,7 +64,7 @@ export function useCalculator() {
 	}
 
 	return {
-		display: state.display,
+		display: formatCalculatorDisplay(state.display),
 		error: state.error,
 		bottomInset: insets.bottom,
 		pressKey,

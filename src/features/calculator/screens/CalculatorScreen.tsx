@@ -337,7 +337,9 @@ export function CalculatorScreen() {
 						</Text>
 						<Text
 							selectable
-							numberOfLines={1}
+							numberOfLines={Math.max(2, Math.ceil(display.length / 30))}
+							adjustsFontSizeToFit
+							minimumFontScale={0.45}
 							accessibilityLiveRegion="polite"
 							testID="calculator-display"
 							style={{

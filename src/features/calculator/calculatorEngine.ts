@@ -1,4 +1,4 @@
-export const MAX_EXPRESSION_LENGTH = 64;
+export const MAX_EXPRESSION_LENGTH = 256;
 const MAX_RESULT = Number.MAX_SAFE_INTEGER;
 
 export type CalculatorKey =
@@ -37,6 +37,16 @@ export type CalculationResult =
 	| { ok: false; error: string };
 
 const operators = new Set(["+", "−", "-", "×", "÷"]);
+
+export function formatCalculatorDisplay(expression: string): string {
+	return expression.replace(/\d+(?:\.\d*)?/g, (number) => {
+		const [integerPart, decimalPart] = number.split(".");
+		const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+		return decimalPart === undefined
+			? groupedInteger
+			: `${groupedInteger},${decimalPart}`;
+	});
+}
 
 export function createCalculatorState(initialAmount: string): CalculatorState {
 	const expression = normalizeInitialAmount(initialAmount);

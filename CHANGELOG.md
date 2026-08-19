@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.5.1...v1.6.0) (2026-08-19)
+
+
+### Features
+
+* **auth:** implement password recovery and verified app links ([#96](https://github.com/gastondelacruz/cuentas-claras-app/issues/96)) ([b415839](https://github.com/gastondelacruz/cuentas-claras-app/commit/b41583971e37d7c279aef24d4f7b1a2e74900175))
+
 ## [1.5.1](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.5.0...v1.5.1) (2026-08-11)
 
 

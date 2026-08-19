@@ -9,9 +9,11 @@ import {
 } from "../../../shared/api/tokenStorage";
 import { useAuthStore } from "../../../shared/store/authStore";
 import {
+	forgotPassword,
 	getEmailVerificationStatus,
 	getMeSummary,
 	refreshSession,
+	resetPassword,
 	resendEmailVerification,
 	verifyEmail,
 } from "../api/authApi";
@@ -91,6 +93,33 @@ describe("authApi.getMeSummary", () => {
 		await expect(getMeSummary()).rejects.toThrow(
 			"API response does not match contract",
 		);
+	});
+});
+
+describe("authApi.passwordRecovery", () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
+	it("requests a password recovery email and accepts 204", async () => {
+		mockPost.mockResolvedValueOnce({ status: 204 });
+
+		await forgotPassword("user@example.com");
+
+		expect(mockPost).toHaveBeenCalledWith("/auth/password/forgot", {
+			email: "user@example.com",
+		});
+	});
+
+	it("posts the reset token and password and accepts 204", async () => {
+		mockPost.mockResolvedValueOnce({ status: 204 });
+
+		await resetPassword("reset-token", "NuevaPassword123");
+
+		expect(mockPost).toHaveBeenCalledWith("/auth/password/reset", {
+			token: "reset-token",
+			password: "NuevaPassword123",
+		});
 	});
 });
 

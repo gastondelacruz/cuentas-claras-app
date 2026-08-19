@@ -1,5 +1,38 @@
 import axios from "axios";
 
+export type EmailVerificationErrorKind = "connection" | "invalid";
+
+export function getEmailVerificationErrorKind(
+	error: unknown,
+): EmailVerificationErrorKind {
+	if (error && typeof error === "object" && "response" in error) {
+		return "invalid";
+	}
+
+	return "connection";
+}
+
+export type PasswordResetErrorCode =
+	| "PASSWORD_RESET_TOKEN_INVALID"
+	| "PASSWORD_RESET_TOKEN_EXPIRED"
+	| "PASSWORD_RESET_TOKEN_CONSUMED"
+	| "PASSWORD_RESET_CONNECTION";
+
+export function getPasswordResetErrorCode(
+	error: unknown,
+): PasswordResetErrorCode {
+	if (!axios.isAxiosError(error)) return "PASSWORD_RESET_CONNECTION";
+	if (!error.response) return "PASSWORD_RESET_CONNECTION";
+	const data = error.response.data as Record<string, unknown> | undefined;
+	const nested = data?.error as Record<string, unknown> | undefined;
+	const dataNested = data?.data as Record<string, unknown> | undefined;
+	const code = data?.code ?? nested?.code ?? dataNested?.code;
+	return code === "PASSWORD_RESET_TOKEN_EXPIRED" ||
+		code === "PASSWORD_RESET_TOKEN_CONSUMED"
+		? code
+		: "PASSWORD_RESET_TOKEN_INVALID";
+}
+
 import { client } from "../../../shared/api/client";
 import { parseOrThrow } from "../../../shared/api/errors";
 import {
@@ -136,4 +169,15 @@ export async function resendEmailVerification(): Promise<void> {
 
 export async function verifyEmail(token: string): Promise<void> {
 	await client.post("/auth/email-verification/verify", { token });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+	await client.post("/auth/password/forgot", { email });
+}
+
+export async function resetPassword(
+	token: string,
+	password: string,
+): Promise<void> {
+	await client.post("/auth/password/reset", { token, password });
 }

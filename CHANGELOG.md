@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.6.0...v1.6.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* improve calculator amount entry display ([#98](https://github.com/gastondelacruz/cuentas-claras-app/issues/98)) ([0dd4449](https://github.com/gastondelacruz/cuentas-claras-app/commit/0dd4449effc830c7e00c97029614085de46d3eab))
+* improve calculator amount entry display ([#98](https://github.com/gastondelacruz/cuentas-claras-app/issues/98)) ([0dd4449](https://github.com/gastondelacruz/cuentas-claras-app/commit/0dd4449effc830c7e00c97029614085de46d3eab))
+
 ## [1.6.0](https://github.com/gastondelacruz/cuentas-claras-app/compare/v1.5.1...v1.6.0) (2026-08-19)
 
 

@@ -12,6 +12,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../../../app/navigation/types";
 import { AppTopBar } from "../../../shared/ui/AppTopBar";
+import { AuthFooter } from "../../../shared/ui/AuthFooter";
 import { KeyboardAwareScrollView } from "../../../shared/ui/KeyboardAwareScrollView";
 import { useBiometricAuth } from "../hooks/useBiometricAuth";
 import { useLoginForm } from "../hooks/useLoginForm";
@@ -19,7 +20,7 @@ import { useRegisterForm } from "../hooks/useRegisterForm";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Auth">;
 
-export function AuthScreen({ route }: Props) {
+export function AuthScreen({ route, navigation }: Props) {
 	const [activeTab, setActiveTab] = useState<"login" | "register">(
 		route.params?.initialTab ?? "login",
 	);
@@ -232,6 +233,17 @@ export function AuthScreen({ route }: Props) {
 										Iniciar Sesión
 									</Text>
 								</TouchableOpacity>
+								<TouchableOpacity
+									accessibilityRole="button"
+									accessibilityLabel="¿Olvidaste tu contraseña?"
+									testID="forgot-password-link"
+									onPress={() => navigation.navigate("ForgotPassword")}
+									className="items-center mb-2"
+								>
+									<Text className="text-sm font-semibold text-[#006d37]">
+										¿Olvidaste tu contraseña?
+									</Text>
+								</TouchableOpacity>
 							</>
 						) : (
 							<>
@@ -397,6 +409,7 @@ export function AuthScreen({ route }: Props) {
 							</>
 						)}
 					</View>
+					<AuthFooter />
 				</View>
 			</KeyboardAwareScrollView>
 

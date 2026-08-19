@@ -16,6 +16,10 @@ jest.mock("../api/authApi", () => ({
 	verifyEmail: jest.fn(),
 	getEmailVerificationStatus: jest.fn(),
 	resendEmailVerification: jest.fn(),
+	getEmailVerificationErrorKind: (error: unknown) =>
+		error && typeof error === "object" && "response" in error
+			? "invalid"
+			: "connection",
 }));
 
 const mockVerifyEmail = jest.mocked(verifyEmail);
@@ -70,7 +74,7 @@ describe("VerifyEmailScreen", () => {
 		expect(mockVerifyEmail).not.toHaveBeenCalled();
 	});
 
-	it("shows expired-or-consumed token copy and lets the user retry when verification fails", async () => {
+	it("shows a connection error and lets the user retry when verification cannot reach the API", async () => {
 		mockVerifyEmail
 			.mockRejectedValueOnce(new Error("network error"))
 			.mockResolvedValueOnce(undefined);
@@ -82,7 +86,7 @@ describe("VerifyEmailScreen", () => {
 		});
 		expect(
 			screen.getByText(
-				"El enlace puede estar vencido o ya fue usado. Reenviá el email de verificación e intentá nuevamente.",
+				"No pudimos conectar con el servidor. Revisá tu conexión e intentá nuevamente.",
 			),
 		).toBeTruthy();
 
@@ -93,6 +97,20 @@ describe("VerifyEmailScreen", () => {
 			expect(navigationMock.navigate).toHaveBeenCalledWith("Main", {
 				screen: "GroupsList",
 			});
+		});
+	});
+
+	it("shows an invalid-or-expired message for an API token error", async () => {
+		mockVerifyEmail.mockRejectedValueOnce({ response: { status: 400 } });
+
+		renderScreen();
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(
+					"El enlace puede estar vencido o ya fue usado. Reenviá el email de verificación e intentá nuevamente.",
+				),
+			).toBeTruthy();
 		});
 	});
 

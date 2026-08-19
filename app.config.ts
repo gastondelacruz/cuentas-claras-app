@@ -7,6 +7,10 @@ export default ({ config }: ConfigContext): ExpoConfig =>
 		...config,
 		plugins: [...(config.plugins ?? []), "expo-status-bar"],
 		version: packageJson.version,
+		extra: {
+			...config.extra,
+			apiUrl: process.env.EXPO_PUBLIC_API_URL,
+		},
 		ios: {
 			...config.ios,
 			infoPlist: {

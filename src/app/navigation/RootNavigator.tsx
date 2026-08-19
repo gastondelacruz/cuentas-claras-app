@@ -1,6 +1,10 @@
 import { ActivityIndicator, Text, View } from "react-native";
-import { useEffect } from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useEffect, useRef } from "react";
+import { useNavigation } from "@react-navigation/native";
+import {
+	createNativeStackNavigator,
+	type NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 
 import { CalculatorScreen } from "../../features/calculator/screens/CalculatorScreen";
 import { AddExpenseScreen } from "../../features/expenses/screens/AddExpenseScreen";
@@ -13,6 +17,8 @@ import { PersonalTransactionCategoriesScreen } from "../../features/personal-exp
 import { CreatePersonalTransactionCategoryScreen } from "../../features/personal-expenses/screens/CreatePersonalTransactionCategoryScreen";
 import { EmailVerificationRequiredScreen } from "../../features/auth/screens/EmailVerificationRequiredScreen";
 import { VerifyEmailScreen } from "../../features/auth/screens/VerifyEmailScreen";
+import { ForgotPasswordScreen } from "../../features/auth/screens/ForgotPasswordScreen";
+import { ResetPasswordScreen } from "../../features/auth/screens/ResetPasswordScreen";
 import { AuthScreen } from "../../features/auth/screens/AuthScreen";
 import { OnboardingScreen } from "../../features/auth/screens/OnboardingScreen";
 import { AcceptGroupInvitationScreen } from "../../features/groups/screens/AcceptGroupInvitationScreen";
@@ -26,18 +32,24 @@ import { RootStackParamList } from "./types";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function LoginRedirectScreen() {
+	const navigation =
+		useNavigation<NativeStackNavigationProp<RootStackParamList, "Auth">>();
+
 	return (
 		<AuthScreen
 			route={
 				{ key: "Auth", name: "Auth", params: { initialTab: "login" } } as never
 			}
-			navigation={{} as never}
+			navigation={navigation}
 		/>
 	);
 }
 
 export function RootNavigator() {
+	const navigation =
+		useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const wasAuthenticated = useRef(isAuthenticated);
 	const emailVerified = useAuthStore((state) => state.emailVerified);
 	const pendingGroupInvitationToken = useAuthStore(
 		(state) => state.pendingGroupInvitationToken,
@@ -45,15 +57,19 @@ export function RootNavigator() {
 	useEmailVerificationStatus();
 	useSessionRestore();
 	const isRestoringSession = useAuthStore((state) => state.isRestoringSession);
-	const biometricUnlockRequired = useAuthStore(
-		(state) => state.biometricUnlockRequired,
-	);
 
 	useEffect(() => {
 		return onAuthLogout(() => {
 			useAuthStore.getState().clearSession();
 		});
 	}, []);
+
+	useEffect(() => {
+		if (isAuthenticated && !wasAuthenticated.current) {
+			navigation.reset({ index: 0, routes: [{ name: "Main" }] });
+		}
+		wasAuthenticated.current = isAuthenticated;
+	}, [isAuthenticated, navigation]);
 
 	if (isRestoringSession) {
 		return (
@@ -62,10 +78,6 @@ export function RootNavigator() {
 				<Text className="mt-3 text-[#1a1c1e]">Restaurando tu sesión…</Text>
 			</View>
 		);
-	}
-
-	if (biometricUnlockRequired && !isAuthenticated) {
-		return <LoginRedirectScreen />;
 	}
 
 	const GatedMainScreen = isAuthenticated ? MainTabs : LoginRedirectScreen;
@@ -134,6 +146,16 @@ export function RootNavigator() {
 			<Stack.Screen
 				name="Auth"
 				component={AuthScreen}
+				options={{ headerShown: false }}
+			/>
+			<Stack.Screen
+				name="ForgotPassword"
+				component={ForgotPasswordScreen}
+				options={{ headerShown: false }}
+			/>
+			<Stack.Screen
+				name="ResetPassword"
+				component={ResetPasswordScreen}
 				options={{ headerShown: false }}
 			/>
 			<Stack.Screen

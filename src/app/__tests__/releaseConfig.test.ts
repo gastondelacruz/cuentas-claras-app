@@ -18,6 +18,36 @@ describe("release configuration", () => {
 		expect(releaseConfig.version).toBe(packageJson.version);
 	});
 
+	it("keeps the real Android package and verified HTTPS App Link filters", () => {
+		expect(releaseConfig.android?.package).toBe("com.cuentasclaras.app");
+		expect(releaseConfig.scheme).toBe("cuentasclaras");
+		expect(releaseConfig.android?.intentFilters).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					action: "VIEW",
+					autoVerify: true,
+					category: ["BROWSABLE", "DEFAULT"],
+					data: [
+						{
+							scheme: "https",
+							host: "cuentas-claras-app.com",
+							pathPrefix: "/verify-email",
+						},
+					],
+				}),
+				expect.objectContaining({
+					data: [
+						{
+							scheme: "https",
+							host: "cuentas-claras-app.com",
+							pathPrefix: "/reset-password",
+						},
+					],
+				}),
+			]),
+		);
+	});
+
 	it("assigns each build profile to its explicit EAS environment without embedding the public API URL", () => {
 		const buildProfiles = easJson.build as Record<
 			string,

@@ -36,6 +36,18 @@ OpenSpec is the source of truth for requirements and implementation decisions. F
 
 Stop and ask for clarification on ambiguity, failing tests, or high-risk irreversible work. Keep each increment tested, compilable, and revertible.
 
+### Mandatory proposal and approval gate
+
+For every user request that asks the agent to make a change, run a command with side effects, build, deploy, commit, or otherwise execute work:
+
+1. **INSPECT:** gather the minimum read-only context needed to understand the request. Read-only inspection and diagnostics are allowed before approval.
+2. **PROPOSE:** present the user with the possible implementation approaches, including the recommended option, assumptions, affected files or systems, risks, and verification steps.
+3. **APPROVE:** explicitly ask the user to approve one approach or the complete plan. Do not interpret a general request as approval of an unpresented plan.
+4. **EXECUTE:** only after explicit approval, edit files, run builds/tests with side effects, deploy, commit, or perform any other implementation action.
+5. **REPORT:** summarize what was executed, evidence from verification, and remaining limitations.
+
+Before approval, do not modify files, create generated artifacts, install dependencies, build, deploy, commit, or push. If the request is ambiguous, stop at **INSPECT** and ask for clarification. For purely conversational or read-only questions, explain the answer without requiring an approval gate.
+
 ## API Contract Source of Truth
 
 - `swagger-spec.json` is the source of truth for backend endpoints, request bodies, response envelopes, and DTO shapes.

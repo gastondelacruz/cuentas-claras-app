@@ -63,6 +63,8 @@ export type CalculatorSourceParams = Omit<
 export type RootStackParamList = {
 	Onboarding: undefined;
 	Auth: { initialTab?: "login" | "register" } | undefined;
+	ForgotPassword: undefined;
+	ResetPassword: { token?: string } | undefined;
 	Main: NavigatorScreenParams<MainTabParamList> | undefined;
 	GroupDetail: { groupId?: string } | undefined;
 	NewGroup: { groupId?: string } | undefined;
@@ -92,6 +94,8 @@ export type RootStackParamList = {
 export const registeredRouteNames = [
 	"Onboarding",
 	"Auth",
+	"ForgotPassword",
+	"ResetPassword",
 	"GroupsList",
 	"PersonalExpenses",
 	"GroupDetail",

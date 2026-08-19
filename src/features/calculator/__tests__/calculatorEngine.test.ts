@@ -2,10 +2,21 @@ import {
 	MAX_EXPRESSION_LENGTH,
 	createCalculatorState,
 	evaluateExpression,
+	formatCalculatorDisplay,
 	pressCalculatorKey,
 } from "../calculatorEngine";
 
 describe("calculatorEngine", () => {
+	it.each([
+		["100", "100"],
+		["1000", "1.000"],
+		["1250000", "1.250.000"],
+		["1250.5", "1.250,5"],
+		["1000+25.5%", "1.000+25,5%"],
+	])("formats %s for the calculator display as %s", (expression, display) => {
+		expect(formatCalculatorDisplay(expression)).toBe(display);
+	});
+
 	it.each([
 		["2+3×4", "14"],
 		["(2+3)×4", "20"],
@@ -36,12 +47,21 @@ describe("calculatorEngine", () => {
 	it("rejects non-positive, overflowing, and overlong results", () => {
 		expect(evaluateExpression("0").ok).toBe(false);
 		expect(evaluateExpression("1-2").ok).toBe(false);
-		expect(evaluateExpression("999999999999999×999999999999999").ok).toBe(
-			false,
-		);
+		expect(evaluateExpression("999999999999999×999999999999999").ok).toBe(false);
 		expect(evaluateExpression("1".repeat(MAX_EXPRESSION_LENGTH + 1)).ok).toBe(
 			false,
 		);
+	});
+
+	it("allows an expression up to the expanded input limit", () => {
+		const state = createCalculatorState("1".repeat(MAX_EXPRESSION_LENGTH - 1));
+		const next = pressCalculatorKey(state, "1");
+		const rejected = pressCalculatorKey(next, "1");
+
+		expect(next.error).toBeUndefined();
+		expect(next.expression).toHaveLength(MAX_EXPRESSION_LENGTH);
+		expect(rejected.expression).toBe(next.expression);
+		expect(rejected.error).toBe("La operación es demasiado larga");
 	});
 
 	it("supports clear and backspace state behavior", () => {

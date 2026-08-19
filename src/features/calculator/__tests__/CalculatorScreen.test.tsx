@@ -69,7 +69,7 @@ describe("CalculatorScreen", () => {
 		expect(screen.getByText("Calculadora")).toBeTruthy();
 		expect(screen.getByText("Monto actual")).toBeTruthy();
 		expect(screen.getByTestId("calculator-display").props.children).toBe(
-			"1250.5",
+			"1.250,5",
 		);
 
 		const controls = [
@@ -215,6 +215,13 @@ describe("CalculatorScreen", () => {
 		expect(resolvedStyle("calculator-display")).toEqual(
 			expect.objectContaining({ width: "100%", textAlign: "right" }),
 		);
+		expect(screen.getByTestId("calculator-display").props).toEqual(
+			expect.objectContaining({
+				adjustsFontSizeToFit: true,
+				minimumFontScale: 0.45,
+				numberOfLines: 2,
+			}),
+		);
 
 		const contentStyle = StyleSheet.flatten(
 			screen.getByTestId("calculator-scroll").props.contentContainerStyle,
@@ -286,13 +293,10 @@ describe("CalculatorScreen", () => {
 
 		expect(screen.getByTestId("calculator-display").props.children).toBe("20");
 		fireEvent.press(screen.getByTestId("calculator-accept"));
-		expect(navigationMock.popTo).toHaveBeenCalledWith(
-			"AddPersonalTransaction",
-			{
-				...sourceParams,
-				calculatorResult: "20",
-			},
-		);
+		expect(navigationMock.popTo).toHaveBeenCalledWith("AddPersonalTransaction", {
+			...sourceParams,
+			calculatorResult: "20",
+		});
 	});
 
 	it("supports decimal, operators, backspace, and clear controls", () => {
@@ -314,7 +318,7 @@ describe("CalculatorScreen", () => {
 		}
 		fireEvent.press(screen.getByTestId("calculator-key-backspace"));
 		expect(screen.getByTestId("calculator-display").props.children).toBe(
-			"7.5+2-1÷",
+			"7,5+2-1÷",
 		);
 		fireEvent.press(screen.getByTestId("calculator-key-clear"));
 		expect(screen.getByTestId("calculator-display").props.children).toBe("0");
